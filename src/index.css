@@ -1,0 +1,362 @@
+@import "tailwindcss";
+
+
+  .bg-primary{
+            background-color: rgb(200 16 46) !important
+
+  }
+/* Popover padding */
+.ant-popover-content p {
+  padding: 20px !important;
+}
+
+/* Animation fade-in khi xuất hiện */
+.fade-in {
+  opacity: 0;
+  transform: scale(0.95);
+  animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation khi hover */
+.hover-scale:hover {
+  transform: scale(1.05);
+  transition: transform 1s ease-in-out;
+}
+
+.product__item:hover {
+  box-shadow: 2px 6px 10px rgba(0, 0, 0, 0.2); /* right + bottom */
+  transition: box-shadow 0.5s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+}
+
+
+.image-wrapper {
+  position: relative;
+  width: 300px; /* chỉnh theo ý */
+  height: 150px; /* chỉnh theo ý */
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+
+.image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Lớp phủ gradient mờ bên phải */
+.image-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%; /* phần bên phải mờ */
+  height: 100%;
+  background: linear-gradient(to left, white, transparent);
+}
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* ==================== ADVISOR LAYOUT STYLES ==================== */
+
+/* Sidebar Menu Styling */
+.admin-menu .ant-menu-item {
+  margin: 8px 0 !important;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  font-weight: 500 !important;
+}
+
+.admin-menu .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
+
+.admin-menu .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+}
+
+.admin-menu .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+.admin-menu .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  font-weight: 500 !important;
+}
+
+.admin-menu .ant-menu-submenu-title:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.admin-menu .ant-menu-item-icon {
+  color: inherit !important;
+  min-width: auto;
+  margin-right: 12px;
+}
+
+/* Ant Table Styling */
+.ant-table {
+  font-size: 14px;
+}
+
+.ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%) !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(200, 16, 46, 0.04) !important;
+}
+
+.ant-table-row {
+  transition: all 0.3s ease !important;
+}
+
+/* Ant Card Styling */
+.ant-card {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.ant-card-head {
+  background: linear-gradient(135deg, #fafafa 0%, #f0f2f5 100%) !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+/* Ant Button Styling */
+.ant-btn-primary {
+  background: linear-gradient(135deg, #c8102e 0%, #e65100 100%) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+.ant-btn-primary:active {
+  transform: translateY(0) !important;
+}
+
+/* Ant Input Styling */
+.ant-input,
+.ant-input-number,
+.ant-select-selector {
+  border-radius: 6px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-input:focus,
+.ant-input-number:focus,
+.ant-select-focused .ant-select-selector {
+  border-color: #c8102e !important;
+  box-shadow: 0 0 0 2px rgba(200, 16, 46, 0.1) !important;
+}
+
+/* Ant Select Styling */
+.ant-select-selector {
+  border-radius: 6px !important;
+}
+
+.ant-select:hover .ant-select-selector {
+  border-color: #c8102e !important;
+}
+
+/* Scrollbar styling for Sider */
+.ant-layout-sider::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Ant Tabs Styling */
+.ant-tabs-nav {
+  background: transparent !important;
+  border-bottom: 2px solid #f0f0f0 !important;
+}
+
+.ant-tabs-tab {
+  border-radius: 6px 6px 0 0 !important;
+  margin-right: 8px !important;
+  color: #999 !important;
+  font-weight: 500 !important;
+}
+
+.ant-tabs-tab:hover {
+  color: #c8102e !important;
+}
+
+.ant-tabs-tab-active {
+  color: #c8102e !important;
+  border-bottom: 3px solid #c8102e !important;
+}
+
+.ant-tabs-ink-bar {
+  background: #c8102e !important;
+}
+
+/* Tooltip Styling */
+.ant-tooltip-inner {
+  background: rgba(0, 0, 0, 0.85) !important;
+  border-radius: 6px !important;
+}
+
+/* Dropdown Menu Styling */
+.ant-dropdown-menu {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: rgba(200, 16, 46, 0.1) !important;
+}
+
+/* Modal Styling */
+.ant-modal-content {
+  border-radius: 12px !important;
+}
+
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0 !important;
+  border-radius: 0 0 12px 12px !important;
+}
+
+/* Avatar Styling */
+.ant-avatar {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Tag Styling */
+.ant-tag {
+  border-radius: 4px !important;
+  padding: 4px 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Statistic Styling */
+.ant-statistic-title {
+  color: #999 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.ant-statistic-content {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+}
+
+/* Empty State Styling */
+.ant-empty-description {
+  color: #999 !important;
+  font-size: 14px !important;
+}
+
+/* Form Styling */
+.ant-form-item-label > label {
+  font-weight: 600 !important;
+  color: #333 !important;
+}
+
+.ant-form-item-label > label::before {
+  content: "" !important;
+}
+
+.ant-form-item-required::before {
+  display: inline-block !important;
+  margin-right: 4px !important;
+  color: #c8102e !important;
+  font-weight: bold !important;
+  content: "*" !important;
+}
+
+/* Space between elements */
+.ant-space {
+  gap: 12px !important;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+
+  .ant-table-column-title {
+    font-size: 12px !important;
+  }
+
+  .admin-menu .ant-menu-item {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-card {
+    border-radius: 8px !important;
+  }
+
+  .ant-btn {
+    border-radius: 4px !important;
+  }
+
+  .ant-statistic-content {
+    font-size: 24px !important;
+  }
+}
