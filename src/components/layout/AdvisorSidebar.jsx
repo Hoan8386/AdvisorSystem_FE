@@ -1,30 +1,14 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext } from "react";
 import { toast } from "react-toastify";
-import { FileText, Bell, LogOut, User, Home } from "lucide-react";
+import { FileText, Bell, LogOut, Home, Calendar } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
-import { getAccountAPI, logoutApi } from "../../services/api.service";
+import { logoutApi } from "../../services/api.service";
 
 export const AdvisorSidebar = ({ onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, handleLogout } = useContext(AuthContext);
-  const [advisorInfo, setAdvisorInfo] = useState(null);
-
-  useEffect(() => {
-    fetchAdvisorInfo();
-  }, []);
-
-  const fetchAdvisorInfo = async () => {
-    try {
-      const res = await getAccountAPI();
-      if (res && res.data) {
-        setAdvisorInfo(res.data);
-      }
-    } catch (error) {
-      console.error("Error fetching advisor info:", error);
-    }
-  };
+  const { handleLogout } = useContext(AuthContext);
 
   const handleLogoutClick = async () => {
     try {
@@ -60,6 +44,16 @@ export const AdvisorSidebar = ({ onClose }) => {
       hoverColor: "hover:bg-orange-100",
       dotColor: "bg-orange-600",
     },
+    {
+      id: "activities",
+      path: "/admin/activities",
+      label: "Hoạt động",
+      icon: Calendar,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      hoverColor: "hover:bg-blue-100",
+      dotColor: "bg-blue-600",
+    },
   ];
 
   return (
@@ -86,7 +80,9 @@ export const AdvisorSidebar = ({ onClose }) => {
             (item.path === "/admin" &&
               location.pathname.startsWith("/admin/home")) ||
             (item.path === "/admin/notifications" &&
-              location.pathname.startsWith("/admin/notifications"));
+              location.pathname.startsWith("/admin/notifications")) ||
+            (item.path === "/admin/activities" &&
+              location.pathname.startsWith("/admin/activities"));
 
           return (
             <button
@@ -122,24 +118,7 @@ export const AdvisorSidebar = ({ onClose }) => {
       </nav>
 
       {/* User Info & Logout */}
-      <div className="p-4 border-t border-gray-200 space-y-2">
-        {/* User Info */}
-        <div className="px-4 py-3 bg-gray-50 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">
-                {advisorInfo?.full_name || user?.full_name || "Advisor"}
-              </div>
-              <div className="text-xs text-gray-500 truncate">
-                {user?.user_code}
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="p-4 border-t border-gray-200">
         {/* Logout Button */}
         <button
           onClick={handleLogoutClick}

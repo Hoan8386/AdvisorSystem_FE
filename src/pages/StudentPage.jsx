@@ -648,15 +648,6 @@ export const StudentPage = () => {
                     {getTypeInfo(selectedNotification.type).icon}{" "}
                     {getTypeInfo(selectedNotification.type).text}
                   </Tag>
-                  {selectedNotification.is_read ? (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-xl font-bold text-sm">
-                      ✓ Đã đọc
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl font-bold text-sm">
-                      ● Chưa đọc
-                    </span>
-                  )}
                 </div>
               </div>
 

@@ -19,6 +19,7 @@ export const LoginPage = () => {
   const [formData, setFormData] = useState({
     user_code: "",
     password: "",
+    role: "student", // Default role
     remember: false,
   });
 
@@ -42,13 +43,17 @@ export const LoginPage = () => {
 
     try {
       setLoading(true);
-      const res = await loginApi(formData.user_code, formData.password);
+      const res = await loginApi(
+        formData.user_code,
+        formData.password,
+        formData.role
+      );
 
-      // Response structure: { success: true, data: { token, user: { user_id, role, ... } } }
+      // Response structure: { success: true, data: { token, user: { id, role, ... } } }
       if (
         res?.success &&
         res?.data?.token &&
-        res?.data?.user?.user_id &&
+        res?.data?.user?.id &&
         res?.data?.user?.role
       ) {
         // Combine token + user data
@@ -166,6 +171,76 @@ export const LoginPage = () => {
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Role Selection */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
+                    Vai trò
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, role: "student" })
+                      }
+                      className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-lg border-2 transition-all duration-300 ${
+                        formData.role === "student"
+                          ? "border-purple-500 bg-purple-50"
+                          : "border-gray-200 bg-white hover:border-purple-300"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
+                          formData.role === "student"
+                            ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <UserOutlined className="text-sm" />
+                      </div>
+                      <span
+                        className={`text-xs font-semibold ${
+                          formData.role === "student"
+                            ? "text-purple-700"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        Sinh viên
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, role: "advisor" })
+                      }
+                      className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-lg border-2 transition-all duration-300 ${
+                        formData.role === "advisor"
+                          ? "border-purple-500 bg-purple-50"
+                          : "border-gray-200 bg-white hover:border-purple-300"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
+                          formData.role === "advisor"
+                            ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <UserOutlined className="text-sm" />
+                      </div>
+                      <span
+                        className={`text-xs font-semibold ${
+                          formData.role === "advisor"
+                            ? "text-purple-700"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        Cố vấn
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* User Code Input */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -178,7 +253,11 @@ export const LoginPage = () => {
                       name="user_code"
                       value={formData.user_code}
                       onChange={handleChange}
-                      placeholder="Nhập mã số (GV/MSV)"
+                      placeholder={
+                        formData.role === "advisor"
+                          ? "Nhập mã giảng viên (VD: GV001)"
+                          : "Nhập mã sinh viên (VD: 210001)"
+                      }
                       className="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-400 text-base"
                     />
                   </div>

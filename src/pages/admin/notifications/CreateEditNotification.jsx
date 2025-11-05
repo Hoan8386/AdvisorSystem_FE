@@ -77,8 +77,13 @@ export const CreateEditNotification = () => {
 
       let advisorClasses = [];
 
-      // Lấy classes từ res.data.advisor.classes
-      if (res?.data?.advisor?.classes) {
+      // Lấy classes từ res.data.classes hoặc res.classes
+      if (res?.data?.classes) {
+        advisorClasses = res.data.classes;
+      } else if (res?.classes) {
+        advisorClasses = res.classes;
+      } else if (res?.data?.advisor?.classes) {
+        // Fallback nếu API trả về cấu trúc cũ
         advisorClasses = res.data.advisor.classes;
       }
 

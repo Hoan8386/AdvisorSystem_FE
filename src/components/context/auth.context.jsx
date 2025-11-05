@@ -97,23 +97,24 @@ const AuthWrapper = ({ children }) => {
       try {
         const res = await getAccountAPI();
         // getAccountAPI returns the `data` payload per axios.customize
-        if (res && res.user_id) {
+        // Backend returns { id, user_code, full_name, email, role, avatar_url, phone_number, unit }
+        if (res && (res.id || res.user_id)) {
           setUser({
-            id: res.user_id,
+            id: res.id ?? res.user_id,
             email: res.email ?? "",
             full_name: res.full_name ?? "",
             address: res.address ?? "",
-            phone: res.phone ?? "",
+            phone: res.phone_number ?? res.phone ?? "",
             role: res.role ?? "",
           });
-        } else if (res && res.data && res.data.user_id) {
+        } else if (res && res.data && (res.data.id || res.data.user_id)) {
           const d = res.data;
           setUser({
-            id: d.user_id,
+            id: d.id ?? d.user_id,
             email: d.email ?? "",
             full_name: d.full_name ?? "",
             address: d.address ?? "",
-            phone: d.phone ?? "",
+            phone: d.phone_number ?? d.phone ?? "",
             role: d.role ?? "",
           });
         }

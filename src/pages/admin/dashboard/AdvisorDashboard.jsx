@@ -17,9 +17,9 @@ import {
   Tag,
   Space,
   Empty,
-  message,
   Tabs,
 } from "antd";
+import { toast } from "react-toastify";
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -58,7 +58,7 @@ export const AdvisorDashboard = () => {
         setNotifications(res.data || []);
       }
     } catch (error) {
-      message.error("Lỗi khi tải danh sách thông báo");
+      toast.error("Lỗi khi tải danh sách thông báo");
       console.error(error);
     } finally {
       setLoading(false);
@@ -86,11 +86,11 @@ export const AdvisorDashboard = () => {
         try {
           const res = await deleteNotificationAPI(id);
           if (res && res.success) {
-            message.success("Thông báo đã được xoá");
+            toast.success("Thông báo đã được xoá");
             fetchNotifications();
           }
         } catch (error) {
-          message.error("Lỗi khi xoá thông báo");
+          toast.error("Lỗi khi xoá thông báo");
         }
       },
     });
@@ -308,6 +308,43 @@ export const AdvisorDashboard = () => {
     </div>
   );
 
+  // Activities Tab Content
+  const activitiesContent = (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Quản lý hoạt động ngoại khóa</h1>
+        <Button
+          type="primary"
+          size="large"
+          icon={<PlusOutlined />}
+          onClick={() => navigate("/admin/activities/create")}
+          style={{
+            background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: 600,
+          }}
+        >
+          Tạo hoạt động mới
+        </Button>
+      </div>
+      <Card>
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-4">
+            Xem danh sách đầy đủ tại trang Quản lý hoạt động
+          </p>
+          <Button
+            type="primary"
+            size="large"
+            onClick={() => navigate("/admin/activities")}
+          >
+            Đi đến trang Quản lý hoạt động
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+
   const tabItems = [
     {
       key: "home",
@@ -318,6 +355,11 @@ export const AdvisorDashboard = () => {
       key: "notifications",
       label: "Thông báo",
       children: notificationsContent,
+    },
+    {
+      key: "activities",
+      label: "Hoạt động",
+      children: activitiesContent,
     },
     {
       key: "classes",

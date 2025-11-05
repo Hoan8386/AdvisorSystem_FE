@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Settings,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -39,10 +40,20 @@ export const StudentLayout = ({ children }) => {
       label: "Thông báo",
       icon: Bell,
     },
-    // Có thể thêm các menu items khác sau này
+    {
+      id: "activities",
+      path: "/student/activities",
+      label: "Hoạt động",
+      icon: Calendar,
+    },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === "/student") {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">

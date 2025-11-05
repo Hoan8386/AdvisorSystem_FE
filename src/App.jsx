@@ -15,9 +15,17 @@ import AdvisorNotifications from "./pages/admin/notifications/AdvisorNotificatio
 import AdvisorProfile from "./pages/admin/profile/AdvisorProfile";
 import CreateEditNotification from "./pages/admin/notifications/CreateEditNotification";
 import NotificationResponses from "./pages/admin/notifications/NotificationResponses";
-import StudentPage from "./pages/StudentPage";
+import AdvisorActivities from "./pages/admin/activities/AdvisorActivities";
+import CreateEditActivity from "./pages/admin/activities/CreateEditActivity";
+import ActivityDetail from "./pages/admin/activities/ActivityDetail";
+import ActivityRegistrations from "./pages/admin/activities/ActivityRegistrations";
+import StudentPage from "./pages/Student.Notification.Page";
 import StudentProfile from "./pages/StudentProfile";
 import StudentDashboard from "./pages/client/StudentDashboard";
+import StudentActivities from "./pages/client/activities/StudentActivities";
+import StudentActivityDetail from "./pages/client/activities/StudentActivityDetail";
+import MyRegistrations from "./pages/client/activities/MyRegistrations";
+import MyCancellationRequests from "./pages/client/activities/MyCancellationRequests";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -111,6 +119,14 @@ function App() {
           path: "notifications/:notificationId/responses",
           element: <NotificationResponses />,
         },
+        { path: "activities", element: <AdvisorActivities /> },
+        { path: "activities/create", element: <CreateEditActivity /> },
+        { path: "activities/:id", element: <ActivityDetail /> },
+        { path: "activities/:id/edit", element: <CreateEditActivity /> },
+        {
+          path: "activities/:id/registrations",
+          element: <ActivityRegistrations />,
+        },
         { path: "profile", element: <AdvisorProfile /> },
       ],
     },
@@ -121,20 +137,21 @@ function App() {
       element: (
         <LayoutApp>
           <ProtectedRoute allowedRoles={["student"]}>
-            <StudentPage />
+            <LayoutAdmin />
           </ProtectedRoute>
         </LayoutApp>
       ),
-    },
-    {
-      path: "/student/profile",
-      element: (
-        <LayoutApp>
-          <ProtectedRoute allowedRoles={["student"]}>
-            <StudentProfile />
-          </ProtectedRoute>
-        </LayoutApp>
-      ),
+      children: [
+        { index: true, element: <StudentPage /> },
+        { path: "profile", element: <StudentProfile /> },
+        { path: "activities", element: <StudentActivities /> },
+        { path: "activities/:id", element: <StudentActivityDetail /> },
+        { path: "activities/my-registrations", element: <MyRegistrations /> },
+        {
+          path: "activities/my-cancellation-requests",
+          element: <MyCancellationRequests />,
+        },
+      ],
     },
     // { path: "/unauthorized", element: <Unauthorized /> },
   ]);

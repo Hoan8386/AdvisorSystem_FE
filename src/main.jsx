@@ -7,12 +7,10 @@ import { AuthWrapper } from "./components/context/auth.context.jsx";
 import { ToastContainer } from "react-toastify";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <ConfigProvider>
-      <AuthWrapper>
-        <ToastContainer />
-        <App />
-      </AuthWrapper>
-    </ConfigProvider>
-  </StrictMode>
+  <ConfigProvider>
+    <AuthWrapper>
+      <ToastContainer />
+      <App />
+    </AuthWrapper>
+  </ConfigProvider>
 );

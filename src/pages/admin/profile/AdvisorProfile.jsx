@@ -11,12 +11,12 @@ import {
   Form,
   Input,
   Modal,
-  message,
   Divider,
   Tag,
   Space,
   Upload,
 } from "antd";
+import { toast } from "react-toastify";
 import {
   EditOutlined,
   SaveOutlined,
@@ -52,7 +52,7 @@ export const AdvisorProfile = () => {
         });
       }
     } catch (error) {
-      message.error("Lỗi khi tải thông tin");
+      toast.error("Lỗi khi tải thông tin");
       console.error(error);
     } finally {
       setLoading(false);
@@ -62,20 +62,20 @@ export const AdvisorProfile = () => {
   const handleSaveProfile = async (values) => {
     try {
       // TODO: Call update API
-      message.success("Cập nhật thông tin thành công");
+      toast.success("Cập nhật thông tin thành công");
       setEditing(false);
       fetchAdvisorInfo();
     } catch (error) {
-      message.error("Lỗi khi cập nhật thông tin");
+      toast.error("Lỗi khi cập nhật thông tin");
     }
   };
 
   const handleChangeAvatar = (info) => {
     if (info.file.status === "done") {
-      message.success("Cập nhật ảnh đại diện thành công");
+      toast.success("Cập nhật ảnh đại diện thành công");
       // Update avatar in state
     } else if (info.file.status === "error") {
-      message.error("Lỗi khi tải ảnh");
+      toast.error("Lỗi khi tải ảnh");
     }
   };
 
@@ -187,13 +187,13 @@ export const AdvisorProfile = () => {
                     {advisorInfo?.phone_number || "Chưa cập nhật"}
                   </p>
                 </div>
-                {advisorInfo?.advisor?.unit && (
+                {advisorInfo?.unit && (
                   <div style={{ marginBottom: 12 }}>
                     <span style={{ color: "#999", fontSize: 12 }}>
                       KHOA/BỘ MÔN
                     </span>
                     <p style={{ margin: "4px 0 0 0", fontWeight: 500 }}>
-                      {advisorInfo.advisor.unit.unit_name}
+                      {advisorInfo.unit.unit_name}
                     </p>
                   </div>
                 )}
@@ -215,7 +215,7 @@ export const AdvisorProfile = () => {
                   <div
                     style={{ fontSize: 24, fontWeight: 700, color: "#c8102e" }}
                   >
-                    {advisorInfo?.advisor?.classes?.length || 0}
+                    {advisorInfo?.classes?.length || 0}
                   </div>
                   <div style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
                     Lớp học
@@ -225,45 +225,44 @@ export const AdvisorProfile = () => {
             </Card>
 
             {/* Classes Card */}
-            {advisorInfo?.advisor?.classes &&
-              advisorInfo.advisor.classes.length > 0 && (
-                <Card
+            {advisorInfo?.classes && advisorInfo.classes.length > 0 && (
+              <Card
+                style={{
+                  borderRadius: 12,
+                  border: "none",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  marginTop: 20,
+                }}
+                title="📚 Lớp học quản lý"
+              >
+                <div
                   style={{
-                    borderRadius: 12,
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    marginTop: 20,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
                   }}
-                  title="📚 Lớp học quản lý"
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 12,
-                    }}
-                  >
-                    {advisorInfo.advisor.classes.map((classItem) => (
-                      <div
-                        key={classItem.class_id}
-                        style={{
-                          padding: 12,
-                          border: "1px solid #f0f0f0",
-                          borderRadius: 8,
-                          backgroundColor: "#fafafa",
-                        }}
-                      >
-                        <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                          {classItem.class_name}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#999" }}>
-                          {classItem.description}
-                        </div>
+                  {advisorInfo.classes.map((classItem) => (
+                    <div
+                      key={classItem.class_id}
+                      style={{
+                        padding: 12,
+                        border: "1px solid #f0f0f0",
+                        borderRadius: 8,
+                        backgroundColor: "#fafafa",
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        {classItem.class_name}
                       </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
+                      <div style={{ fontSize: 12, color: "#999" }}>
+                        {classItem.description}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
           </Col>
 
           {/* Right: Edit Form */}
@@ -441,7 +440,7 @@ export const AdvisorProfile = () => {
                             fontSize: 16,
                           }}
                         >
-                          {advisorInfo?.advisor?.unit?.unit_name || "N/A"}
+                          {advisorInfo?.unit?.unit_name || "N/A"}
                         </p>
                       </div>
                     </Col>
@@ -470,7 +469,7 @@ export const AdvisorProfile = () => {
                 >
                   <span>Mật khẩu</span>
                   <Button
-                    onClick={() => message.info("Chức năng sẽ được cập nhật")}
+                    onClick={() => toast.info("Chức năng sẽ được cập nhật")}
                   >
                     Đổi mật khẩu
                   </Button>
