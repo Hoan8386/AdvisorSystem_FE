@@ -104,7 +104,7 @@ export const NotificationResponses = () => {
         const statusMap = {
           pending: { text: "Chờ phản hồi", color: "orange" },
           replied: { text: "Đã trả lời", color: "green" },
-          rejected: { text: "Từ chối", color: "red" },
+          rejected: { text: "Từ chối", color: "volcano" },
         };
         const statusInfo = statusMap[status] || {
           text: status,

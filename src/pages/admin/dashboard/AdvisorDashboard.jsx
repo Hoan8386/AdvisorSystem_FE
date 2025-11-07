@@ -128,7 +128,7 @@ export const AdvisorDashboard = () => {
             type === "announcement"
               ? "blue"
               : type === "deadline"
-              ? "red"
+              ? "orange"
               : "green"
           }
         >

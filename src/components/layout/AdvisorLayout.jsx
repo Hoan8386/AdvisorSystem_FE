@@ -2,7 +2,15 @@ import { useContext, useState, useEffect } from "react";
 import { AdvisorSidebar } from "./AdvisorSidebar";
 import { AuthContext } from "../context/auth.context";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, ChevronDown } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { getAccountAPI, logoutApi } from "../../services/api.service";
 import { toast } from "react-toastify";
 
@@ -13,6 +21,17 @@ export const AdvisorLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [advisorInfo, setAdvisorInfo] = useState(null);
+
+  // Lưu state sidebar collapsed vào localStorage để giữ trạng thái khi navigate
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    return saved === "true";
+  });
+
+  // Cập nhật localStorage khi state thay đổi
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     fetchAdvisorInfo();
@@ -63,8 +82,11 @@ export const AdvisorLayout = ({ children }) => {
       )}
 
       {/* Sidebar - Desktop */}
-      <div className="hidden lg:block h-screen overflow-y-auto">
-        <AdvisorSidebar />
+      <div className="hidden lg:block h-screen overflow-y-auto transition-all duration-300">
+        <AdvisorSidebar
+          isCollapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
       </div>
 
       {/* Sidebar - Mobile */}
@@ -82,6 +104,19 @@ export const AdvisorLayout = ({ children }) => {
         <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              {/* Desktop Sidebar Toggle Button */}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden lg:flex p-2.5 rounded-xl bg-gradient-to-br from-[#1da1f2] to-[#1890da] hover:from-[#1890da] hover:to-[#1780c8] text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                title={sidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="w-5 h-5" />
+                ) : (
+                  <ChevronLeft className="w-5 h-5" />
+                )}
+              </button>
+
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -111,7 +146,7 @@ export const AdvisorLayout = ({ children }) => {
                 onBlur={() => setTimeout(() => setUserMenuOpen(false), 200)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-9 h-9 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                <div className="w-9 h-9 bg-gradient-to-r from-[#1da1f2] to-[#1a91da] rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="hidden sm:block text-left">
@@ -138,7 +173,7 @@ export const AdvisorLayout = ({ children }) => {
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <User className="w-4 h-4 text-red-600" />
+                    <User className="w-4 h-4 text-[#1da1f2]" />
                     <span className="text-sm font-medium">Hồ sơ của tôi</span>
                   </button>
                   <div className="border-t border-gray-200 my-1"></div>
@@ -148,7 +183,7 @@ export const AdvisorLayout = ({ children }) => {
                       handleLogoutClick();
                       setUserMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[#1da1f2] hover:bg-blue-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="text-sm font-medium">Đăng xuất</span>
@@ -165,9 +200,13 @@ export const AdvisorLayout = ({ children }) => {
         </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 px-4 sm:px-6 py-4">
-          <div className="text-center text-xs sm:text-sm text-gray-500">
-            © 2024 Hệ thống Tư vấn sinh viên
+        <footer className="bg-white border-t border-gray-200 px-4 sm:px-6 py-3">
+          <div className="flex items-center justify-center">
+            <img
+              src="/logo/logo_2.png"
+              alt="Logo Trường"
+              className="h-14 w-auto object-contain"
+            />
           </div>
         </footer>
       </div>

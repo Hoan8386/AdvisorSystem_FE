@@ -74,7 +74,7 @@ const Navbar = () => {
             />
             <Popover
               content={content}
-              className="w-[28px] text-center text-red-600 font-bold"
+              className="w-[28px] text-center text-[#1da1f2] font-bold"
             >
               VI
             </Popover>
@@ -130,13 +130,13 @@ const Navbar = () => {
                     <>
                       <a
                         href="/login"
-                        className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 md:block hover:font-bold hover:text-red-700 cursor-pointer m-0"
+                        className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 md:block hover:font-bold hover:text-[#1da1f2] cursor-pointer m-0"
                       >
                         Đăng nhập
                       </a>
                       <a
                         href="/register"
-                        className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-red-700 cursor-pointer m-0"
+                        className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-[#1da1f2] cursor-pointer m-0"
                       >
                         Đăng ký
                       </a>
@@ -151,7 +151,7 @@ const Navbar = () => {
                       </Link>
                       <Link
                         to="/order"
-                        className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-red-700 cursor-pointer"
+                        className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-[#1da1f2] cursor-pointer"
                       >
                         Theo dõi đơn hàng
                       </Link>
@@ -162,19 +162,19 @@ const Navbar = () => {
 
                   <a
                     href="#"
-                    className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-red-700 cursor-pointer"
+                    className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-[#1da1f2] cursor-pointer"
                   >
                     Đỗi điểm
                   </a>
                   <a
                     href="#"
-                    className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-red-700 cursor-pointer"
+                    className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-[#1da1f2] cursor-pointer"
                   >
                     Hut Rewards
                   </a>
                   <a
                     href="#"
-                    className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-red-700 cursor-pointer"
+                    className="duration-100 block py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-[#1da1f2] cursor-pointer"
                   >
                     Hỗ trợ khách hàng
                   </a>
@@ -184,7 +184,7 @@ const Navbar = () => {
                       <div className="bg-gray-300 w-full h-[1px]" />
                       <button
                         onClick={logout}
-                        className="w-full text-left duration-100 py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-red-700 cursor-pointer"
+                        className="w-full text-left duration-100 py-3 pl-5 md:py-2 md:pl-4 hover:font-bold hover:text-[#1da1f2] cursor-pointer"
                       >
                         Đăng xuất
                       </button>

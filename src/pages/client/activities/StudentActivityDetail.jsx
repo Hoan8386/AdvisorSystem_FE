@@ -187,66 +187,95 @@ export const StudentActivityDetail = () => {
             </Tag>
           </div>
 
-          <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} bordered>
+          <Descriptions
+            column={1}
+            bordered
+            labelStyle={{
+              fontWeight: 600,
+              backgroundColor: "#fafafa",
+              fontSize: "15px",
+              width: "200px",
+            }}
+            contentStyle={{
+              fontSize: "15px",
+              fontWeight: 500,
+              backgroundColor: "#ffffff",
+            }}
+          >
             <Descriptions.Item
               label={
-                <span>
+                <span style={{ color: "#1890ff" }}>
                   <CalendarOutlined className="mr-2" />
                   Thời gian bắt đầu
                 </span>
               }
             >
-              {dayjs(activity.start_time).format("DD/MM/YYYY HH:mm")}
+              <span
+                style={{ color: "#262626", fontWeight: 600, fontSize: "16px" }}
+              >
+                {dayjs(activity.start_time).format("DD/MM/YYYY HH:mm")}
+              </span>
             </Descriptions.Item>
 
             <Descriptions.Item
               label={
-                <span>
+                <span style={{ color: "#1890ff" }}>
                   <CalendarOutlined className="mr-2" />
                   Thời gian kết thúc
                 </span>
               }
             >
-              {dayjs(activity.end_time).format("DD/MM/YYYY HH:mm")}
+              <span
+                style={{ color: "#262626", fontWeight: 600, fontSize: "16px" }}
+              >
+                {dayjs(activity.end_time).format("DD/MM/YYYY HH:mm")}
+              </span>
             </Descriptions.Item>
 
             <Descriptions.Item
               label={
-                <span>
+                <span style={{ color: "#52c41a" }}>
                   <EnvironmentOutlined className="mr-2" />
                   Địa điểm
                 </span>
               }
             >
-              {activity.location}
+              <span
+                style={{ color: "#262626", fontWeight: 600, fontSize: "16px" }}
+              >
+                {activity.location}
+              </span>
             </Descriptions.Item>
 
             <Descriptions.Item
               label={
-                <span>
-                  <UserOutlined className="mr-2" />
-                  Người phụ trách
-                </span>
-              }
-            >
-              {activity.advisor?.user_name || "N/A"}
-            </Descriptions.Item>
-
-            <Descriptions.Item
-              label={
-                <span>
+                <span style={{ color: "#fa8c16" }}>
                   <TeamOutlined className="mr-2" />
                   Đơn vị tổ chức
                 </span>
               }
-              span={2}
             >
-              {activity.organizer_unit?.unit_name || "N/A"}
+              <span
+                style={{ color: "#262626", fontWeight: 600, fontSize: "16px" }}
+              >
+                {activity.organizer_unit?.unit_name || "N/A"}
+              </span>
             </Descriptions.Item>
 
             {activity.general_description && (
-              <Descriptions.Item label="Mô tả chung" span={3}>
-                <div className="whitespace-pre-wrap">
+              <Descriptions.Item
+                label={<span style={{ color: "#722ed1" }}>📝 Mô tả chung</span>}
+              >
+                <div
+                  className="whitespace-pre-wrap"
+                  style={{
+                    lineHeight: "1.8",
+                    color: "#262626",
+                    fontSize: "15px",
+                    padding: "8px 0",
+                    fontWeight: 500,
+                  }}
+                >
                   {activity.general_description}
                 </div>
               </Descriptions.Item>
@@ -261,6 +290,9 @@ export const StudentActivityDetail = () => {
             description="Bạn có thể xem chi tiết đăng ký trong trang 'Hoạt động đã đăng ký'"
             type="info"
             showIcon
+            style={{
+              margin: "20px 0",
+            }}
             icon={<CheckCircleOutlined />}
             action={
               <Button
@@ -324,11 +356,13 @@ export const StudentActivityDetail = () => {
                   <div className="flex-grow">
                     <h4 className="font-bold text-base mb-1">
                       {role.role_name}
-                      {role.student_registration_status && (
-                        <Tag color="green" className="ml-2">
-                          Đã đăng ký
-                        </Tag>
-                      )}
+                      <span style={{ marginLeft: "20px" }}>
+                        {role.student_registration_status && (
+                          <Tag color="green" className="ml-2">
+                            Đã đăng ký
+                          </Tag>
+                        )}
+                      </span>
                     </h4>
                     {role.description && (
                       <p className="text-gray-600 text-sm mb-2">

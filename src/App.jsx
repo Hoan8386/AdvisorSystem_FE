@@ -19,6 +19,9 @@ import AdvisorActivities from "./pages/admin/activities/AdvisorActivities";
 import CreateEditActivity from "./pages/admin/activities/CreateEditActivity";
 import ActivityDetail from "./pages/admin/activities/ActivityDetail";
 import ActivityRegistrations from "./pages/admin/activities/ActivityRegistrations";
+import AssignStudents from "./pages/admin/activities/AssignStudents";
+import AdvisorClasses from "./pages/admin/classes/AdvisorClasses";
+import ClassDetail from "./pages/admin/classes/ClassDetail";
 import StudentPage from "./pages/Student.Notification.Page";
 import StudentProfile from "./pages/StudentProfile";
 import StudentDashboard from "./pages/client/StudentDashboard";
@@ -26,6 +29,7 @@ import StudentActivities from "./pages/client/activities/StudentActivities";
 import StudentActivityDetail from "./pages/client/activities/StudentActivityDetail";
 import MyRegistrations from "./pages/client/activities/MyRegistrations";
 import MyCancellationRequests from "./pages/client/activities/MyCancellationRequests";
+import StudentPoints from "./pages/client/points/StudentPoints";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -127,6 +131,12 @@ function App() {
           path: "activities/:id/registrations",
           element: <ActivityRegistrations />,
         },
+        {
+          path: "activities/:id/assign-students",
+          element: <AssignStudents />,
+        },
+        { path: "classes", element: <AdvisorClasses /> },
+        { path: "classes/:classId", element: <ClassDetail /> },
         { path: "profile", element: <AdvisorProfile /> },
       ],
     },
@@ -144,6 +154,7 @@ function App() {
       children: [
         { index: true, element: <StudentPage /> },
         { path: "profile", element: <StudentProfile /> },
+        { path: "points", element: <StudentPoints /> },
         { path: "activities", element: <StudentActivities /> },
         { path: "activities/:id", element: <StudentActivityDetail /> },
         { path: "activities/my-registrations", element: <MyRegistrations /> },

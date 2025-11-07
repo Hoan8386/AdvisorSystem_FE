@@ -8,7 +8,7 @@ const Footer = () => {
         {/* Cột 1: Logo + Social */}
         <div>
           <img src={logo} alt="Logo" className="w-32 mb-4" />
-          <div className="flex gap-4 text-2xl text-red-600">
+          <div className="flex gap-4 text-2xl text-[#1da1f2]">
             <a href="#" aria-label="Facebook">
               <FaFacebookF />
             </a>

@@ -48,7 +48,7 @@ export const MyCancellationRequests = () => {
       icon: <CheckCircleOutlined />,
     },
     rejected: {
-      color: "red",
+      color: "orange",
       text: "Đã từ chối",
       icon: <CloseCircleOutlined />,
     },
@@ -85,12 +85,7 @@ export const MyCancellationRequests = () => {
         </div>
       ),
     },
-    {
-      title: "Người phụ trách",
-      dataIndex: "advisor_name",
-      key: "advisor_name",
-      width: 150,
-    },
+
     {
       title: "Ngày gửi",
       dataIndex: "requested_at",
@@ -160,7 +155,7 @@ export const MyCancellationRequests = () => {
             <div className="text-sm text-gray-600">Đã duyệt</div>
           </Card>
           <Card size="small" className="text-center">
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-orange-600">
               {stats.rejected}
             </div>
             <div className="text-sm text-gray-600">Đã từ chối</div>

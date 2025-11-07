@@ -93,9 +93,9 @@ export const StudentDashboard = () => {
       case "announcement":
         return "blue";
       case "deadline":
-        return "red";
-      case "reminder":
         return "orange";
+      case "reminder":
+        return "cyan";
       default:
         return "default";
     }
@@ -204,7 +204,7 @@ export const StudentDashboard = () => {
                           {notification.title}
                         </h3>
                         {!notification.is_read && (
-                          <Badge color="red" text="Chưa đọc" />
+                          <Badge color="blue" text="Chưa đọc" />
                         )}
                       </div>
                       <div className="flex gap-2 items-center mb-3">

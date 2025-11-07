@@ -300,15 +300,17 @@ export const StudentPage = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border-2 border-red-200 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-red-600 text-sm font-semibold mb-1 uppercase tracking-wide">
+                <p className="text-[#1da1f2] text-sm font-semibold mb-1 uppercase tracking-wide">
                   Chưa đọc
                 </p>
-                <p className="text-4xl font-bold text-red-700">{unreadCount}</p>
+                <p className="text-4xl font-bold text-[#1a91da]">
+                  {unreadCount}
+                </p>
               </div>
-              <div className="w-16 h-16 bg-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-[#1da1f2] rounded-2xl flex items-center justify-center shadow-lg">
                 <span className="text-3xl">🔔</span>
               </div>
             </div>
@@ -356,13 +358,13 @@ export const StudentPage = () => {
                 onClick={() => setFilterUnread(!filterUnread)}
                 className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
                   filterUnread
-                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-red-200"
+                    ? "bg-gradient-to-r from-[#1da1f2] to-cyan-500 text-white shadow-blue-200"
                     : "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-blue-200"
                 }`}
               >
                 {filterUnread
                   ? "📋 Hiện tất cả"
-                  : `🔴 Chưa đọc (${unreadCount})`}
+                  : `� Chưa đọc (${unreadCount})`}
               </button>
 
               <button
@@ -430,20 +432,20 @@ export const StudentPage = () => {
                             key={notif.notification_id}
                             onClick={() => handleViewDetail(notif)}
                             className={`group relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl ${
-                              !notif.is_read ? "ring-4 ring-red-200" : ""
+                              !notif.is_read ? "ring-4 ring-blue-200" : ""
                             }`}
                             style={{
                               borderColor: !notif.is_read
-                                ? "#ef4444"
+                                ? "#1da1f2"
                                 : "#e5e7eb",
                               backgroundColor: !notif.is_read
-                                ? "#fef2f2"
+                                ? "#e8f5fe"
                                 : "#fafafa",
                             }}
                           >
                             {/* Unread indicator badge */}
                             {!notif.is_read && (
-                              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-[#1da1f2] to-cyan-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
                                 <span className="text-white text-sm font-bold">
                                   NEW
                                 </span>
@@ -511,7 +513,7 @@ export const StudentPage = () => {
                                       ✓ Đã đọc
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full font-bold">
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-[#1da1f2] rounded-full font-bold">
                                       ● Chưa đọc
                                     </span>
                                   )}
@@ -715,7 +717,7 @@ export const StudentPage = () => {
                   👨‍🏫 Thông tin cố vấn
                 </h4>
                 <div className="flex items-center gap-4 bg-white rounded-xl p-4 border-2 border-purple-100">
-                  <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-red-400 rounded-2xl flex items-center justify-center text-3xl text-white shadow-lg">
+                  <div className="w-16 h-16 bg-gradient-to-r from-[#1da1f2] to-cyan-400 rounded-2xl flex items-center justify-center text-3xl text-white shadow-lg">
                     👤
                   </div>
                   <div>

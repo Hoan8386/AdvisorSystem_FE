@@ -124,6 +124,7 @@ export const StudentActivities = () => {
             borderRadius: 12,
             border: "none",
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            marginBottom: "20px",
           }}
         >
           <Space size="middle" wrap>

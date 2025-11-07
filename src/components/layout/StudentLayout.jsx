@@ -11,6 +11,7 @@ import {
   Settings,
   ChevronDown,
   Calendar,
+  Trophy,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -40,6 +41,7 @@ export const StudentLayout = ({ children }) => {
       label: "Thông báo",
       icon: Bell,
     },
+
     {
       id: "activities",
       path: "/student/activities",
@@ -56,24 +58,23 @@ export const StudentLayout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div
+      className="min-h-screen"
+      style={{
+        background: "linear-gradient(to bottom right, #e8f5fe, #f0f9ff)",
+      }}
+    >
       {/* Header Bar */}
       <header className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo & Brand */}
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg transform hover:rotate-12 transition-transform duration-300">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Student Portal
-                </h1>
-                <p className="text-xs text-gray-500 font-medium">
-                  Hệ thống Tư vấn Sinh viên
-                </p>
-              </div>
+              <img
+                src="/logo/sv_logo_dashboard.png"
+                alt="Logo"
+                className="h-16 w-auto object-contain"
+              />
             </div>
 
             {/* User Dropdown Menu - Desktop */}
@@ -81,9 +82,13 @@ export const StudentLayout = ({ children }) => {
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 onBlur={() => setTimeout(() => setUserMenuOpen(false), 200)}
-                className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200 hover:shadow-lg transition-all duration-300"
+                className="flex items-center gap-3 px-4 py-2 rounded-xl border-2 hover:shadow-lg transition-all duration-300"
+                style={{ backgroundColor: "#e8f5fe", borderColor: "#1da1f2" }}
               >
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
+                  style={{ backgroundColor: "#1da1f2" }}
+                >
                   <span className="text-white font-bold text-lg">
                     {user?.full_name?.charAt(0) || "S"}
                   </span>
@@ -110,10 +115,21 @@ export const StudentLayout = ({ children }) => {
                       navigate("/student/profile");
                       setUserMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 transition-all"
                   >
-                    <User className="w-5 h-5 text-blue-600" />
+                    <User className="w-5 h-5" style={{ color: "#1da1f2" }} />
                     <span className="font-medium">Hồ sơ của tôi</span>
+                  </button>
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      navigate("/student/points");
+                      setUserMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 transition-all"
+                  >
+                    <Trophy className="w-5 h-5" style={{ color: "#1da1f2" }} />
+                    <span className="font-medium">Điểm rèn luyện</span>
                   </button>
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
@@ -122,7 +138,7 @@ export const StudentLayout = ({ children }) => {
                       handleLogoutClick();
                       setUserMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-all"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[#1da1f2] hover:bg-blue-50 transition-all"
                   >
                     <LogOut className="w-5 h-5" />
                     <span className="font-medium">Đăng xuất</span>
@@ -160,9 +176,10 @@ export const StudentLayout = ({ children }) => {
                   onClick={() => navigate(item.path)}
                   className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
                     active
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-200"
+                      ? "text-white shadow-lg"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
+                  style={active ? { backgroundColor: "#1da1f2" } : {}}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
@@ -189,10 +206,9 @@ export const StudentLayout = ({ children }) => {
                     setMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
-                    active
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    active ? "text-white" : "text-gray-600 hover:bg-gray-100"
                   }`}
+                  style={active ? { backgroundColor: "#1da1f2" } : {}}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
@@ -208,15 +224,25 @@ export const StudentLayout = ({ children }) => {
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-medium"
               >
-                <User className="w-5 h-5 text-blue-600" />
+                <User className="w-5 h-5" style={{ color: "#1da1f2" }} />
                 <span>Hồ sơ của tôi</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate("/student/points");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-medium"
+              >
+                <Trophy className="w-5 h-5" style={{ color: "#1da1f2" }} />
+                <span>Điểm rèn luyện</span>
               </button>
               <button
                 onClick={() => {
                   handleLogoutClick();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium"
+                className="w-full flex items-center gap-3 px-4 py-3 text-[#1da1f2] hover:bg-blue-50 rounded-xl font-medium"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Đăng xuất</span>
@@ -230,21 +256,18 @@ export const StudentLayout = ({ children }) => {
       <main className="min-h-[calc(100vh-80px)]">{children}</main>
 
       {/* Footer */}
-      <footer className="bg-white border-t-1 border-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mt-12">
+      <footer
+        className="bg-white border-t-2 mt-12"
+        style={{ borderColor: "#1da1f2" }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-bold text-gray-900">
-                  Student Portal
-                </div>
-                <div className="text-xs text-gray-500">
-                  Hệ thống Tư vấn Sinh viên
-                </div>
-              </div>
+              <img
+                src="/logo/sv_logo_dashboard.png"
+                alt="Logo"
+                className="h-12 w-auto object-contain"
+              />
             </div>
             <div className="text-sm text-gray-600">
               © 2024 Student Advisory System. All rights reserved.

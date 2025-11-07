@@ -165,12 +165,7 @@ export const MyRegistrations = () => {
         </Space>
       ),
     },
-    {
-      title: "Người phụ trách",
-      dataIndex: "advisor_name",
-      key: "advisor_name",
-      width: 150,
-    },
+
     {
       title: "Ngày đăng ký",
       dataIndex: "registration_time",
@@ -271,7 +266,7 @@ export const MyRegistrations = () => {
             <div className="text-sm text-gray-600">Đã tham gia</div>
           </Card>
           <Card size="small" className="text-center">
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-orange-600">
               {stats.cancelled}
             </div>
             <div className="text-sm text-gray-600">Đã hủy</div>

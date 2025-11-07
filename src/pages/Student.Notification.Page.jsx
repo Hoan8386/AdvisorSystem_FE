@@ -25,12 +25,6 @@ import {
   Alert,
   Input,
 } from "antd";
-import {
-  UserOutlined,
-  LinkOutlined,
-  FileOutlined,
-  TeamOutlined,
-} from "@ant-design/icons";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -247,7 +241,10 @@ export const StudentPage = () => {
     <StudentLayout>
       <div className="max-w-7xl mx-auto p-6">
         {/* Welcome Banner with Gradient */}
-        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-xl p-8 mb-6 text-white relative overflow-hidden">
+        <div
+          className="rounded-2xl shadow-xl p-8 mb-6 text-white relative overflow-hidden"
+          style={{ background: "linear-gradient(to right, #1da1f2, #1a8cd8)" }}
+        >
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
           <div className="relative flex items-center justify-between">
@@ -283,15 +280,17 @@ export const StudentPage = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border-2 border-red-200 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-red-600 text-sm font-semibold mb-1 uppercase tracking-wide">
+                <p className="text-[#1da1f2] text-sm font-semibold mb-1 uppercase tracking-wide">
                   Chưa đọc
                 </p>
-                <p className="text-4xl font-bold text-red-700">{unreadCount}</p>
+                <p className="text-4xl font-bold text-[#1a91da]">
+                  {unreadCount}
+                </p>
               </div>
-              <div className="w-16 h-16 bg-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-[#1da1f2] rounded-2xl flex items-center justify-center shadow-lg">
                 <span className="text-3xl">🔔</span>
               </div>
             </div>
@@ -339,7 +338,7 @@ export const StudentPage = () => {
                 onClick={() => setFilterUnread(!filterUnread)}
                 className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
                   filterUnread
-                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-red-200"
+                    ? "bg-gradient-to-r from-[#1da1f2] to-cyan-500 text-white shadow-blue-200"
                     : "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-blue-200"
                 }`}
               >
@@ -412,20 +411,20 @@ export const StudentPage = () => {
                             key={notif.notification_id}
                             onClick={() => handleViewDetail(notif)}
                             className={`group relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl ${
-                              !notif.is_read ? "ring-4 ring-red-200" : ""
+                              !notif.is_read ? "ring-4 ring-blue-200" : ""
                             }`}
                             style={{
                               borderColor: !notif.is_read
-                                ? "#ef4444"
+                                ? "#1da1f2"
                                 : "#e5e7eb",
                               backgroundColor: !notif.is_read
-                                ? "#fef2f2"
+                                ? "#e8f5fe"
                                 : "#fafafa",
                             }}
                           >
                             {/* Unread indicator badge */}
                             {!notif.is_read && (
-                              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-[#1da1f2] to-cyan-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
                                 <span className="text-white text-sm font-bold">
                                   NEW
                                 </span>
@@ -478,7 +477,7 @@ export const StudentPage = () => {
                                 {/* Meta info */}
                                 <div className="flex flex-wrap items-center gap-4 text-xs">
                                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-                                    👤 {notif.advisor?.user?.full_name || "N/A"}
+                                    👤 {notif.advisor?.full_name || "N/A"}
                                   </span>
                                   <span
                                     className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-medium"
@@ -493,7 +492,7 @@ export const StudentPage = () => {
                                       ✓ Đã đọc
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full font-bold">
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-[#1da1f2] rounded-full font-bold">
                                       ● Chưa đọc
                                     </span>
                                   )}
@@ -630,9 +629,7 @@ export const StudentPage = () => {
                       "DD/MM/YYYY HH:mm"
                     )}
                   </span>
-                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-xl font-semibold text-sm">
-                    👤 {selectedNotification.advisor?.user?.full_name || "N/A"}
-                  </span>
+
                   <Tag
                     className="!m-0 !px-4 !py-2 !text-sm !font-bold !rounded-xl"
                     style={{
@@ -649,7 +646,7 @@ export const StudentPage = () => {
                       ✓ Đã đọc
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl font-bold text-sm">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-[#1da1f2] rounded-xl font-bold text-sm">
                       ● Chưa đọc
                     </span>
                   )}
@@ -671,8 +668,8 @@ export const StudentPage = () => {
               {/* Link */}
               {selectedNotification.link && (
                 <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-5">
-                  <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <LinkOutlined /> Liên kết đính kèm
+                  <h4 className="text-lg font-bold text-gray-900 mb-3">
+                    🔗 Liên kết đính kèm
                   </h4>
                   <a
                     href={selectedNotification.link}
@@ -680,7 +677,7 @@ export const StudentPage = () => {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-3 bg-white hover:bg-amber-100 text-blue-600 font-semibold rounded-xl border-2 border-amber-200 transition-all duration-300 break-all"
                   >
-                    🔗 {selectedNotification.link}
+                    {selectedNotification.link}
                   </a>
                 </div>
               )}
@@ -689,8 +686,8 @@ export const StudentPage = () => {
               {selectedNotification.attachments &&
                 selectedNotification.attachments.length > 0 && (
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-5">
-                    <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <FileOutlined /> Tài liệu đính kèm (
+                    <h4 className="text-lg font-bold text-gray-900 mb-3">
+                      📎 Tài liệu đính kèm (
                       {selectedNotification.attachments.length})
                     </h4>
                     <div className="flex flex-col gap-3">
@@ -702,37 +699,17 @@ export const StudentPage = () => {
                           className="group flex items-center gap-3 py-3 px-4 rounded-xl bg-white border-2 border-green-200 text-green-700 no-underline text-sm font-semibold transition-all duration-300 hover:bg-green-100 hover:shadow-lg hover:scale-[1.02]"
                         >
                           <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform">
-                            <FileOutlined />
+                            📄
                           </div>
                           <span className="flex-1">{attachment.file_name}</span>
                           <span className="text-xs px-2 py-1 bg-green-100 rounded-full">
-                            📥 Tải xuống
+                            Tải xuống
                           </span>
                         </a>
                       ))}
                     </div>
                   </div>
                 )}
-
-              {/* Advisor Card */}
-              <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
-                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  👨‍🏫 Thông tin cố vấn
-                </h4>
-                <div className="flex items-center gap-4 bg-white rounded-xl p-4 border-2 border-purple-100">
-                  <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-red-400 rounded-2xl flex items-center justify-center text-3xl text-white shadow-lg">
-                    👤
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {selectedNotification.advisor?.user?.full_name}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      📧 {selectedNotification.advisor?.user?.email}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Response Form */}
               <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-amber-300 rounded-2xl p-5">

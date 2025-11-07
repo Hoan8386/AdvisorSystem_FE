@@ -1,10 +1,22 @@
 @import "tailwindcss";
 
+:root {
+  --primary-color: #1da1f2;
+  --primary-light: #e8f5fe;
+  --primary-dark: #1a91da;
+}
 
-  .bg-primary{
-            background-color: rgb(200 16 46) !important
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
 
-  }
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
 /* Popover padding */
 .ant-popover-content p {
   padding: 20px !important;

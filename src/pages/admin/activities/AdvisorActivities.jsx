@@ -47,20 +47,40 @@ export const AdvisorActivities = () => {
   const fetchActivities = async () => {
     try {
       setLoading(true);
-      const params = {};
+      const res = await getActivitiesAPI();
 
-      if (filters.status) {
-        params.status = filters.status;
-      }
-
-      if (filters.dateRange) {
-        params.from_date = filters.dateRange[0].format("YYYY-MM-DD");
-        params.to_date = filters.dateRange[1].format("YYYY-MM-DD");
-      }
-
-      const res = await getActivitiesAPI(params);
       if (res && res.success) {
-        setActivities(res.data || []);
+        let filteredData = res.data || [];
+
+        // Lọc theo trạng thái
+        if (filters.status) {
+          filteredData = filteredData.filter(
+            (activity) => activity.status === filters.status
+          );
+        }
+
+        // Lọc theo khoảng thời gian
+        if (filters.dateRange && filters.dateRange.length === 2) {
+          const fromDate = filters.dateRange[0].startOf("day");
+          const toDate = filters.dateRange[1].endOf("day");
+
+          filteredData = filteredData.filter((activity) => {
+            const startTime = dayjs(activity.start_time);
+            const endTime = dayjs(activity.end_time);
+
+            // Hoạt động nằm trong khoảng thời gian nếu:
+            // - Bắt đầu trong khoảng thời gian, HOẶC
+            // - Kết thúc trong khoảng thời gian, HOẶC
+            // - Bắt đầu trước và kết thúc sau khoảng thời gian
+            return (
+              (startTime.isAfter(fromDate) && startTime.isBefore(toDate)) ||
+              (endTime.isAfter(fromDate) && endTime.isBefore(toDate)) ||
+              (startTime.isBefore(fromDate) && endTime.isAfter(toDate))
+            );
+          });
+        }
+
+        setActivities(filteredData);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách hoạt động");
@@ -95,12 +115,8 @@ export const AdvisorActivities = () => {
     switch (status) {
       case "upcoming":
         return "blue";
-      case "ongoing":
-        return "green";
       case "completed":
-        return "default";
-      case "cancelled":
-        return "red";
+        return "green";
       default:
         return "default";
     }
@@ -110,12 +126,8 @@ export const AdvisorActivities = () => {
     switch (status) {
       case "upcoming":
         return "Sắp diễn ra";
-      case "ongoing":
-        return "Đang diễn ra";
       case "completed":
         return "Đã hoàn thành";
-      case "cancelled":
-        return "Đã hủy";
       default:
         return status;
     }
@@ -127,90 +139,83 @@ export const AdvisorActivities = () => {
       dataIndex: "title",
       key: "title",
       width: 250,
-      render: (text) => <span className="font-semibold">{text}</span>,
+      ellipsis: true,
+      render: (text) => <span className="font-semibold text-sm">{text}</span>,
     },
     {
       title: "Địa điểm",
       dataIndex: "location",
       key: "location",
-      width: 200,
+      width: 150,
       ellipsis: true,
+      render: (text) => <span className="text-sm">{text}</span>,
     },
     {
       title: "Thời gian",
       key: "time",
-      width: 180,
-      render: (_, record) => (
-        <div className="text-xs">
-          <div className="font-medium text-gray-700">
-            {dayjs(record.start_time).format("DD/MM/YYYY")}
+      width: 250,
+      render: (_, record) => {
+        const startDate = dayjs(record.start_time);
+        const endDate = dayjs(record.end_time);
+        const isSameDay =
+          startDate.format("DD/MM/YYYY") === endDate.format("DD/MM/YYYY");
+
+        return (
+          <div className="text-xs whitespace-nowrap">
+            <span className="font-medium text-gray-700">
+              {startDate.format("DD/MM/YYYY")} {startDate.format("HH:mm")}
+            </span>
+            <span className="text-gray-500 mx-1">→</span>
+            <span className="text-gray-600">
+              {!isSameDay && `${endDate.format("DD/MM/YYYY")} `}
+              {endDate.format("HH:mm")}
+            </span>
           </div>
-          <div className="text-gray-500">
-            {dayjs(record.start_time).format("HH:mm")} -{" "}
-            {dayjs(record.end_time).format("HH:mm")}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 130,
+      width: 110,
       render: (status) => (
-        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
-      ),
-    },
-    {
-      title: "Đơn vị tổ chức",
-      key: "organizer",
-      width: 200,
-      render: (_, record) => (
-        <span className="text-sm">
-          {record.organizer_unit?.unit_name || "N/A"}
-        </span>
+        <Tag color={getStatusColor(status)} className="text-xs">
+          {getStatusText(status)}
+        </Tag>
       ),
     },
     {
       title: "Thao tác",
       key: "action",
-      width: 200,
-      fixed: "right",
+      width: 160,
       render: (_, record) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <Button
             type="primary"
             size="small"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/admin/activities/${record.activity_id}`)}
-            className="flex-shrink-0"
+            title="Xem chi tiết"
             style={{
               background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
               border: "none",
               borderRadius: "6px",
-              fontWeight: 500,
-              padding: "0 8px",
-              minWidth: "32px",
+              padding: "4px 8px",
             }}
-          >
-            <span className="hidden lg:inline ml-1">Xem</span>
-          </Button>
+          />
           <Button
             size="small"
             icon={<UsergroupAddOutlined />}
             onClick={() =>
               navigate(`/admin/activities/${record.activity_id}/registrations`)
             }
-            className="flex-shrink-0"
+            title="Danh sách đăng ký"
             style={{
               borderRadius: "6px",
-              fontWeight: 500,
-              padding: "0 8px",
-              minWidth: "32px",
+              padding: "4px 8px",
             }}
-          >
-            <span className="hidden lg:inline ml-1">ĐK</span>
-          </Button>
+          />
           <Button
             type="default"
             size="small"
@@ -218,31 +223,23 @@ export const AdvisorActivities = () => {
             onClick={() =>
               navigate(`/admin/activities/${record.activity_id}/edit`)
             }
-            className="flex-shrink-0"
+            title="Chỉnh sửa"
             style={{
               borderRadius: "6px",
-              fontWeight: 500,
-              padding: "0 8px",
-              minWidth: "32px",
+              padding: "4px 8px",
             }}
-          >
-            <span className="hidden lg:inline ml-1">Sửa</span>
-          </Button>
+          />
           <Button
             danger
             size="small"
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.activity_id)}
-            className="flex-shrink-0"
+            title="Xóa"
             style={{
               borderRadius: "6px",
-              fontWeight: 500,
-              padding: "0 8px",
-              minWidth: "32px",
+              padding: "4px 8px",
             }}
-          >
-            <span className="hidden lg:inline ml-1">Xoá</span>
-          </Button>
+          />
         </div>
       ),
     },
@@ -292,9 +289,7 @@ export const AdvisorActivities = () => {
                 onChange={(value) => setFilters({ ...filters, status: value })}
                 options={[
                   { label: "Sắp diễn ra", value: "upcoming" },
-                  { label: "Đang diễn ra", value: "ongoing" },
                   { label: "Đã hoàn thành", value: "completed" },
-                  { label: "Đã hủy", value: "cancelled" },
                 ]}
               />
             </div>
@@ -318,6 +313,7 @@ export const AdvisorActivities = () => {
         <Card
           style={{
             borderRadius: 12,
+            marginTop: "20px",
             border: "none",
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}
@@ -330,12 +326,12 @@ export const AdvisorActivities = () => {
               dataSource={activities}
               rowKey="activity_id"
               loading={loading}
-              scroll={{ x: 1200 }}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
                 showTotal: (total) => `Tổng ${total} hoạt động`,
               }}
+              size="middle"
             />
           )}
         </Card>

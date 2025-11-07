@@ -174,10 +174,46 @@ const getActivityRegistrationsAPI = (activityId) => {
   return axios.get(URL_BACKEND);
 };
 
+// Get cancellation requests for activity (Advisor only)
+const getActivityCancellationRequestsAPI = (activityId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/cancellation-requests`;
+  return axios.get(URL_BACKEND);
+};
+
+// Approve/Reject cancellation request (Advisor only)
+const updateCancellationRequestAPI = (activityId, requestId, status) => {
+  const URL_BACKEND = `/api/activities/${activityId}/cancellation-requests/${requestId}`;
+  return axios.patch(URL_BACKEND, { status });
+};
+
 // Update attendance (Advisor only)
 const updateAttendanceAPI = (activityId, attendanceData) => {
   const URL_BACKEND = `/api/activities/${activityId}/attendance`;
   return axios.post(URL_BACKEND, attendanceData);
+};
+
+// Get available students for assignment (Advisor only)
+const getAvailableStudentsAPI = (activityId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/available-students`;
+  return axios.get(URL_BACKEND);
+};
+
+// Assign students to activity (Advisor only)
+const assignStudentsAPI = (activityId, assignments) => {
+  const URL_BACKEND = `/api/activities/${activityId}/assign-students`;
+  console.log("assignStudentsAPI called with:", {
+    URL_BACKEND,
+    activityId,
+    assignments,
+    payload: { assignments },
+  });
+  return axios.post(URL_BACKEND, { assignments });
+};
+
+// Unassign student from activity (Advisor only)
+const unassignStudentAPI = (activityId, registrationId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/assignments/${registrationId}`;
+  return axios.delete(URL_BACKEND);
 };
 
 // ============ Student Activity Registration APIs ============
@@ -272,7 +308,12 @@ export {
     updateActivityAPI,
     deleteActivityAPI,
     getActivityRegistrationsAPI,
+    getActivityCancellationRequestsAPI,
+    updateCancellationRequestAPI,
     updateAttendanceAPI,
+    getAvailableStudentsAPI,
+    assignStudentsAPI,
+    unassignStudentAPI,
     // Activity APIs (Student)
     registerActivityAPI,
     getMyRegistrationsAPI,

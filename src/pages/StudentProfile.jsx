@@ -823,7 +823,7 @@ export const StudentProfile = () => {
                           Email
                         </div>
                         <Tag
-                          color={studentInfo.email ? "red" : "default"}
+                          color={studentInfo.email ? "blue" : "default"}
                           style={{
                             padding: "8px 12px",
                             fontSize: 12,
