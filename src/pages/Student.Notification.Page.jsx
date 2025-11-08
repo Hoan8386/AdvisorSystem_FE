@@ -160,6 +160,15 @@ export const StudentPage = () => {
     }
   };
 
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedNotification(null);
+    setResponseContent("");
+    // Refresh danh sách thông báo khi đóng modal
+    fetchNotifications();
+    fetchUnreadCount();
+  };
+
   const handleSubmitResponse = async () => {
     if (!responseContent.trim()) {
       message.warning("Vui lòng nhập nội dung phản hồi");
@@ -598,11 +607,11 @@ export const StudentPage = () => {
           </div>
         }
         open={detailModalOpen}
-        onCancel={() => setDetailModalOpen(false)}
+        onCancel={handleCloseDetailModal}
         footer={[
           <Button
             key="close"
-            onClick={() => setDetailModalOpen(false)}
+            onClick={handleCloseDetailModal}
             type="primary"
             size="large"
             className="bg-gradient-to-r from-blue-500 to-purple-500 border-none font-semibold"
@@ -641,15 +650,6 @@ export const StudentPage = () => {
                     {getTypeInfo(selectedNotification.type).icon}{" "}
                     {getTypeInfo(selectedNotification.type).text}
                   </Tag>
-                  {selectedNotification.is_read ? (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-xl font-bold text-sm">
-                      ✓ Đã đọc
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-[#1da1f2] rounded-xl font-bold text-sm">
-                      ● Chưa đọc
-                    </span>
-                  )}
                 </div>
               </div>
 

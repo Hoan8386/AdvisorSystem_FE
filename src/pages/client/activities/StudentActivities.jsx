@@ -79,6 +79,16 @@ export const StudentActivities = () => {
     navigate(`/student/activities/${activityId}`);
   };
 
+  // Kiểm tra xem hoạt động có đang diễn ra không
+  const isActivityOngoing = (activity) => {
+    const now = dayjs();
+    const startTime = dayjs(activity.start_time);
+    const endTime = dayjs(activity.end_time);
+
+    // Hoạt động đang diễn ra nếu thời gian hiện tại nằm giữa start và end
+    return now.isAfter(startTime) && now.isBefore(endTime);
+  };
+
   const statusConfig = {
     upcoming: {
       color: "blue",
@@ -209,6 +219,16 @@ export const StudentActivities = () => {
                     >
                       {statusConfig[activity.status]?.text}
                     </Tag>
+                    {/* Tag "Đang diễn ra" nếu hoạt động đang diễn ra trong ngày */}
+                    {isActivityOngoing(activity) && (
+                      <Tag
+                        color="volcano"
+                        icon={<CheckCircleOutlined />}
+                        style={{ marginLeft: "8px" }}
+                      >
+                        🔴 Đang diễn ra
+                      </Tag>
+                    )}
                   </div>
 
                   {/* Title */}
@@ -235,11 +255,20 @@ export const StudentActivities = () => {
                     size="small"
                     className="mb-4 flex-grow"
                   >
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <CalendarOutlined className="mr-2" />
-                      <span>
-                        {dayjs(activity.start_time).format("DD/MM/YYYY HH:mm")}
-                      </span>
+                    <div className="flex items-start text-gray-600 text-sm">
+                      <CalendarOutlined className="mr-2 mt-1" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-700">
+                          Bắt đầu:{" "}
+                          {dayjs(activity.start_time).format(
+                            "DD/MM/YYYY HH:mm"
+                          )}
+                        </span>
+                        <span className="font-medium text-gray-700 mt-1">
+                          Kết thúc:{" "}
+                          {dayjs(activity.end_time).format("DD/MM/YYYY HH:mm")}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center text-gray-600 text-sm">
                       <EnvironmentOutlined className="mr-2" />

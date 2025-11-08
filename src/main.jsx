@@ -5,12 +5,14 @@ import "./index.css";
 import App from "./App.jsx";
 import { AuthWrapper } from "./components/context/auth.context.jsx";
 import { ToastContainer } from "react-toastify";
+import ChatbotWidget from "./components/chat/ChatbotWidget.jsx";
 
 createRoot(document.getElementById("root")).render(
   <ConfigProvider>
     <AuthWrapper>
       <ToastContainer />
       <App />
+      <ChatbotWidget />
     </AuthWrapper>
   </ConfigProvider>
 );

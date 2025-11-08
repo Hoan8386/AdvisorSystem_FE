@@ -37,6 +37,7 @@ export const AssignStudents = () => {
   const [activityData, setActivityData] = useState(null);
   const [availableStudents, setAvailableStudents] = useState([]);
   const [unavailableStudents, setUnavailableStudents] = useState([]);
+  const [cancelledStudents, setCancelledStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
   const [assigning, setAssigning] = useState(false);
@@ -69,7 +70,18 @@ export const AssignStudents = () => {
       if (res && res.data) {
         setActivityData(res.data);
         setAvailableStudents(res.data.available_students || []);
-        setUnavailableStudents(res.data.unavailable_students || []);
+
+        // Tách sinh viên đã đăng ký (registered) và đã hủy (cancelled)
+        const unavailable = res.data.unavailable_students || [];
+        const registered = unavailable.filter(
+          (s) => s.current_registration?.registration_status === "registered"
+        );
+        const cancelled = unavailable.filter(
+          (s) => s.current_registration?.registration_status === "cancelled"
+        );
+
+        setUnavailableStudents(registered);
+        setCancelledStudents(cancelled);
       }
     } catch (error) {
       toast.error(
@@ -288,22 +300,35 @@ export const AssignStudents = () => {
       width: 150,
       render: (_, record) => {
         if (record.current_registration) {
-          return (
-            <Tag color="blue" icon={<CheckCircleOutlined />}>
-              Đã đăng ký: {record.current_registration.role_name}
-            </Tag>
-          );
+          const { registration_status } = record.current_registration;
+
+          if (registration_status === "registered") {
+            return (
+              <Tag color="blue" icon={<CheckCircleOutlined />}>
+                Đã đăng ký
+              </Tag>
+            );
+          } else if (registration_status === "cancelled") {
+            return <Tag color="red">Đã hủy đăng ký</Tag>;
+          }
         }
         return <Tag color="default">Không rõ</Tag>;
       },
     },
     {
-      title: "Lý do",
-      dataIndex: "reason_cannot_assign",
-      key: "reason_cannot_assign",
-      render: (text) => (
-        <span className="text-sm text-gray-600">{text || "N/A"}</span>
-      ),
+      title: "Vai trò",
+      key: "role_name",
+      width: 150,
+      render: (_, record) => {
+        if (record.current_registration?.role_name) {
+          return (
+            <span className="text-sm font-medium text-gray-800">
+              {record.current_registration.role_name}
+            </span>
+          );
+        }
+        return <span className="text-sm text-gray-400">N/A</span>;
+      },
     },
     {
       title: "Thao tác",
@@ -363,25 +388,32 @@ export const AssignStudents = () => {
         {activityData?.summary && (
           <Card>
             <Row gutter={16}>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={6}>
                 <Statistic
                   title="Tổng sinh viên"
                   value={activityData.summary.total_students}
                   valueStyle={{ color: "#1890ff" }}
                 />
               </Col>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={6}>
                 <Statistic
                   title="Có thể phân công"
                   value={activityData.summary.available_count}
                   valueStyle={{ color: "#52c41a" }}
                 />
               </Col>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={6}>
                 <Statistic
                   title="Đã đăng ký"
-                  value={activityData.summary.unavailable_count}
+                  value={unavailableStudents.length}
                   valueStyle={{ color: "#faad14" }}
+                />
+              </Col>
+              <Col xs={24} sm={6}>
+                <Statistic
+                  title="Đã hủy đăng ký"
+                  value={cancelledStudents.length}
+                  valueStyle={{ color: "#ff4d4f" }}
                 />
               </Col>
             </Row>
@@ -655,6 +687,32 @@ export const AssignStudents = () => {
                       emptyText: (
                         <Empty
                           description="Không có sinh viên nào đã đăng ký"
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        />
+                      ),
+                    }}
+                  />
+                ),
+              },
+              {
+                key: "cancelled",
+                label: `Đã hủy đăng ký (${cancelledStudents.length})`,
+                children: (
+                  <Table
+                    columns={unavailableColumns}
+                    dataSource={cancelledStudents}
+                    rowKey="student_id"
+                    loading={loading}
+                    scroll={{ x: 900 }}
+                    pagination={{
+                      pageSize: 10,
+                      showTotal: (total) => `Tổng ${total} sinh viên`,
+                      showSizeChanger: true,
+                    }}
+                    locale={{
+                      emptyText: (
+                        <Empty
+                          description="Không có sinh viên nào đã hủy đăng ký"
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                         />
                       ),

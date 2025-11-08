@@ -120,8 +120,8 @@ export const ActivityRegistrations = () => {
     },
     {
       title: "MSSV",
-      dataIndex: ["student", "student_id"],
-      key: "student_id",
+      dataIndex: ["student", "user_code"],
+      key: "user_code",
       width: 80,
     },
     {

@@ -14,12 +14,12 @@ import {
   Space,
   Spin,
   Empty,
-  message,
   Divider,
   Row,
   Col,
   Statistic,
 } from "antd";
+import { toast } from "react-toastify";
 import {
   BellOutlined,
   CheckCircleOutlined,
@@ -52,7 +52,7 @@ export const StudentDashboard = () => {
         setNotifications(res.data || []);
       }
     } catch (error) {
-      message.error("Lỗi khi tải danh sách thông báo");
+      toast.error("Lỗi khi tải danh sách thông báo");
       console.error(error);
     } finally {
       setLoading(false);
@@ -74,12 +74,12 @@ export const StudentDashboard = () => {
     try {
       const res = await markAllNotificationsReadAPI();
       if (res && res.success) {
-        message.success("Đã đánh dấu tất cả là đã đọc");
+        toast.success("Đã đánh dấu tất cả là đã đọc");
         setUnreadCount(0);
         fetchNotifications();
       }
     } catch (error) {
-      message.error("Lỗi khi đánh dấu thông báo");
+      toast.error("Lỗi khi đánh dấu thông báo");
       console.error(error);
     }
   };

@@ -71,7 +71,7 @@ export const StudentLayout = ({ children }) => {
             {/* Logo & Brand */}
             <div className="flex items-center gap-4">
               <img
-                src="/logo/sv_logo_dashboard.png"
+                src="/logo/logo_2.png"
                 alt="Logo"
                 className="h-16 w-auto object-contain"
               />
@@ -264,7 +264,7 @@ export const StudentLayout = ({ children }) => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <img
-                src="/logo/sv_logo_dashboard.png"
+                src="/logo/logo_2.png"
                 alt="Logo"
                 className="h-12 w-auto object-contain"
               />

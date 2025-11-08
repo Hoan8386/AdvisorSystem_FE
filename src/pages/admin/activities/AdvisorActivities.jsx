@@ -14,6 +14,7 @@ import {
   Tag,
   Select,
   DatePicker,
+  Popconfirm,
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -91,26 +92,26 @@ export const AdvisorActivities = () => {
   };
 
   const handleDelete = async (activityId) => {
-    Modal.confirm({
-      title: "Xoá hoạt động",
-      content: "Bạn chắc chắn muốn xoá hoạt động này?",
-      okText: "Xoá",
-      cancelText: "Hủy",
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          const res = await deleteActivityAPI(activityId);
-          if (res && res.success) {
-            toast.success("Hoạt động đã được xoá");
-            fetchActivities();
-          }
-        } catch (error) {
-          toast.error(error?.message || "Lỗi khi xoá hoạt động");
-        }
-      },
-    });
-  };
+    console.log("handleDelete called with activityId:", activityId);
+    try {
+      const res = await deleteActivityAPI(activityId);
+      console.log("Delete response:", res);
 
+      // Hiển thị thông báo thành công
+      toast.success(res?.data?.message || "Hoạt động đã được xoá thành công");
+
+      // Refresh lại danh sách hoạt động
+      await fetchActivities();
+    } catch (error) {
+      console.error("Delete error:", error);
+      console.error("Error response:", error.response);
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Lỗi khi xoá hoạt động"
+      );
+    }
+  };
   const getStatusColor = (status) => {
     switch (status) {
       case "upcoming":
@@ -229,17 +230,31 @@ export const AdvisorActivities = () => {
               padding: "4px 8px",
             }}
           />
-          <Button
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.activity_id)}
-            title="Xóa"
-            style={{
-              borderRadius: "6px",
-              padding: "4px 8px",
+          <Popconfirm
+            title="Xoá hoạt động"
+            description="Bạn chắc chắn muốn xoá hoạt động này?"
+            onConfirm={() => {
+              console.log("Delete confirmed for activity:", record.activity_id);
+              handleDelete(record.activity_id);
             }}
-          />
+            onCancel={() => {
+              console.log("Delete cancelled");
+            }}
+            okText="Xoá"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              title="Xóa"
+              style={{
+                borderRadius: "6px",
+                padding: "4px 8px",
+              }}
+            />
+          </Popconfirm>
         </div>
       ),
     },

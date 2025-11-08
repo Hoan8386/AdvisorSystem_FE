@@ -66,6 +66,12 @@ export const AdvisorLayout = ({ children }) => {
       return "Quản lý thông báo";
     } else if (location.pathname.includes("/admin/profile")) {
       return "Hồ sơ cá nhân";
+    } else if (location.pathname.includes("/admin/activities")) {
+      return "Quản lý hoạt động";
+    } else if (location.pathname.includes("/admin/classes")) {
+      return "Quản lý lớp học";
+    } else if (location.pathname.includes("/admin/rag")) {
+      return "Trợ lý AI HUIT";
     } else {
       return "Trang chủ";
     }

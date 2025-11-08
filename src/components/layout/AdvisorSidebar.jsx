@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { toast } from "react-toastify";
-import { Bell, LogOut, Home, Calendar, Users } from "lucide-react";
+import { Bell, LogOut, Home, Calendar, Users, Bot } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
 import { logoutApi } from "../../services/api.service";
@@ -64,6 +64,16 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       hoverColor: "hover:bg-purple-100",
       dotColor: "bg-purple-600",
     },
+    {
+      id: "rag-assistant",
+      path: "/admin/rag",
+      label: "Trợ lý HUIT",
+      icon: Bot,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      hoverColor: "hover:bg-green-100",
+      dotColor: "bg-green-600",
+    },
   ];
 
   return (
@@ -118,7 +128,9 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
             (item.path === "/admin/activities" &&
               location.pathname.startsWith("/admin/activities")) ||
             (item.path === "/admin/classes" &&
-              location.pathname.startsWith("/admin/classes"));
+              location.pathname.startsWith("/admin/classes")) ||
+            (item.path === "/admin/rag" &&
+              location.pathname.startsWith("/admin/rag"));
 
           return (
             <button

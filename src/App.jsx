@@ -1,4 +1,6 @@
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
@@ -30,6 +32,10 @@ import StudentActivityDetail from "./pages/client/activities/StudentActivityDeta
 import MyRegistrations from "./pages/client/activities/MyRegistrations";
 import MyCancellationRequests from "./pages/client/activities/MyCancellationRequests";
 import StudentPoints from "./pages/client/points/StudentPoints";
+import RAGMain from "./pages/admin/rag/RAGMain";
+import RAGDocumentManagement from "./pages/admin/rag/RAGDocumentManagement";
+import RAGChatAssistant from "./pages/admin/rag/RAGChatAssistant";
+import ChatbotWidget from "./components/chat/ChatbotWidget";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -52,6 +58,7 @@ const LayoutClient = () => {
           <div className="w-[1170px]  mx-auto">
             <Header />
             <Outlet />
+
             <Footer />
           </div>
         </>
@@ -138,6 +145,9 @@ function App() {
         { path: "classes", element: <AdvisorClasses /> },
         { path: "classes/:classId", element: <ClassDetail /> },
         { path: "profile", element: <AdvisorProfile /> },
+        { path: "rag", element: <RAGMain /> },
+        { path: "rag/documents", element: <RAGDocumentManagement /> },
+        { path: "rag/chat", element: <RAGChatAssistant /> },
       ],
     },
 
@@ -167,7 +177,23 @@ function App() {
     // { path: "/unauthorized", element: <Unauthorized /> },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </>
+  );
 }
 
 export default App;
