@@ -260,9 +260,11 @@ const getActivityRoleDetailAPI = (activityId, roleId) => {
 // ========== STUDENT POINTS APIs ==========
 
 // Get student points and activities (Advisor or Student)
-const getStudentPointsAPI = (studentId = null) => {
+const getStudentPointsAPI = (studentId = null, semesterId = null) => {
   const URL_BACKEND = "/api/student-points";
-  const params = studentId ? { student_id: studentId } : {};
+  const params = {};
+  if (studentId) params.student_id = studentId;
+  if (semesterId) params.semester_id = semesterId;
   return axios.get(URL_BACKEND, { params });
 };
 
@@ -278,6 +280,122 @@ const getClassSummaryPointsAPI = (classId) => {
 const getClassesAPI = () => {
   const URL_BACKEND = "/api/classes";
   return axios.get(URL_BACKEND);
+};
+
+// Get class detail by ID
+const getClassDetailAPI = (classId) => {
+  const URL_BACKEND = `/api/classes/${classId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get students in a class
+const getClassStudentsAPI = (classId) => {
+  const URL_BACKEND = `/api/classes/${classId}/students`;
+  return axios.get(URL_BACKEND);
+};
+
+// ========== SEMESTER APIs ==========
+
+// Get all semesters
+const getSemestersAPI = () => {
+  const URL_BACKEND = "/api/semesters";
+  return axios.get(URL_BACKEND);
+};
+
+// Get semester detail by ID
+const getSemesterDetailAPI = (semesterId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get semester reports
+const getSemesterReportsAPI = (semesterId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}/reports`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get student report in a semester
+const getStudentSemesterReportAPI = (semesterId, studentId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}/students/${studentId}/report`;
+  return axios.get(URL_BACKEND);
+};
+
+// ========== COURSE APIs ==========
+
+// Get all courses
+const getCoursesAPI = (search = "") => {
+  const URL_BACKEND = "/api/courses";
+  return axios.get(URL_BACKEND, { params: { search } });
+};
+
+// Get course detail by ID
+const getCourseDetailAPI = (courseId) => {
+  const URL_BACKEND = `/api/courses/${courseId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get students of a course
+const getCourseStudentsAPI = (courseId) => {
+  const URL_BACKEND = `/api/courses/${courseId}/students`;
+  return axios.get(URL_BACKEND);
+};
+
+// ========== GRADE APIs ==========
+
+// Get student grades by semester
+const getStudentGradesAPI = (studentId, semesterId = null) => {
+  const URL_BACKEND = `/api/grades/student/${studentId}`;
+  return axios.get(URL_BACKEND, { params: semesterId ? { semester_id: semesterId } : {} });
+};
+
+// Export class grades by semester
+const exportClassGradesAPI = (classId, semesterId) => {
+  const URL_BACKEND = `/api/grades/export-class-grades/${classId}/${semesterId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// ========== ACADEMIC MONITORING APIs ==========
+
+// Get semester report for a student
+const getSemesterReportAPI = (studentId, semesterId) => {
+  const URL_BACKEND = `/api/academic/semester-report/${studentId}/${semesterId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get statistics for class
+const getClassStatisticsAPI = (semesterId = null) => {
+  const URL_BACKEND = `/api/academic/statistics`;
+  return axios.get(URL_BACKEND, { params: semesterId ? { semester_id: semesterId } : {} });
+};
+
+// Get at-risk students
+const getAtRiskStudentsAPI = (semesterId = null) => {
+  const URL_BACKEND = `/api/academic/at-risk-students`;
+  return axios.get(URL_BACKEND, { params: semesterId ? { semester_id: semesterId } : {} });
+};
+
+// Create academic warnings
+const createAcademicWarningsAPI = (data) => {
+  const URL_BACKEND = `/api/academic/create-warnings`;
+  return axios.post(URL_BACKEND, data);
+};
+
+// Get warnings created by advisor
+const getWarningsCreatedAPI = () => {
+  const URL_BACKEND = `/api/academic/warnings-created`;
+  return axios.get(URL_BACKEND);
+};
+
+// Update semester report for a student
+const updateSemesterReportAPI = (data) => {
+  const URL_BACKEND = `/api/academic/update-semester-report`;
+  return axios.post(URL_BACKEND, data);
+};
+
+// Batch update semester reports
+const batchUpdateSemesterReportsAPI = (data) => {
+  const URL_BACKEND = `/api/academic/batch-update-semester-reports`;
+  return axios.post(URL_BACKEND, data);
 };
 
 export {
@@ -326,4 +444,26 @@ export {
     getClassSummaryPointsAPI,
     // Class APIs
     getClassesAPI,
+    getClassDetailAPI,
+    getClassStudentsAPI,
+    // Semester APIs
+    getSemestersAPI,
+    getSemesterDetailAPI,
+    getSemesterReportsAPI,
+    getStudentSemesterReportAPI,
+    // Course APIs
+    getCoursesAPI,
+    getCourseDetailAPI,
+    getCourseStudentsAPI,
+    // Grade APIs
+    getStudentGradesAPI,
+    exportClassGradesAPI,
+    // Academic Monitoring APIs
+    getSemesterReportAPI,
+    getClassStatisticsAPI,
+    getAtRiskStudentsAPI,
+    createAcademicWarningsAPI,
+    getWarningsCreatedAPI,
+    updateSemesterReportAPI,
+    batchUpdateSemesterReportsAPI,
 };

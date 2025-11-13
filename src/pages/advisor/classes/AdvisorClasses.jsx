@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
-import { Card, Row, Col, Empty, Spin } from "antd";
-import { TeamOutlined, UserOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { Card, Row, Col, Empty, Spin, Tag, Descriptions } from "antd";
 import {
-  getAccountAPI,
-  getClassSummaryPointsAPI,
-} from "../../../services/api.service";
+  TeamOutlined,
+  UserOutlined,
+  BankOutlined,
+  IdcardOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import { getClassesAPI } from "../../../services/api.service";
+import { toast } from "react-toastify";
 
 export const AdvisorClasses = () => {
   const navigate = useNavigate();
@@ -14,52 +17,28 @@ export const AdvisorClasses = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUserClassesAndStudentCount();
+    fetchClasses();
   }, []);
 
-  const fetchUserClassesAndStudentCount = async () => {
+  const fetchClasses = async () => {
     try {
       setLoading(true);
+      const response = await getClassesAPI();
 
-      // Gọi API /api/auth/me để lấy thông tin user và classes
-      const userResponse = await getAccountAPI();
-      const userData = userResponse.data?.data || userResponse.data;
-
-      if (!userData.classes || userData.classes.length === 0) {
+      // Response structure: response.data = { success: true, data: [...], message: "..." }
+      if (response?.data?.success) {
+        setClasses(response.data.data || []);
+      } else if (response?.data) {
+        // Fallback: nếu data trả về trực tiếp là array
+        setClasses(Array.isArray(response.data) ? response.data : []);
+      } else {
         setClasses([]);
-        setLoading(false);
-        return;
       }
-
-      // Lấy số lượng sinh viên cho mỗi lớp
-      const classesWithCount = await Promise.all(
-        userData.classes.map(async (classItem) => {
-          try {
-            const summaryRes = await getClassSummaryPointsAPI(
-              classItem.class_id
-            );
-            const summaryData = summaryRes.data?.data || summaryRes.data;
-            return {
-              ...classItem,
-              student_count: summaryData.total_students || 0,
-            };
-          } catch (error) {
-            console.error(
-              `Error fetching student count for class ${classItem.class_id}:`,
-              error
-            );
-            return {
-              ...classItem,
-              student_count: 0,
-            };
-          }
-        })
-      );
-
-      setClasses(classesWithCount);
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching classes:", error);
+      toast.error("Lỗi khi tải danh sách lớp");
+      setClasses([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -130,8 +109,8 @@ export const AdvisorClasses = () => {
                   bodyStyle={{ padding: "20px" }}
                   className="hover:shadow-lg"
                 >
-                  <div className="space-y-3">
-                    {/* Class Name */}
+                  <div className="space-y-4">
+                    {/* Class Header */}
                     <div className="flex items-start gap-3">
                       <div
                         style={{
@@ -160,7 +139,13 @@ export const AdvisorClasses = () => {
                         </h3>
                         {cls.description && (
                           <p
-                            className="text-sm text-gray-500 m-0 mt-1 truncate"
+                            className="text-sm text-gray-500 m-0 mt-1"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
                             title={cls.description}
                           >
                             {cls.description}
@@ -169,23 +154,66 @@ export const AdvisorClasses = () => {
                       </div>
                     </div>
 
-                    {/* Stats */}
+                    {/* Faculty Info */}
+                    {cls.faculty && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          background: "#f0f9ff",
+                          borderRadius: 8,
+                          borderLeft: "3px solid #3b82f6",
+                        }}
+                      >
+                        <div className="flex items-center gap-2 text-sm">
+                          <BankOutlined style={{ color: "#3b82f6" }} />
+                          <span className="text-gray-700 font-medium">
+                            {cls.faculty.unit_name}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Advisor Info */}
+                    {cls.advisor && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          background: "#fef3c7",
+                          borderRadius: 8,
+                          borderLeft: "3px solid #f59e0b",
+                        }}
+                      >
+                        <div className="flex items-center gap-2 text-sm">
+                          <IdcardOutlined style={{ color: "#f59e0b" }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-gray-700 font-medium truncate">
+                              {cls.advisor.full_name}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {cls.advisor.email}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Student Count - Hidden for now, will be shown in detail page */}
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
+                        justifyContent: "center",
                         gap: 8,
                         padding: "12px",
                         background: "#f9fafb",
                         borderRadius: 8,
                       }}
                     >
-                      <UserOutlined style={{ color: "#667eea" }} />
+                      <UserOutlined
+                        style={{ color: "#667eea", fontSize: 18 }}
+                      />
                       <span className="text-sm text-gray-600">
-                        <span className="font-bold text-gray-900">
-                          {cls.student_count}
-                        </span>{" "}
-                        sinh viên
+                        Xem chi tiết lớp học
                       </span>
                     </div>
                   </div>

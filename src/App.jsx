@@ -23,7 +23,7 @@ import ActivityDetail from "./pages/advisor/activities/ActivityDetail";
 import ActivityRegistrations from "./pages/advisor/activities/ActivityRegistrations";
 import AssignStudents from "./pages/advisor/activities/AssignStudents";
 import AdvisorClasses from "./pages/advisor/classes/AdvisorClasses";
-import ClassDetail from "./pages/advisor/classes/ClassDetail";
+import { ClassDetail } from "./pages/advisor/classes/ClassDetail";
 import StudentPage from "./pages/Student.Notification.Page";
 import StudentProfile from "./pages/StudentProfile";
 import StudentDashboard from "./pages/client/StudentDashboard";

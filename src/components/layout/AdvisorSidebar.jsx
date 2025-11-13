@@ -1,6 +1,14 @@
 import { useContext } from "react";
 import { toast } from "react-toastify";
-import { Bell, LogOut, Home, Calendar, Users, Bot } from "lucide-react";
+import {
+  Bell,
+  LogOut,
+  Home,
+  Calendar,
+  Users,
+  Bot,
+  BookOpen,
+} from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
 import { logoutApi } from "../../services/api.service";
