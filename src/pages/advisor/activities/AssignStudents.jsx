@@ -368,7 +368,7 @@ export const AssignStudents = () => {
             <Button
               type="text"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/admin/activities/${id}`)}
+              onClick={() => navigate(`/advisor/activities/${id}`)}
               size="large"
             />
             <div>

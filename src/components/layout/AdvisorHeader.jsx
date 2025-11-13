@@ -35,7 +35,7 @@ export const AdvisorHeader = ({ collapsed, onToggleCollapse }) => {
       key: "profile",
       label: "Thông tin cá nhân",
       icon: <UserOutlined />,
-      onClick: () => navigate("/admin/profile"),
+      onClick: () => navigate("/advisor/profile"),
     },
     {
       key: "divider",

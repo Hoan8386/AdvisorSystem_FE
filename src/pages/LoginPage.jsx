@@ -67,7 +67,7 @@ export const LoginPage = () => {
 
         // Redirect based on role
         if (res.data.user?.role === "advisor") {
-          navigate("/admin");
+          navigate("/advisor");
         } else if (res.data.user?.role === "student") {
           navigate("/student");
         } else {

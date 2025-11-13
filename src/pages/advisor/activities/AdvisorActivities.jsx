@@ -196,7 +196,9 @@ export const AdvisorActivities = () => {
             type="primary"
             size="small"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/admin/activities/${record.activity_id}`)}
+            onClick={() =>
+              navigate(`/advisor/activities/${record.activity_id}`)
+            }
             title="Xem chi tiết"
             style={{
               background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
@@ -209,7 +211,9 @@ export const AdvisorActivities = () => {
             size="small"
             icon={<UsergroupAddOutlined />}
             onClick={() =>
-              navigate(`/admin/activities/${record.activity_id}/registrations`)
+              navigate(
+                `/advisor/activities/${record.activity_id}/registrations`
+              )
             }
             title="Danh sách đăng ký"
             style={{
@@ -222,7 +226,7 @@ export const AdvisorActivities = () => {
             size="small"
             icon={<EditOutlined />}
             onClick={() =>
-              navigate(`/admin/activities/${record.activity_id}/edit`)
+              navigate(`/advisor/activities/${record.activity_id}/edit`)
             }
             title="Chỉnh sửa"
             style={{
@@ -271,7 +275,7 @@ export const AdvisorActivities = () => {
             type="primary"
             size="large"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/admin/activities/create")}
+            onClick={() => navigate("/advisor/activities/create")}
             style={{
               background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
               border: "none",

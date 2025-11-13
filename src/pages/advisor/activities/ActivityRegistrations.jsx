@@ -186,7 +186,7 @@ export const ActivityRegistrations = () => {
             <Button
               type="text"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/admin/activities/${id}`)}
+              onClick={() => navigate(`/advisor/activities/${id}`)}
               size="large"
             />
             <div>

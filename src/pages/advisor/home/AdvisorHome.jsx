@@ -235,7 +235,7 @@ export const AdvisorHome = () => {
               type="primary"
               size="large"
               icon={<PlusOutlined />}
-              onClick={() => navigate("/admin/notifications/create")}
+              onClick={() => navigate("/advisor/notifications/create")}
               style={{
                 background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
                 border: "none",

@@ -94,7 +94,7 @@ export const CreateEditNotification = () => {
       }));
 
       if (classOptions.length === 0) {
-        toast.warning("Bạn không quản lý lớp nào. Vui lòng liên hệ admin.");
+        toast.warning("Bạn không quản lý lớp nào. Vui lòng liên hệ hệ thống.");
       }
 
       setClasses(classOptions);
@@ -142,7 +142,7 @@ export const CreateEditNotification = () => {
         toast.success(
           isEdit ? "Cập nhật thông báo thành công" : "Tạo thông báo thành công"
         );
-        navigate("/admin/notifications");
+        navigate("/advisor/notifications");
       } else {
         if (res && res.errors) {
           const errorMsg = Object.values(res.errors).flat().join("\n");
@@ -181,7 +181,7 @@ export const CreateEditNotification = () => {
             <Button
               type="text"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/admin/notifications")}
+              onClick={() => navigate("/advisor/notifications")}
               style={{ fontSize: 18 }}
             />
             <div>
@@ -385,7 +385,7 @@ export const CreateEditNotification = () => {
                   <Button
                     size="large"
                     icon={<CloseOutlined />}
-                    onClick={() => navigate("/admin/notifications")}
+                    onClick={() => navigate("/advisor/notifications")}
                   >
                     Hủy
                   </Button>

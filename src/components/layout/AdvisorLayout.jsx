@@ -62,15 +62,15 @@ export const AdvisorLayout = ({ children }) => {
   };
 
   const getPageTitle = () => {
-    if (location.pathname.includes("/admin/notifications")) {
+    if (location.pathname.includes("/advisor/notifications")) {
       return "Quản lý thông báo";
-    } else if (location.pathname.includes("/admin/profile")) {
+    } else if (location.pathname.includes("/advisor/profile")) {
       return "Hồ sơ cá nhân";
-    } else if (location.pathname.includes("/admin/activities")) {
+    } else if (location.pathname.includes("/advisor/activities")) {
       return "Quản lý hoạt động";
-    } else if (location.pathname.includes("/admin/classes")) {
+    } else if (location.pathname.includes("/advisor/classes")) {
       return "Quản lý lớp học";
-    } else if (location.pathname.includes("/admin/rag")) {
+    } else if (location.pathname.includes("/advisor/rag")) {
       return "Trợ lý AI HUIT";
     } else {
       return "Trang chủ";
@@ -174,7 +174,7 @@ export const AdvisorLayout = ({ children }) => {
                   <button
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      navigate("/admin/profile");
+                      navigate("/advisor/profile");
                       setUserMenuOpen(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"

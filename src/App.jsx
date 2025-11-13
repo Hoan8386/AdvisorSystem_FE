@@ -11,19 +11,19 @@ import { Spin } from "antd";
 import ProtectedRoute from "./share/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
-import AdvisorDashboard from "./pages/admin/dashboard/AdvisorDashboard";
-import AdvisorHome from "./pages/admin/home/AdvisorHome";
-import AdvisorNotifications from "./pages/admin/notifications/AdvisorNotifications";
-import AdvisorProfile from "./pages/admin/profile/AdvisorProfile";
-import CreateEditNotification from "./pages/admin/notifications/CreateEditNotification";
-import NotificationResponses from "./pages/admin/notifications/NotificationResponses";
-import AdvisorActivities from "./pages/admin/activities/AdvisorActivities";
-import CreateEditActivity from "./pages/admin/activities/CreateEditActivity";
-import ActivityDetail from "./pages/admin/activities/ActivityDetail";
-import ActivityRegistrations from "./pages/admin/activities/ActivityRegistrations";
-import AssignStudents from "./pages/admin/activities/AssignStudents";
-import AdvisorClasses from "./pages/admin/classes/AdvisorClasses";
-import ClassDetail from "./pages/admin/classes/ClassDetail";
+import AdvisorDashboard from "./pages/advisor/dashboard/AdvisorDashboard";
+import AdvisorHome from "./pages/advisor/home/AdvisorHome";
+import AdvisorNotifications from "./pages/advisor/notifications/AdvisorNotifications";
+import AdvisorProfile from "./pages/advisor/profile/AdvisorProfile";
+import CreateEditNotification from "./pages/advisor/notifications/CreateEditNotification";
+import NotificationResponses from "./pages/advisor/notifications/NotificationResponses";
+import AdvisorActivities from "./pages/advisor/activities/AdvisorActivities";
+import CreateEditActivity from "./pages/advisor/activities/CreateEditActivity";
+import ActivityDetail from "./pages/advisor/activities/ActivityDetail";
+import ActivityRegistrations from "./pages/advisor/activities/ActivityRegistrations";
+import AssignStudents from "./pages/advisor/activities/AssignStudents";
+import AdvisorClasses from "./pages/advisor/classes/AdvisorClasses";
+import ClassDetail from "./pages/advisor/classes/ClassDetail";
 import StudentPage from "./pages/Student.Notification.Page";
 import StudentProfile from "./pages/StudentProfile";
 import StudentDashboard from "./pages/client/StudentDashboard";
@@ -32,9 +32,9 @@ import StudentActivityDetail from "./pages/client/activities/StudentActivityDeta
 import MyRegistrations from "./pages/client/activities/MyRegistrations";
 import MyCancellationRequests from "./pages/client/activities/MyCancellationRequests";
 import StudentPoints from "./pages/client/points/StudentPoints";
-import RAGMain from "./pages/admin/rag/RAGMain";
-import RAGDocumentManagement from "./pages/admin/rag/RAGDocumentManagement";
-import RAGChatAssistant from "./pages/admin/rag/RAGChatAssistant";
+import RAGMain from "./pages/advisor/rag/RAGMain";
+import RAGDocumentManagement from "./pages/advisor/rag/RAGDocumentManagement";
+import RAGChatAssistant from "./pages/advisor/rag/RAGChatAssistant";
 import ChatbotWidget from "./components/chat/ChatbotWidget";
 
 const LayoutClient = () => {
@@ -113,7 +113,7 @@ function App() {
 
     // ========== ADVISOR ROUTES ==========
     {
-      path: "/admin",
+      path: "/advisor",
       element: (
         <LayoutApp>
           <ProtectedRoute allowedRoles={["advisor"]}>

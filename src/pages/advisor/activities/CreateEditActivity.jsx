@@ -134,7 +134,7 @@ export const CreateEditActivity = () => {
         toast.success(
           isEdit ? "Cập nhật hoạt động thành công" : "Tạo hoạt động thành công"
         );
-        navigate("/admin/activities");
+        navigate("/advisor/activities");
       }
     } catch (error) {
       console.error("Submit error:", error);
@@ -155,7 +155,7 @@ export const CreateEditActivity = () => {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate("/admin/activities")}
+            onClick={() => navigate("/advisor/activities")}
             size="large"
           />
           <h1 className="text-2xl font-bold text-gray-900 m-0">
@@ -481,7 +481,7 @@ export const CreateEditActivity = () => {
               <Button
                 size="large"
                 icon={<CloseOutlined />}
-                onClick={() => navigate("/admin/activities")}
+                onClick={() => navigate("/advisor/activities")}
               >
                 Hủy
               </Button>

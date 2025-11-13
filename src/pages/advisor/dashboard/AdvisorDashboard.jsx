@@ -97,17 +97,17 @@ export const AdvisorDashboard = () => {
   };
 
   const handleEdit = (record) => {
-    navigate(`/admin/notifications/${record.notification_id}/edit`, {
+    navigate(`/advisor/notifications/${record.notification_id}/edit`, {
       state: { notification: record },
     });
   };
 
   const handleViewResponses = (record) => {
-    navigate(`/admin/notifications/${record.notification_id}/responses`);
+    navigate(`/advisor/notifications/${record.notification_id}/responses`);
   };
 
   const handleCreateNew = () => {
-    navigate("/admin/notifications/create");
+    navigate("/advisor/notifications/create");
   };
 
   const columns = [
@@ -317,7 +317,7 @@ export const AdvisorDashboard = () => {
           type="primary"
           size="large"
           icon={<PlusOutlined />}
-          onClick={() => navigate("/admin/activities/create")}
+          onClick={() => navigate("/advisor/activities/create")}
           style={{
             background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
             border: "none",
@@ -336,7 +336,7 @@ export const AdvisorDashboard = () => {
           <Button
             type="primary"
             size="large"
-            onClick={() => navigate("/admin/activities")}
+            onClick={() => navigate("/advisor/activities")}
           >
             Đi đến trang Quản lý hoạt động
           </Button>

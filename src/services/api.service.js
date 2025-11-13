@@ -301,7 +301,7 @@ export {
     updateNotificationResponseAPI,
     getUnreadNotificationsAPI,
     markAllNotificationsReadAPI,
-    // Activity APIs (Admin)
+    // Activity APIs (Advisor)
     getActivitiesAPI,
     getActivityDetailAPI,
     createActivityAPI,

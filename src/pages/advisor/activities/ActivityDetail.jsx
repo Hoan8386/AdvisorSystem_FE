@@ -48,7 +48,7 @@ export const ActivityDetail = () => {
     } catch (error) {
       toast.error("Lỗi khi tải dữ liệu hoạt động");
       console.error(error);
-      navigate("/admin/activities");
+      navigate("/advisor/activities");
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export const ActivityDetail = () => {
           const res = await deleteActivityAPI(id);
           if (res && res.success) {
             toast.success("Xóa hoạt động thành công");
-            navigate("/admin/activities");
+            navigate("/advisor/activities");
           }
         } catch (error) {
           toast.error(error?.message || "Lỗi khi xóa hoạt động");
@@ -151,7 +151,7 @@ export const ActivityDetail = () => {
             <Button
               type="text"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/admin/activities")}
+              onClick={() => navigate("/advisor/activities")}
               size="large"
             />
             <h1 className="text-2xl font-bold text-gray-900 m-0">
@@ -164,7 +164,7 @@ export const ActivityDetail = () => {
               type="primary"
               icon={<UserOutlined />}
               onClick={() =>
-                navigate(`/admin/activities/${id}/assign-students`)
+                navigate(`/advisor/activities/${id}/assign-students`)
               }
               style={{
                 background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
@@ -176,7 +176,9 @@ export const ActivityDetail = () => {
             <Button
               type="primary"
               icon={<TeamOutlined />}
-              onClick={() => navigate(`/admin/activities/${id}/registrations`)}
+              onClick={() =>
+                navigate(`/advisor/activities/${id}/registrations`)
+              }
               style={{
                 background: "linear-gradient(135deg, #1677ff 0%, #0958d9 100%)",
                 border: "none",
@@ -186,7 +188,7 @@ export const ActivityDetail = () => {
             </Button>
             <Button
               icon={<EditOutlined />}
-              onClick={() => navigate(`/admin/activities/${id}/edit`)}
+              onClick={() => navigate(`/advisor/activities/${id}/edit`)}
             >
               Chỉnh sửa
             </Button>

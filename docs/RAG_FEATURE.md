@@ -35,7 +35,7 @@ Tính năng Trợ lý AI HUIT được tích hợp vào hệ thống AdvisorSyst
 
 ```
 src/
-├── pages/admin/rag/
+├── pages/advisor/rag/
 │   ├── RAGMain.jsx                 # Trang chính với Tabs
 │   ├── RAGChatAssistant.jsx        # Component chat với AI
 │   ├── RAGDocumentManagement.jsx   # Component quản lý tài liệu

@@ -152,7 +152,7 @@ export const ClassDetail = () => {
             <Button
               type="text"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/admin/classes")}
+              onClick={() => navigate("/advisor/classes")}
               size="large"
             />
             <div>

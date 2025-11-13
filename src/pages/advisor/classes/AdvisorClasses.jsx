@@ -65,7 +65,7 @@ export const AdvisorClasses = () => {
   };
 
   const handleClassClick = (classId) => {
-    navigate(`/admin/classes/${classId}`);
+    navigate(`/advisor/classes/${classId}`);
   };
 
   return (

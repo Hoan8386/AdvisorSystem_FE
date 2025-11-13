@@ -26,7 +26,7 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
   const menuItems = [
     {
       id: "home",
-      path: "/admin",
+      path: "/advisor",
       label: "Trang chủ",
       icon: Home,
       color: "text-[#c8102e]",
@@ -36,7 +36,7 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     },
     {
       id: "notifications",
-      path: "/admin/notifications",
+      path: "/advisor/notifications",
       label: "Thông báo",
       icon: Bell,
       color: "text-orange-600",
@@ -46,7 +46,7 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     },
     {
       id: "activities",
-      path: "/admin/activities",
+      path: "/advisor/activities",
       label: "Hoạt động",
       icon: Calendar,
       color: "text-[#c8102e]",
@@ -56,7 +56,7 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     },
     {
       id: "classes",
-      path: "/admin/classes",
+      path: "/advisor/classes",
       label: "Lớp học",
       icon: Users,
       color: "text-purple-600",
@@ -66,7 +66,7 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     },
     {
       id: "rag-assistant",
-      path: "/admin/rag",
+      path: "/advisor/rag",
       label: "Trợ lý HUIT",
       icon: Bot,
       color: "text-green-600",
@@ -121,16 +121,16 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
           const Icon = item.icon;
           const isActive =
             location.pathname === item.path ||
-            (item.path === "/admin" &&
-              location.pathname.startsWith("/admin/home")) ||
-            (item.path === "/admin/notifications" &&
-              location.pathname.startsWith("/admin/notifications")) ||
-            (item.path === "/admin/activities" &&
-              location.pathname.startsWith("/admin/activities")) ||
-            (item.path === "/admin/classes" &&
-              location.pathname.startsWith("/admin/classes")) ||
-            (item.path === "/admin/rag" &&
-              location.pathname.startsWith("/admin/rag"));
+            (item.path === "/advisor" &&
+              location.pathname.startsWith("/advisor/home")) ||
+            (item.path === "/advisor/notifications" &&
+              location.pathname.startsWith("/advisor/notifications")) ||
+            (item.path === "/advisor/activities" &&
+              location.pathname.startsWith("/advisor/activities")) ||
+            (item.path === "/advisor/classes" &&
+              location.pathname.startsWith("/advisor/classes")) ||
+            (item.path === "/advisor/rag" &&
+              location.pathname.startsWith("/advisor/rag"));
 
           return (
             <button

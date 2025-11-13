@@ -85,17 +85,17 @@ export const AdvisorNotifications = () => {
   };
 
   const handleEdit = (record) => {
-    navigate(`/admin/notifications/${record.notification_id}/edit`, {
+    navigate(`/advisor/notifications/${record.notification_id}/edit`, {
       state: { notification: record },
     });
   };
 
   const handleViewResponses = (record) => {
-    navigate(`/admin/notifications/${record.notification_id}/responses`);
+    navigate(`/advisor/notifications/${record.notification_id}/responses`);
   };
 
   const handleCreateNew = () => {
-    navigate("/admin/notifications/create");
+    navigate("/advisor/notifications/create");
   };
 
   // Filter notifications

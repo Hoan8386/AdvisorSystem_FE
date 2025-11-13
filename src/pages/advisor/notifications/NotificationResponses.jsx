@@ -206,7 +206,7 @@ export const NotificationResponses = () => {
           >
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/admin/notifications")}
+              onClick={() => navigate("/advisor/notifications")}
               type="text"
               style={{ fontSize: 18 }}
             >
