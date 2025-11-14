@@ -16,6 +16,7 @@ import {
   Collapse,
   Space,
   Divider,
+  Tabs,
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -45,11 +46,8 @@ import {
   getCourseStudentsAPI,
   getStudentPointsAPI,
   getStudentSemesterReportAPI,
-  getAtRiskStudentsAPI,
-  createAcademicWarningsAPI,
-  getClassStatisticsAPI,
   batchUpdateSemesterReportsAPI,
-  getWarningsCreatedAPI,
+  getAtRiskStudentsAPI,
 } from "../../../services/api.service";
 
 const { Option } = Select;
@@ -68,7 +66,6 @@ export const ClassDetail = () => {
   const [selectedSemester, setSelectedSemester] = useState(null);
   const [semesterReports, setSemesterReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
-  const [reportStatistics, setReportStatistics] = useState(null);
 
   // Modal state
   const [studentGradeModalVisible, setStudentGradeModalVisible] =
@@ -89,18 +86,15 @@ export const ClassDetail = () => {
   const [loadingStudentPoints, setLoadingStudentPoints] = useState(false);
 
   // Academic Monitoring state
+  const [academicStatistics, setAcademicStatistics] = useState(null);
+  const [loadingBatchUpdate, setLoadingBatchUpdate] = useState(false);
+
+  // At-risk students state
   const [atRiskStudents, setAtRiskStudents] = useState([]);
   const [loadingAtRisk, setLoadingAtRisk] = useState(false);
-  const [academicStatistics, setAcademicStatistics] = useState(null);
-  const [loadingStatistics, setLoadingStatistics] = useState(false);
-  const [selectedWarningStudents, setSelectedWarningStudents] = useState([]);
-  const [loadingBatchUpdate, setLoadingBatchUpdate] = useState(false);
-  const [loadingCreateWarnings, setLoadingCreateWarnings] = useState(false);
 
-  // Warnings modal state
-  const [warningsModalVisible, setWarningsModalVisible] = useState(false);
-  const [warningsList, setWarningsList] = useState([]);
-  const [loadingWarnings, setLoadingWarnings] = useState(false);
+  // Tab state
+  const [activeTab, setActiveTab] = useState("students");
 
   useEffect(() => {
     if (classId) {
@@ -112,9 +106,9 @@ export const ClassDetail = () => {
 
   useEffect(() => {
     if (selectedSemester) {
-      fetchSemesterReports();
+      fetchSemesterReports(); // Đã bao gồm statistics
+      // fetchAcademicStatistics(); // Không cần nữa, đã lấy từ fetchSemesterReports
       fetchAtRiskStudents();
-      fetchAcademicStatistics();
     }
   }, [selectedSemester]);
 
@@ -173,23 +167,64 @@ export const ClassDetail = () => {
       console.log("Semester reports response:", response);
 
       if (response?.success) {
-        const reportsData = response.data?.reports || [];
+        // API trả về class_statistics là mảng các lớp
+        const classStatistics = response.data?.class_statistics || [];
+
+        // Tìm thống kê của lớp hiện tại (so sánh với type conversion)
+        const currentClassStats = classStatistics.find(
+          (stat) =>
+            stat.class_id == classId || stat.class_id === parseInt(classId)
+        );
+
+        // Lấy danh sách reports của lớp hiện tại
+        const reportsData = currentClassStats?.reports || [];
         setSemesterReports(reportsData);
 
-        // Calculate statistics
-        const stats = {
-          total: reportsData.length,
-          passed: reportsData.filter((r) => r.outcome === "Học tiếp").length,
-          warned: reportsData.filter(
-            (r) => r.outcome && r.outcome.includes("Cảnh cáo")
-          ).length,
-          noGrade: reportsData.filter((r) => r.outcome === "Chưa có điểm")
-            .length,
-        };
-        setReportStatistics(stats);
+        // Lấy luôn thống kê học vụ từ gpa_statistics
+        if (currentClassStats) {
+          const statsData = {
+            total_students: currentClassStats.total_students,
+            average_gpa: currentClassStats.average_gpa || 0,
+            statistics: {
+              excellent: currentClassStats.gpa_statistics?.excellent || 0,
+              good: currentClassStats.gpa_statistics?.good || 0,
+              average: currentClassStats.gpa_statistics?.average || 0,
+              weak: currentClassStats.gpa_statistics?.weak || 0,
+              poor: currentClassStats.gpa_statistics?.fair || 0,
+            },
+            percentages: {
+              excellent:
+                ((currentClassStats.gpa_statistics?.excellent || 0) /
+                  currentClassStats.total_students) *
+                100,
+              good:
+                ((currentClassStats.gpa_statistics?.good || 0) /
+                  currentClassStats.total_students) *
+                100,
+              average:
+                ((currentClassStats.gpa_statistics?.average || 0) /
+                  currentClassStats.total_students) *
+                100,
+              weak:
+                ((currentClassStats.gpa_statistics?.weak || 0) /
+                  currentClassStats.total_students) *
+                100,
+              poor:
+                ((currentClassStats.gpa_statistics?.fair || 0) /
+                  currentClassStats.total_students) *
+                100,
+            },
+          };
+          setAcademicStatistics(statsData);
+        }
+
+        console.log("Class ID:", classId, "Type:", typeof classId);
+        console.log("Found class stats:", currentClassStats);
+        console.log("Current class reports:", reportsData);
       }
     } catch (error) {
       console.error("Error fetching semester reports:", error);
+      toast.error("Không thể tải báo cáo học kỳ");
     } finally {
       setLoadingReports(false);
     }
@@ -278,7 +313,7 @@ export const ClassDetail = () => {
 
   // Fetch at-risk students
   const fetchAtRiskStudents = async () => {
-    if (!selectedSemester) return;
+    if (!selectedSemester || !classData) return;
 
     try {
       setLoadingAtRisk(true);
@@ -286,102 +321,21 @@ export const ClassDetail = () => {
       console.log("At-risk students response:", response);
 
       if (response?.success) {
-        setAtRiskStudents(response.data.at_risk_students || []);
+        const allStudents = response.data?.at_risk_students || [];
+        // Filter by class_name (API không trả về class_id)
+        const classStudents = allStudents.filter(
+          (student) => student.class_name === classData.class_name
+        );
+        console.log("Class name:", classData.class_name);
+        console.log("Filtered at-risk students:", classStudents);
+        setAtRiskStudents(classStudents);
       }
     } catch (error) {
       console.error("Error fetching at-risk students:", error);
-      toast.error("Không thể tải danh sách sinh viên nguy cơ");
+      toast.error("Không thể tải danh sách sinh viên có nguy cơ");
     } finally {
       setLoadingAtRisk(false);
     }
-  };
-
-  // Fetch academic statistics
-  const fetchAcademicStatistics = async () => {
-    if (!selectedSemester) return;
-
-    try {
-      setLoadingStatistics(true);
-      const response = await getClassStatisticsAPI(selectedSemester);
-      console.log("Academic statistics response:", response);
-
-      if (response?.success) {
-        setAcademicStatistics(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching statistics:", error);
-      toast.error("Không thể tải thống kê học vụ");
-    } finally {
-      setLoadingStatistics(false);
-    }
-  };
-
-  // Create academic warnings
-  const handleCreateWarnings = async () => {
-    if (selectedWarningStudents.length === 0) {
-      toast.warning("Vui lòng chọn sinh viên cần tạo cảnh cáo");
-      return;
-    }
-
-    try {
-      setLoadingCreateWarnings(true);
-      const response = await createAcademicWarningsAPI({
-        semester_id: selectedSemester,
-        student_ids: selectedWarningStudents,
-      });
-
-      if (response?.success) {
-        const { total_created, errors } = response.data;
-
-        // Hiển thị thông báo dựa trên kết quả
-        if (total_created > 0) {
-          toast.success(`Đã tạo ${total_created} cảnh cáo học vụ thành công`);
-        }
-
-        // Hiển thị các lỗi/cảnh báo (nếu có)
-        if (errors && errors.length > 0) {
-          if (total_created === 0) {
-            // Nếu không tạo được cảnh cáo nào
-            toast.warning("Không thể tạo cảnh cáo");
-          }
-          errors.forEach((err) => {
-            toast.warning(err);
-          });
-        }
-
-        setSelectedWarningStudents([]);
-        fetchAtRiskStudents(); // Refresh list
-      }
-    } catch (error) {
-      console.error("Error creating warnings:", error);
-      toast.error("Không thể tạo cảnh cáo học vụ");
-    } finally {
-      setLoadingCreateWarnings(false);
-    }
-  };
-
-  // Fetch warnings list
-  const fetchWarnings = async () => {
-    try {
-      setLoadingWarnings(true);
-      const response = await getWarningsCreatedAPI();
-      console.log("Warnings response:", response);
-
-      if (response?.success) {
-        setWarningsList(response.data.warnings || []);
-      }
-    } catch (error) {
-      console.error("Error fetching warnings:", error);
-      toast.error("Không thể tải danh sách cảnh cáo");
-    } finally {
-      setLoadingWarnings(false);
-    }
-  };
-
-  // Handle view warnings
-  const handleViewWarnings = () => {
-    setWarningsModalVisible(true);
-    fetchWarnings();
   };
 
   // Batch update semester reports
@@ -391,37 +345,29 @@ export const ClassDetail = () => {
       return;
     }
 
-    Modal.confirm({
-      title: "Xác nhận cập nhật hàng loạt",
-      content: "Bạn có chắc muốn cập nhật báo cáo học kỳ cho tất cả sinh viên?",
-      okText: "Xác nhận",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          setLoadingBatchUpdate(true);
-          const response = await batchUpdateSemesterReportsAPI({
-            class_id: classId,
-            semester_id: selectedSemester,
-          });
+    try {
+      setLoadingBatchUpdate(true);
+      const response = await batchUpdateSemesterReportsAPI({
+        class_id: classId,
+        semester_id: selectedSemester,
+      });
 
-          if (response?.success) {
-            const { summary } = response.data;
-            toast.success(
-              `Cập nhật thành công ${summary.success_count}/${summary.total_processed} sinh viên`
-            );
-            if (summary.error_count > 0) {
-              toast.warning(`Có ${summary.error_count} sinh viên bị lỗi`);
-            }
-            fetchSemesterReports(); // Refresh reports
-          }
-        } catch (error) {
-          console.error("Error batch updating:", error);
-          toast.error("Không thể cập nhật báo cáo hàng loạt");
-        } finally {
-          setLoadingBatchUpdate(false);
+      if (response?.success) {
+        const { summary } = response.data;
+        toast.success(
+          `Cập nhật thành công ${summary.success_count}/${summary.total_processed} sinh viên`
+        );
+        if (summary.error_count > 0) {
+          toast.warning(`Có ${summary.error_count} sinh viên bị lỗi`);
         }
-      },
-    });
+        fetchSemesterReports(); // Refresh reports
+      }
+    } catch (error) {
+      console.error("Error batch updating:", error);
+      toast.error("Không thể cập nhật báo cáo hàng loạt");
+    } finally {
+      setLoadingBatchUpdate(false);
+    }
   };
 
   const getGradeColor = (grade) => {
@@ -454,27 +400,17 @@ export const ClassDetail = () => {
       title: "Họ và tên",
       dataIndex: "full_name",
       key: "full_name",
-      width: 200,
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-      width: 200,
-    },
-    {
-      title: "Số điện thoại",
-      dataIndex: "phone_number",
-      key: "phone_number",
-      width: 130,
+      width: 250,
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 120,
+      width: 150,
+      align: "center",
       render: (status) => {
         const statusConfig = {
+          studying: { color: "success", text: "Đang học" },
           active: { color: "success", text: "Đang học" },
           inactive: { color: "default", text: "Không hoạt động" },
           graduated: { color: "blue", text: "Đã tốt nghiệp" },
@@ -488,9 +424,26 @@ export const ClassDetail = () => {
       },
     },
     {
+      title: "Số lần cảnh báo",
+      dataIndex: "warnings_count",
+      key: "warnings_count",
+      width: 150,
+      align: "center",
+      render: (count) => {
+        if (!count || count === 0) {
+          return <Tag color="success">0</Tag>;
+        }
+        return (
+          <Tag color={count >= 3 ? "red" : count >= 2 ? "orange" : "gold"}>
+            {count} lần
+          </Tag>
+        );
+      },
+    },
+    {
       title: "Thao tác",
       key: "action",
-      width: 250,
+      width: 280,
       render: (_, record) => (
         <Space>
           <Button
@@ -749,499 +702,452 @@ export const ClassDetail = () => {
               </Row>
             )}
 
-            {/* Semester Reports and Statistics */}
-            {selectedSemester && (
-              <Card
-                title={
-                  <span className="flex items-center gap-2">
-                    <FileTextOutlined />
-                    Báo cáo học kỳ
-                  </span>
-                }
-                style={{
-                  borderRadius: 12,
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                {reportStatistics && (
-                  <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                    <Col xs={12} sm={6}>
-                      <Card size="small" className="text-center">
-                        <div className="text-3xl font-bold text-blue-600">
-                          {reportStatistics.total}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-2">
-                          Tổng sinh viên
-                        </div>
-                      </Card>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <Card size="small" className="text-center">
-                        <div className="text-3xl font-bold text-green-600">
-                          {reportStatistics.passed}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-2">
-                          Học tiếp
-                        </div>
-                      </Card>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <Card size="small" className="text-center">
-                        <div className="text-3xl font-bold text-orange-600">
-                          {reportStatistics.warned}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-2">
-                          Cảnh cáo
-                        </div>
-                      </Card>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <Card size="small" className="text-center">
-                        <div className="text-3xl font-bold text-red-600">
-                          {reportStatistics.noGrade}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-2">
-                          Nghĩ học
-                        </div>
-                      </Card>
-                    </Col>
-                  </Row>
-                )}
-
-                <Divider />
-
-                <Spin spinning={loadingReports}>
-                  <Table
-                    columns={[
-                      {
-                        title: "MSSV",
-                        dataIndex: ["student", "user_code"],
-                        key: "user_code",
-                        width: 110,
-                      },
-                      {
-                        title: "Họ và tên",
-                        dataIndex: ["student", "full_name"],
-                        key: "full_name",
-                        width: 180,
-                      },
-                      {
-                        title: "GPA (10)",
-                        dataIndex: "gpa",
-                        key: "gpa",
-                        width: 100,
-                        align: "center",
-                        render: (gpa) => {
-                          const numGpa = gpa ? Number(gpa) : 0;
-                          return (
-                            <span
-                              className={`font-bold ${getGradeColor(numGpa)}`}
-                            >
-                              {numGpa.toFixed(2)}
-                            </span>
-                          );
-                        },
-                      },
-                      {
-                        title: "GPA (4)",
-                        dataIndex: "gpa_4_scale",
-                        key: "gpa_4_scale",
-                        width: 100,
-                        align: "center",
-                        render: (gpa) => {
-                          const numGpa = gpa ? Number(gpa) : 0;
-                          return (
-                            <span className="font-semibold">
-                              {numGpa.toFixed(2)}
-                            </span>
-                          );
-                        },
-                      },
-                      {
-                        title: "TC đăng ký",
-                        dataIndex: "credits_registered",
-                        key: "credits_registered",
-                        width: 110,
-                        align: "center",
-                      },
-                      {
-                        title: "TC đạt",
-                        dataIndex: "credits_passed",
-                        key: "credits_passed",
-                        width: 90,
-                        align: "center",
-                      },
-                      {
-                        title: "Kết quả",
-                        dataIndex: "outcome",
-                        key: "outcome",
-                        width: 160,
-                        render: (outcome) => {
-                          if (!outcome) {
-                            return <Tag color="default">Chưa đánh giá</Tag>;
-                          }
-
-                          // Check for specific outcomes
-                          if (outcome === "Học tiếp") {
-                            return <Tag color="success">Học tiếp</Tag>;
-                          }
-                          if (outcome === "Chưa có điểm") {
-                            return <Tag color="default">Chưa có điểm</Tag>;
-                          }
-                          if (outcome.includes("Cảnh cáo")) {
-                            return <Tag color="warning">{outcome}</Tag>;
-                          }
-                          if (outcome.includes("thôi học")) {
-                            return <Tag color="error">{outcome}</Tag>;
-                          }
-
-                          // Default
-                          return <Tag color="default">{outcome}</Tag>;
-                        },
-                      },
-                      {
-                        title: "Thao tác",
-                        key: "action",
-                        width: 120,
-                        render: (_, record) => (
-                          <Button
-                            type="link"
-                            icon={<EyeOutlined />}
-                            onClick={() =>
-                              handleViewStudentGrades(record.student)
-                            }
-                            size="small"
-                            loading={loadingStudentGrades}
-                          >
-                            Xem điểm
-                          </Button>
-                        ),
-                      },
-                    ]}
-                    dataSource={semesterReports}
-                    rowKey={(record) =>
-                      record.student?.student_id || record.student?.user_code
-                    }
-                    scroll={{ x: 1200 }}
-                    pagination={{
-                      pageSize: 10,
-                      showTotal: (total) => `Tổng ${total} sinh viên`,
-                      showSizeChanger: true,
-                    }}
-                    locale={{
-                      emptyText: (
-                        <Empty description="Chưa có báo cáo học kỳ này" />
-                      ),
-                    }}
-                  />
-                </Spin>
-              </Card>
-            )}
-
-            {/* Students List */}
+            {/* Tabs for Students List and Semester Reports */}
             <Card
-              title={
-                <span className="flex items-center gap-2 text-lg font-semibold">
-                  <UserOutlined />
-                  Danh sách sinh viên ({students.length})
-                </span>
-              }
               style={{
                 borderRadius: 12,
                 border: "none",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
               }}
             >
-              <Table
-                columns={studentColumns}
-                dataSource={students}
-                rowKey="student_id"
-                pagination={{
-                  pageSize: 10,
-                  showTotal: (total) => `Tổng ${total} sinh viên`,
-                  showSizeChanger: true,
-                }}
-                locale={{
-                  emptyText: (
-                    <Empty description="Chưa có sinh viên nào trong lớp" />
-                  ),
-                }}
+              <Tabs
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                items={[
+                  {
+                    key: "students",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <UserOutlined />
+                        Danh sách lớp ({students.length})
+                      </span>
+                    ),
+                    children: (
+                      <Table
+                        columns={studentColumns}
+                        dataSource={students}
+                        rowKey="student_id"
+                        pagination={{
+                          pageSize: 10,
+                          showTotal: (total) => `Tổng ${total} sinh viên`,
+                          showSizeChanger: true,
+                        }}
+                        locale={{
+                          emptyText: (
+                            <Empty description="Chưa có sinh viên nào trong lớp" />
+                          ),
+                        }}
+                      />
+                    ),
+                  },
+                  {
+                    key: "reports",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <FileTextOutlined />
+                        Báo cáo học kỳ
+                      </span>
+                    ),
+                    children: selectedSemester ? (
+                      <div className="space-y-6">
+                        {/* Academic Statistics */}
+                        {academicStatistics && (
+                          <Card
+                            title={
+                              <Space>
+                                <BarChartOutlined />
+                                <span>Thống kê học vụ</span>
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  icon={<ReloadOutlined />}
+                                  loading={loadingBatchUpdate}
+                                  onClick={handleBatchUpdate}
+                                >
+                                  Cập nhật hàng loạt
+                                </Button>
+                              </Space>
+                            }
+                            size="small"
+                          >
+                            <Row gutter={[16, 16]}>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="GPA Trung bình"
+                                    value={
+                                      academicStatistics.average_gpa?.toFixed(
+                                        2
+                                      ) || "0.00"
+                                    }
+                                    valueStyle={{ color: "#1890ff" }}
+                                  />
+                                </Card>
+                              </Col>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="Giỏi"
+                                    value={
+                                      academicStatistics.statistics
+                                        ?.excellent || 0
+                                    }
+                                    valueStyle={{ color: "#52c41a" }}
+                                    suffix={`/ ${academicStatistics.total_students}`}
+                                  />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {academicStatistics.percentages?.excellent?.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </div>
+                                </Card>
+                              </Col>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="Khá"
+                                    value={
+                                      academicStatistics.statistics?.good || 0
+                                    }
+                                    valueStyle={{ color: "#1890ff" }}
+                                    suffix={`/ ${academicStatistics.total_students}`}
+                                  />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {academicStatistics.percentages?.good?.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </div>
+                                </Card>
+                              </Col>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="Trung bình"
+                                    value={
+                                      academicStatistics.statistics?.average ||
+                                      0
+                                    }
+                                    valueStyle={{ color: "#faad14" }}
+                                    suffix={`/ ${academicStatistics.total_students}`}
+                                  />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {academicStatistics.percentages?.average?.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </div>
+                                </Card>
+                              </Col>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="Yếu"
+                                    value={
+                                      academicStatistics.statistics?.weak || 0
+                                    }
+                                    valueStyle={{ color: "#ff7a45" }}
+                                    suffix={`/ ${academicStatistics.total_students}`}
+                                  />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {academicStatistics.percentages?.weak?.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </div>
+                                </Card>
+                              </Col>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="Kém"
+                                    value={
+                                      academicStatistics.statistics?.poor || 0
+                                    }
+                                    valueStyle={{ color: "#f5222d" }}
+                                    suffix={`/ ${academicStatistics.total_students}`}
+                                  />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {academicStatistics.percentages?.poor?.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </div>
+                                </Card>
+                              </Col>
+                            </Row>
+                          </Card>
+                        )}
+
+                        {/* Semester Reports Table */}
+                        <Spin spinning={loadingReports}>
+                          <Table
+                            columns={[
+                              {
+                                title: "MSSV",
+                                dataIndex: ["student", "user_code"],
+                                key: "user_code",
+                                width: 110,
+                              },
+                              {
+                                title: "Họ và tên",
+                                dataIndex: ["student", "full_name"],
+                                key: "full_name",
+                                width: 180,
+                              },
+                              {
+                                title: "GPA (10)",
+                                dataIndex: "gpa",
+                                key: "gpa",
+                                width: 100,
+                                align: "center",
+                                render: (gpa) => {
+                                  const numGpa = gpa ? Number(gpa) : 0;
+                                  return (
+                                    <span
+                                      className={`font-bold ${getGradeColor(
+                                        numGpa
+                                      )}`}
+                                    >
+                                      {numGpa.toFixed(2)}
+                                    </span>
+                                  );
+                                },
+                              },
+                              {
+                                title: "GPA (4)",
+                                dataIndex: "gpa_4_scale",
+                                key: "gpa_4_scale",
+                                width: 100,
+                                align: "center",
+                                render: (gpa) => {
+                                  const numGpa = gpa ? Number(gpa) : 0;
+                                  return (
+                                    <span className="font-semibold">
+                                      {numGpa.toFixed(2)}
+                                    </span>
+                                  );
+                                },
+                              },
+                              {
+                                title: "TC đăng ký",
+                                dataIndex: "credits_registered",
+                                key: "credits_registered",
+                                width: 110,
+                                align: "center",
+                              },
+                              {
+                                title: "TC đạt",
+                                dataIndex: "credits_passed",
+                                key: "credits_passed",
+                                width: 90,
+                                align: "center",
+                              },
+                              {
+                                title: "Kết quả",
+                                dataIndex: "outcome",
+                                key: "outcome",
+                                width: 160,
+                                render: (outcome) => {
+                                  if (!outcome) {
+                                    return (
+                                      <Tag color="default">Chưa đánh giá</Tag>
+                                    );
+                                  }
+
+                                  // Check for specific outcomes
+                                  if (outcome === "Học tiếp") {
+                                    return <Tag color="success">Học tiếp</Tag>;
+                                  }
+                                  if (outcome === "Chưa có điểm") {
+                                    return (
+                                      <Tag color="default">Chưa có điểm</Tag>
+                                    );
+                                  }
+                                  if (outcome.includes("Cảnh cáo")) {
+                                    return <Tag color="warning">{outcome}</Tag>;
+                                  }
+                                  if (outcome.includes("thôi học")) {
+                                    return <Tag color="error">{outcome}</Tag>;
+                                  }
+
+                                  // Default
+                                  return <Tag color="default">{outcome}</Tag>;
+                                },
+                              },
+                              {
+                                title: "Thao tác",
+                                key: "action",
+                                width: 120,
+                                render: (_, record) => (
+                                  <Button
+                                    type="link"
+                                    icon={<EyeOutlined />}
+                                    onClick={() =>
+                                      handleViewStudentGrades(record.student)
+                                    }
+                                    size="small"
+                                    loading={loadingStudentGrades}
+                                  >
+                                    Xem điểm
+                                  </Button>
+                                ),
+                              },
+                            ]}
+                            dataSource={semesterReports}
+                            rowKey={(record) =>
+                              record.student?.student_id ||
+                              record.student?.user_code
+                            }
+                            scroll={{ x: 1200 }}
+                            pagination={{
+                              pageSize: 10,
+                              showTotal: (total) => `Tổng ${total} sinh viên`,
+                              showSizeChanger: true,
+                            }}
+                            locale={{
+                              emptyText: (
+                                <Empty description="Chưa có báo cáo học kỳ này" />
+                              ),
+                            }}
+                          />
+                        </Spin>
+                      </div>
+                    ) : (
+                      <Empty description="Vui lòng chọn học kỳ để xem báo cáo" />
+                    ),
+                  },
+                  {
+                    key: "at-risk",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <AlertOutlined />
+                        Sinh viên có nguy cơ ({atRiskStudents.length})
+                      </span>
+                    ),
+                    children: selectedSemester ? (
+                      <Spin spinning={loadingAtRisk}>
+                        <Table
+                          columns={[
+                            {
+                              title: "MSSV",
+                              dataIndex: "user_code",
+                              key: "user_code",
+                              width: 100,
+                            },
+                            {
+                              title: "Họ tên",
+                              dataIndex: "full_name",
+                              key: "full_name",
+                              width: 180,
+                            },
+                            {
+                              title: "Lớp",
+                              dataIndex: "class_name",
+                              key: "class_name",
+                              width: 120,
+                            },
+                            {
+                              title: "CPA (4.0)",
+                              dataIndex: "cpa_4_scale",
+                              key: "cpa_4_scale",
+                              width: 100,
+                              align: "center",
+                              render: (cpa) => {
+                                const numCpa = cpa ? Number(cpa) : 0;
+                                const color =
+                                  numCpa >= 3.6
+                                    ? "green"
+                                    : numCpa >= 3.0
+                                    ? "blue"
+                                    : numCpa >= 2.0
+                                    ? "orange"
+                                    : "red";
+                                return (
+                                  <Tag color={color}>{numCpa.toFixed(2)}</Tag>
+                                );
+                              },
+                            },
+                            {
+                              title: "Ngưỡng",
+                              dataIndex: "warning_threshold",
+                              key: "warning_threshold",
+                              width: 90,
+                              align: "center",
+                              render: (threshold) => {
+                                const numThreshold = threshold
+                                  ? Number(threshold)
+                                  : 0;
+                                return numThreshold.toFixed(2);
+                              },
+                            },
+                            {
+                              title: "Mức độ",
+                              dataIndex: "risk_level",
+                              key: "risk_level",
+                              width: 110,
+                              render: (level) => {
+                                const config = {
+                                  critical: { color: "red", text: "Rất cao" },
+                                  high: { color: "orange", text: "Cao" },
+                                  medium: { color: "gold", text: "Trung bình" },
+                                  low: { color: "blue", text: "Thấp" },
+                                };
+                                const c = config[level] || {
+                                  color: "default",
+                                  text: level,
+                                };
+                                return <Tag color={c.color}>{c.text}</Tag>;
+                              },
+                            },
+                            {
+                              title: "Môn rớt",
+                              dataIndex: "failed_courses_count",
+                              key: "failed_courses_count",
+                              width: 90,
+                              align: "center",
+                              render: (count) => (
+                                <Tag color={count > 0 ? "red" : "default"}>
+                                  {count}
+                                </Tag>
+                              ),
+                            },
+                            {
+                              title: "Lý do nguy cơ",
+                              dataIndex: "risk_reasons",
+                              key: "risk_reasons",
+                              render: (reasons) => (
+                                <ul className="list-disc list-inside text-xs">
+                                  {reasons?.slice(0, 2).map((reason, idx) => (
+                                    <li key={idx} className="text-red-600">
+                                      {reason}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ),
+                            },
+                          ]}
+                          dataSource={atRiskStudents}
+                          rowKey="student_id"
+                          pagination={{
+                            pageSize: 10,
+                            showTotal: (total) => `Tổng ${total} sinh viên`,
+                          }}
+                          locale={{
+                            emptyText: (
+                              <Empty description="Không có sinh viên nguy cơ trong lớp này" />
+                            ),
+                          }}
+                        />
+                      </Spin>
+                    ) : (
+                      <Empty description="Vui lòng chọn học kỳ để xem danh sách sinh viên có nguy cơ" />
+                    ),
+                  },
+                ]}
               />
             </Card>
-
-            {/* Academic Statistics */}
-            {selectedSemester && academicStatistics && (
-              <Card
-                title={
-                  <Space>
-                    <BarChartOutlined />
-                    <span>Thống kê học vụ</span>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<ReloadOutlined />}
-                      loading={loadingBatchUpdate}
-                      onClick={handleBatchUpdate}
-                    >
-                      Cập nhật hàng loạt
-                    </Button>
-                  </Space>
-                }
-                style={{
-                  borderRadius: 12,
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                <Row gutter={[16, 16]}>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Giỏi"
-                        value={academicStatistics.statistics?.excellent || 0}
-                        valueStyle={{ color: "#52c41a" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.excellent?.toFixed(1)}%
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Khá"
-                        value={academicStatistics.statistics?.good || 0}
-                        valueStyle={{ color: "#1890ff" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.good?.toFixed(1)}%
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Trung bình"
-                        value={academicStatistics.statistics?.average || 0}
-                        valueStyle={{ color: "#faad14" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.average?.toFixed(1)}%
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Yếu"
-                        value={academicStatistics.statistics?.weak || 0}
-                        valueStyle={{ color: "#ff7a45" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.weak?.toFixed(1)}%
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Kém"
-                        value={academicStatistics.statistics?.poor || 0}
-                        valueStyle={{ color: "#f5222d" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.poor?.toFixed(1)}%
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Bị cảnh cáo"
-                        value={academicStatistics.statistics?.warned || 0}
-                        valueStyle={{ color: "#fa8c16" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.warned?.toFixed(1)}%
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={6}>
-                    <Card size="small" className="text-center">
-                      <Statistic
-                        title="Nguy cơ bỏ học"
-                        value={academicStatistics.statistics?.dropout_risk || 0}
-                        valueStyle={{ color: "#cf1322" }}
-                        suffix={`/ ${academicStatistics.total_students}`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {academicStatistics.percentages?.dropout_risk?.toFixed(
-                          1
-                        )}
-                        %
-                      </div>
-                    </Card>
-                  </Col>
-                </Row>
-              </Card>
-            )}
-
-            {/* At-Risk Students */}
-            {selectedSemester && atRiskStudents.length > 0 && (
-              <Card
-                title={
-                  <Space>
-                    <AlertOutlined />
-                    <span>Sinh viên có nguy cơ ({atRiskStudents.length})</span>
-                    <Button
-                      type="default"
-                      size="small"
-                      icon={<FileTextOutlined />}
-                      onClick={handleViewWarnings}
-                      loading={loadingWarnings}
-                    >
-                      Xem danh sách cảnh cáo
-                    </Button>
-                    <Button
-                      type="primary"
-                      danger
-                      size="small"
-                      icon={<WarningOutlined />}
-                      disabled={selectedWarningStudents.length === 0}
-                      onClick={handleCreateWarnings}
-                      loading={loadingCreateWarnings}
-                    >
-                      Tạo cảnh cáo ({selectedWarningStudents.length})
-                    </Button>
-                  </Space>
-                }
-                style={{
-                  borderRadius: 12,
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                <Spin spinning={loadingAtRisk}>
-                  <Table
-                    rowSelection={{
-                      selectedRowKeys: selectedWarningStudents,
-                      onChange: (selectedKeys) => {
-                        setSelectedWarningStudents(selectedKeys);
-                      },
-                    }}
-                    columns={[
-                      {
-                        title: "MSSV",
-                        dataIndex: "user_code",
-                        key: "user_code",
-                        width: 100,
-                      },
-                      {
-                        title: "Họ tên",
-                        dataIndex: "full_name",
-                        key: "full_name",
-                        width: 180,
-                      },
-                      {
-                        title: "CPA (4.0)",
-                        dataIndex: "cpa_4_scale",
-                        key: "cpa_4_scale",
-                        width: 100,
-                        align: "center",
-                        render: (cpa) => {
-                          const numCpa = cpa ? Number(cpa) : 0;
-                          const color =
-                            numCpa >= 3.6
-                              ? "green"
-                              : numCpa >= 3.0
-                              ? "blue"
-                              : numCpa >= 2.0
-                              ? "orange"
-                              : "red";
-                          return <Tag color={color}>{numCpa.toFixed(2)}</Tag>;
-                        },
-                      },
-                      {
-                        title: "Ngưỡng",
-                        dataIndex: "warning_threshold",
-                        key: "warning_threshold",
-                        width: 90,
-                        align: "center",
-                        render: (threshold) => {
-                          const numThreshold = threshold
-                            ? Number(threshold)
-                            : 0;
-                          return numThreshold.toFixed(2);
-                        },
-                      },
-                      {
-                        title: "Mức độ",
-                        dataIndex: "risk_level",
-                        key: "risk_level",
-                        width: 110,
-                        render: (level) => {
-                          const config = {
-                            critical: { color: "red", text: "Rất cao" },
-                            high: { color: "orange", text: "Cao" },
-                            medium: { color: "gold", text: "Trung bình" },
-                            low: { color: "blue", text: "Thấp" },
-                          };
-                          const c = config[level] || {
-                            color: "default",
-                            text: level,
-                          };
-                          return <Tag color={c.color}>{c.text}</Tag>;
-                        },
-                      },
-                      {
-                        title: "Môn rớt",
-                        dataIndex: "failed_courses_count",
-                        key: "failed_courses_count",
-                        width: 90,
-                        align: "center",
-                        render: (count) => (
-                          <Tag color={count > 0 ? "red" : "default"}>
-                            {count}
-                          </Tag>
-                        ),
-                      },
-                      {
-                        title: "Lý do nguy cơ",
-                        dataIndex: "risk_reasons",
-                        key: "risk_reasons",
-                        render: (reasons) => (
-                          <ul className="list-disc list-inside text-xs">
-                            {reasons?.slice(0, 2).map((reason, idx) => (
-                              <li key={idx} className="text-red-600">
-                                {reason}
-                              </li>
-                            ))}
-                          </ul>
-                        ),
-                      },
-                    ]}
-                    dataSource={atRiskStudents}
-                    rowKey="student_id"
-                    pagination={{
-                      pageSize: 10,
-                      showTotal: (total) => `Tổng ${total} sinh viên`,
-                    }}
-                    locale={{
-                      emptyText: (
-                        <Empty description="Không có sinh viên nguy cơ" />
-                      ),
-                    }}
-                  />
-                </Spin>
-              </Card>
-            )}
           </>
         )}
 
@@ -1459,12 +1365,12 @@ export const ClassDetail = () => {
                 <Col span={12}>
                   <Card size="small" className="text-center">
                     <Statistic
-                      title="Tổng điểm rèn luyện"
+                      title="Tổng điểm CTXH"
                       value={
-                        selectedStudentPoints.summary?.total_training_points ||
-                        0
+                        selectedStudentPoints.summary?.total_social_points +
+                          "/180 " || 0
                       }
-                      valueStyle={{ color: "#3f8600" }}
+                      valueStyle={{ color: "#1890ff" }}
                       prefix={<TrophyOutlined />}
                     />
                   </Card>
@@ -1472,11 +1378,12 @@ export const ClassDetail = () => {
                 <Col span={12}>
                   <Card size="small" className="text-center">
                     <Statistic
-                      title="Tổng điểm CTXH"
+                      title="Tổng điểm rèn luyện"
                       value={
-                        selectedStudentPoints.summary?.total_social_points || 0
+                        selectedStudentPoints.summary?.total_training_points ||
+                        0
                       }
-                      valueStyle={{ color: "#1890ff" }}
+                      valueStyle={{ color: "#3f8600" }}
                       prefix={<TrophyOutlined />}
                     />
                   </Card>
@@ -1630,140 +1537,6 @@ export const ClassDetail = () => {
               </Card>
             </div>
           ) : null}
-        </Modal>
-
-        {/* Academic Warnings Modal */}
-        <Modal
-          title={
-            <Space>
-              <WarningOutlined />
-              <span>Danh sách cảnh cáo học vụ đã tạo</span>
-            </Space>
-          }
-          open={warningsModalVisible}
-          onCancel={() => {
-            setWarningsModalVisible(false);
-            setWarningsList([]);
-          }}
-          footer={null}
-          width={1200}
-        >
-          <Spin spinning={loadingWarnings}>
-            {warningsList.length > 0 ? (
-              <Table
-                columns={[
-                  {
-                    title: "STT",
-                    key: "index",
-                    width: 60,
-                    align: "center",
-                    render: (_, __, index) => index + 1,
-                  },
-                  {
-                    title: "Tiêu đề",
-                    dataIndex: "title",
-                    key: "title",
-                    width: 300,
-                    render: (title) => (
-                      <span className="font-medium">{title}</span>
-                    ),
-                  },
-                  {
-                    title: "MSSV",
-                    dataIndex: "user_code",
-                    key: "user_code",
-                    width: 100,
-                  },
-                  {
-                    title: "Họ tên",
-                    dataIndex: "student_name",
-                    key: "student_name",
-                    width: 180,
-                  },
-                  {
-                    title: "Lớp",
-                    dataIndex: "class_name",
-                    key: "class_name",
-                    width: 100,
-                  },
-                  {
-                    title: "Học kỳ",
-                    dataIndex: "semester",
-                    key: "semester",
-                    width: 150,
-                  },
-                  {
-                    title: "Ngày tạo",
-                    dataIndex: "created_at",
-                    key: "created_at",
-                    width: 150,
-                    align: "center",
-                  },
-                  {
-                    title: "Thao tác",
-                    key: "action",
-                    width: 120,
-                    align: "center",
-                    render: (_, record) => (
-                      <Button
-                        type="link"
-                        size="small"
-                        onClick={() => {
-                          Modal.info({
-                            title: record.title,
-                            width: 800,
-                            content: (
-                              <div className="space-y-4 mt-4">
-                                <div>
-                                  <div className="font-semibold mb-2">
-                                    Thông tin sinh viên:
-                                  </div>
-                                  <div className="pl-4">
-                                    <p>MSSV: {record.user_code}</p>
-                                    <p>Họ tên: {record.student_name}</p>
-                                    <p>Lớp: {record.class_name}</p>
-                                  </div>
-                                </div>
-                                <Divider />
-                                <div>
-                                  <div className="font-semibold mb-2">
-                                    Nội dung cảnh cáo:
-                                  </div>
-                                  <div className="pl-4 whitespace-pre-wrap">
-                                    {record.content || "Không có nội dung"}
-                                  </div>
-                                </div>
-                                <Divider />
-                                <div>
-                                  <div className="font-semibold mb-2">
-                                    Lời khuyên:
-                                  </div>
-                                  <div className="pl-4 whitespace-pre-wrap">
-                                    {record.advice || "Không có lời khuyên"}
-                                  </div>
-                                </div>
-                              </div>
-                            ),
-                          });
-                        }}
-                      >
-                        Chi tiết
-                      </Button>
-                    ),
-                  },
-                ]}
-                dataSource={warningsList}
-                rowKey="warning_id"
-                pagination={{
-                  pageSize: 10,
-                  showTotal: (total) => `Tổng ${total} cảnh cáo`,
-                }}
-                scroll={{ y: 400 }}
-              />
-            ) : (
-              <Empty description="Chưa có cảnh cáo học vụ nào được tạo" />
-            )}
-          </Spin>
         </Modal>
       </div>
     </AdvisorLayout>

@@ -363,9 +363,12 @@ const getSemesterReportAPI = (studentId, semesterId) => {
 };
 
 // Get statistics for class
-const getClassStatisticsAPI = (semesterId = null) => {
+const getClassStatisticsAPI = (semesterId = null, classId = null) => {
   const URL_BACKEND = `/api/academic/statistics`;
-  return axios.get(URL_BACKEND, { params: semesterId ? { semester_id: semesterId } : {} });
+  const params = {};
+  if (semesterId) params.semester_id = semesterId;
+  if (classId) params.class_id = classId;
+  return axios.get(URL_BACKEND, { params });
 };
 
 // Get at-risk students
