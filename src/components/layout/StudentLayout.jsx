@@ -12,6 +12,8 @@ import {
   ChevronDown,
   Calendar,
   Trophy,
+  BookOpen,
+  AlertTriangle,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -41,12 +43,23 @@ export const StudentLayout = ({ children }) => {
       label: "Thông báo",
       icon: Bell,
     },
-
     {
       id: "activities",
       path: "/student/activities",
       label: "Hoạt động",
       icon: Calendar,
+    },
+    {
+      id: "semester-report",
+      path: "/student/semester-report",
+      label: "Báo cáo học kỳ",
+      icon: BookOpen,
+    },
+    {
+      id: "warnings",
+      path: "/student/warnings",
+      label: "Cảnh cáo học vụ",
+      icon: AlertTriangle,
     },
   ];
 

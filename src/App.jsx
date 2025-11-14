@@ -32,6 +32,8 @@ import StudentActivityDetail from "./pages/client/activities/StudentActivityDeta
 import MyRegistrations from "./pages/client/activities/MyRegistrations";
 import MyCancellationRequests from "./pages/client/activities/MyCancellationRequests";
 import StudentPoints from "./pages/client/points/StudentPoints";
+import MySemesterReport from "./pages/client/academic/MySemesterReport";
+import MyWarnings from "./pages/client/academic/MyWarnings";
 import RAGMain from "./pages/advisor/rag/RAGMain";
 import RAGDocumentManagement from "./pages/advisor/rag/RAGDocumentManagement";
 import RAGChatAssistant from "./pages/advisor/rag/RAGChatAssistant";
@@ -165,6 +167,8 @@ function App() {
         { index: true, element: <StudentPage /> },
         { path: "profile", element: <StudentProfile /> },
         { path: "points", element: <StudentPoints /> },
+        { path: "semester-report", element: <MySemesterReport /> },
+        { path: "warnings", element: <MyWarnings /> },
         { path: "activities", element: <StudentActivities /> },
         { path: "activities/:id", element: <StudentActivityDetail /> },
         { path: "activities/my-registrations", element: <MyRegistrations /> },

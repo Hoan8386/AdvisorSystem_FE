@@ -1,8 +1,11 @@
 import { useContext, useEffect, useState } from "react";
 import { StudentLayout } from "../../../components/layout/StudentLayout";
-import { Card, Table, Tag, Spin, Empty } from "antd";
+import { Card, Table, Tag, Spin, Empty, Select, Tabs } from "antd";
 import { AuthContext } from "../../../components/context/auth.context";
-import { getStudentPointsAPI } from "../../../services/api.service";
+import {
+  getStudentPointsAPI,
+  getSemestersAPI,
+} from "../../../services/api.service";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 
@@ -10,18 +13,46 @@ export const StudentPoints = () => {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [pointsData, setPointsData] = useState(null);
+  const [semesters, setSemesters] = useState([]);
+  const [selectedSemester, setSelectedSemester] = useState(null);
 
   useEffect(() => {
-    if (user?.id) {
+    fetchSemesters();
+    // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    if (user?.id && selectedSemester) {
       fetchStudentPoints();
     }
     // eslint-disable-next-line
-  }, [user]);
+  }, [user, selectedSemester]);
+
+  const fetchSemesters = async () => {
+    try {
+      const res = await getSemestersAPI();
+      if (res && res.data) {
+        const semesterOptions = res.data.map((sem) => ({
+          value: sem.semester_id,
+          label: `${sem.semester_name} - ${sem.academic_year}`,
+        }));
+        setSemesters(semesterOptions);
+
+        // Tự động chọn học kỳ đầu tiên
+        if (semesterOptions.length > 0) {
+          setSelectedSemester(semesterOptions[0].value);
+        }
+      }
+    } catch (error) {
+      toast.error("Lỗi khi tải danh sách học kỳ");
+      console.error(error);
+    }
+  };
 
   const fetchStudentPoints = async () => {
     try {
       setLoading(true);
-      const res = await getStudentPointsAPI(user.id);
+      const res = await getStudentPointsAPI(user.id, selectedSemester);
       if (res && res.data) {
         setPointsData(res.data);
       }
@@ -33,7 +64,11 @@ export const StudentPoints = () => {
     }
   };
 
-  const columns = [
+  const handleSemesterChange = (value) => {
+    setSelectedSemester(value);
+  };
+
+  const trainingColumns = [
     {
       title: "STT",
       key: "index",
@@ -53,18 +88,6 @@ export const StudentPoints = () => {
       width: 200,
     },
     {
-      title: "Loại điểm",
-      dataIndex: "point_type",
-      key: "point_type",
-      width: 120,
-      align: "center",
-      render: (type) => (
-        <Tag color={type === "ren_luyen" ? "blue" : "green"}>
-          {type === "ren_luyen" ? "Rèn luyện" : "CTXH"}
-        </Tag>
-      ),
-    },
-    {
       title: "Điểm",
       dataIndex: "points_awarded",
       key: "points_awarded",
@@ -80,7 +103,56 @@ export const StudentPoints = () => {
       key: "activity_date",
       width: 150,
       align: "center",
-      render: (date) => dayjs(date).format("DD/MM/YYYY"),
+    },
+    {
+      title: "Địa điểm",
+      dataIndex: "location",
+      key: "location",
+      width: 200,
+    },
+  ];
+
+  const socialColumns = [
+    {
+      title: "STT",
+      key: "index",
+      width: 60,
+      align: "center",
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: "Tên hoạt động",
+      dataIndex: "activity_title",
+      key: "activity_title",
+    },
+    {
+      title: "Vai trò",
+      dataIndex: "role_name",
+      key: "role_name",
+      width: 200,
+    },
+    {
+      title: "Điểm",
+      dataIndex: "points_awarded",
+      key: "points_awarded",
+      width: 100,
+      align: "center",
+      render: (points) => (
+        <span className="font-bold text-lg text-green-600">+{points}</span>
+      ),
+    },
+    {
+      title: "Ngày hoạt động",
+      dataIndex: "activity_date",
+      key: "activity_date",
+      width: 150,
+      align: "center",
+    },
+    {
+      title: "Địa điểm",
+      dataIndex: "location",
+      key: "location",
+      width: 200,
     },
   ];
 
@@ -89,9 +161,19 @@ export const StudentPoints = () => {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-4xl">🏆</span>
-            <h1 className="text-3xl font-bold">Điểm Rèn Luyện Của Tôi</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🏆</span>
+              <h1 className="text-3xl font-bold">Điểm Rèn Luyện Của Tôi</h1>
+            </div>
+            <Select
+              style={{ width: 250 }}
+              placeholder="Chọn học kỳ"
+              value={selectedSemester}
+              onChange={handleSemesterChange}
+              options={semesters}
+              size="large"
+            />
           </div>
           {pointsData?.student_info && (
             <div className="text-lg opacity-90">
@@ -100,6 +182,12 @@ export const StudentPoints = () => {
               </span>
               <span className="mx-2">•</span>
               <span>{pointsData.student_info.user_code}</span>
+            </div>
+          )}
+          {pointsData?.filter_info && (
+            <div className="mt-2 text-sm opacity-80">
+              📅 {pointsData.filter_info.semester_name} -{" "}
+              {pointsData.filter_info.academic_year}
             </div>
           )}
         </div>
@@ -116,33 +204,13 @@ export const StudentPoints = () => {
                 className="text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
                 style={{
                   borderRadius: 16,
-                  border: "2px solid #3b82f6",
-                  background:
-                    "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
-                }}
-              >
-                <div className="text-5xl font-bold text-blue-600 mb-2">
-                  {pointsData.summary?.total_training_points || 0}
-                </div>
-                <div className="text-lg text-gray-700 font-semibold">
-                  Điểm Rèn Luyện
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Tổng điểm hoạt động rèn luyện
-                </div>
-              </Card>
-
-              <Card
-                className="text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
-                style={{
-                  borderRadius: 16,
                   border: "2px solid #10b981",
                   background:
                     "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
                 }}
               >
                 <div className="text-5xl font-bold text-green-600 mb-2">
-                  {pointsData.summary?.total_social_points || 0}
+                  {pointsData.summary?.total_social_points + "/180" || 0}
                 </div>
                 <div className="text-lg text-gray-700 font-semibold">
                   Điểm Cộng Tác Xã Hội
@@ -151,41 +219,96 @@ export const StudentPoints = () => {
                   Tổng điểm hoạt động CTXH
                 </div>
               </Card>
+              <Card
+                className="text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
+                style={{
+                  borderRadius: 16,
+                  border: "2px solid #3b82f6",
+                  background:
+                    "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+                }}
+              >
+                <div className="text-5xl font-bold text-blue-600 mb-2">
+                  {pointsData.summary?.total_training_points + "/70" || 0}
+                </div>
+                <div className="text-lg text-gray-700 font-semibold">
+                  Điểm Rèn Luyện
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Tổng điểm hoạt động rèn luyện
+                </div>
+              </Card>
             </div>
 
             {/* Activities Table */}
             <Card
-              title={
-                <span className="text-xl font-bold">
-                  Chi Tiết Các Hoạt Động ({pointsData.activities?.length || 0})
-                </span>
-              }
               style={{
                 borderRadius: 16,
                 border: "none",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
             >
-              {pointsData.activities && pointsData.activities.length > 0 ? (
-                <Table
-                  columns={columns}
-                  dataSource={pointsData.activities}
-                  rowKey={(record, index) => index}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: false,
-                    showTotal: (total) => `Tổng ${total} hoạt động`,
-                  }}
-                  locale={{
-                    emptyText: "Chưa có hoạt động nào",
-                  }}
-                />
-              ) : (
-                <Empty
-                  description="Bạn chưa tham gia hoạt động nào"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              )}
+              <Tabs
+                defaultActiveKey="training"
+                items={[
+                  {
+                    key: "training",
+                    label: (
+                      <span className="text-lg font-semibold">
+                        🔥 Hoạt động Rèn luyện (
+                        {pointsData.training_activities?.length || 0})
+                      </span>
+                    ),
+                    children:
+                      pointsData.training_activities &&
+                      pointsData.training_activities.length > 0 ? (
+                        <Table
+                          columns={trainingColumns}
+                          dataSource={pointsData.training_activities}
+                          rowKey={(record) => record.activity_id}
+                          pagination={{
+                            pageSize: 10,
+                            showSizeChanger: false,
+                            showTotal: (total) => `Tổng ${total} hoạt động`,
+                          }}
+                        />
+                      ) : (
+                        <Empty
+                          description="Chưa có hoạt động rèn luyện nào"
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        />
+                      ),
+                  },
+                  {
+                    key: "social",
+                    label: (
+                      <span className="text-lg font-semibold">
+                        💚 Hoạt động CTXH (
+                        {pointsData.social_activities?.length || 0})
+                      </span>
+                    ),
+                    children:
+                      pointsData.social_activities &&
+                      pointsData.social_activities.length > 0 ? (
+                        <Table
+                          columns={socialColumns}
+                          dataSource={pointsData.social_activities}
+                          rowKey={(record) => record.activity_id}
+                          pagination={{
+                            pageSize: 10,
+                            showSizeChanger: false,
+                            showTotal: (total) => `Tổng ${total} hoạt động`,
+                          }}
+                        />
+                      ) : (
+                        <Empty
+                          description="Chưa có hoạt động CTXH nào"
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        />
+                      ),
+                  },
+                ]}
+              />
             </Card>
           </>
         ) : (

@@ -401,6 +401,19 @@ const batchUpdateSemesterReportsAPI = (data) => {
   return axios.post(URL_BACKEND, data);
 };
 
+// Student Academic APIs
+// Get my semester report
+const getMySemesterReportAPI = (semesterId) => {
+  const URL_BACKEND = `/api/academic/my-semester-report/${semesterId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get my warnings
+const getMyWarningsAPI = () => {
+  const URL_BACKEND = `/api/academic/my-warnings`;
+  return axios.get(URL_BACKEND);
+};
+
 export {
     
     createUserApi,
@@ -469,4 +482,7 @@ export {
     getWarningsCreatedAPI,
     updateSemesterReportAPI,
     batchUpdateSemesterReportsAPI,
+    // Student Academic APIs
+    getMySemesterReportAPI,
+    getMyWarningsAPI,
 };
