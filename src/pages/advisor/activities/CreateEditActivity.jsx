@@ -12,6 +12,7 @@ import {
   InputNumber,
   Row,
   Col,
+  Checkbox,
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -40,6 +41,7 @@ export const CreateEditActivity = () => {
   const [loading, setLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [units, setUnits] = useState([]);
+  const [classes, setClasses] = useState([]);
 
   useEffect(() => {
     if (id) {
@@ -47,6 +49,7 @@ export const CreateEditActivity = () => {
       fetchActivityData();
     }
     fetchUserInfo();
+    fetchClasses();
     // eslint-disable-next-line
   }, [id]);
 
@@ -63,6 +66,7 @@ export const CreateEditActivity = () => {
           time: [dayjs(activity.start_time), dayjs(activity.end_time)],
           organizer_unit_id: activity.organizer_unit_id,
           status: activity.status,
+          class_ids: activity.classes?.map((cls) => cls.class_id) || [],
           roles: activity.roles?.map((role) => ({
             role_name: role.role_name,
             description: role.description,
@@ -101,6 +105,40 @@ export const CreateEditActivity = () => {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      // Gọi API /api/auth/me để lấy dữ liệu advisor mới nhất với danh sách lớp
+      const res = await getAccountAPI();
+
+      let advisorClasses = [];
+
+      // Lấy classes từ res.data.classes hoặc res.classes
+      if (res?.data?.classes) {
+        advisorClasses = res.data.classes;
+      } else if (res?.classes) {
+        advisorClasses = res.classes;
+      } else if (res?.data?.advisor?.classes) {
+        // Fallback nếu API trả về cấu trúc cũ
+        advisorClasses = res.data.advisor.classes;
+      }
+
+      // Convert to Ant Design checkbox options format
+      const classOptions = advisorClasses.map((classItem) => ({
+        label: `${classItem.class_name} - ${classItem.description || ""}`,
+        value: classItem.class_id,
+      }));
+
+      if (classOptions.length === 0) {
+        toast.warning("Bạn không quản lý lớp nào. Vui lòng liên hệ hệ thống.");
+      }
+
+      setClasses(classOptions);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách lớp:", error);
+      toast.error("Lỗi khi tải danh sách lớp");
+    }
+  };
+
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
@@ -113,6 +151,7 @@ export const CreateEditActivity = () => {
         end_time: values.time[1].format("YYYY-MM-DD HH:mm:ss"),
         organizer_unit_id: values.organizer_unit_id,
         status: values.status || "upcoming",
+        class_ids: values.class_ids || [],
         roles: values.roles.map((role) => ({
           role_name: role.role_name,
           description: role.description || null,
@@ -258,6 +297,19 @@ export const CreateEditActivity = () => {
                     </Form.Item>
                   </Col>
                 </Row>
+
+                <Form.Item
+                  label="Chọn lớp"
+                  name="class_ids"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng chọn ít nhất một lớp",
+                    },
+                  ]}
+                >
+                  <Checkbox.Group options={classes} />
+                </Form.Item>
 
                 <Divider orientation="left">Vai trò trong hoạt động</Divider>
 

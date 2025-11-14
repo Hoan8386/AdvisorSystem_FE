@@ -3,6 +3,7 @@ import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
   getActivitiesAPI,
   deleteActivityAPI,
+  getActivityDetailAPI,
 } from "../../../services/api.service";
 import {
   Button,
@@ -23,6 +24,7 @@ import {
   EditOutlined,
   EyeOutlined,
   UsergroupAddOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -40,6 +42,9 @@ export const AdvisorActivities = () => {
     status: null,
     dateRange: null,
   });
+  const [classesModalVisible, setClassesModalVisible] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
   useEffect(() => {
     fetchActivities();
@@ -88,6 +93,22 @@ export const AdvisorActivities = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewClasses = async (activityId) => {
+    try {
+      setLoadingClasses(true);
+      setClassesModalVisible(true);
+      const res = await getActivityDetailAPI(activityId);
+      if (res && res.data) {
+        setSelectedActivity(res.data);
+      }
+    } catch (error) {
+      toast.error("Lỗi khi tải danh sách lớp");
+      console.error(error);
+    } finally {
+      setLoadingClasses(false);
     }
   };
 
@@ -205,6 +226,18 @@ export const AdvisorActivities = () => {
               border: "none",
               borderRadius: "6px",
               padding: "4px 8px",
+            }}
+          />
+          <Button
+            size="small"
+            icon={<TeamOutlined />}
+            onClick={() => handleViewClasses(record.activity_id)}
+            title="Xem lớp tham gia"
+            style={{
+              borderRadius: "6px",
+              padding: "4px 8px",
+              color: "#52c41a",
+              borderColor: "#52c41a",
             }}
           />
           <Button
@@ -355,6 +388,90 @@ export const AdvisorActivities = () => {
           )}
         </Card>
       </div>
+
+      {/* Modal xem lớp tham gia */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <TeamOutlined style={{ color: "#52c41a" }} />
+            <span>Lớp tham gia hoạt động</span>
+          </div>
+        }
+        open={classesModalVisible}
+        onCancel={() => {
+          setClassesModalVisible(false);
+          setSelectedActivity(null);
+        }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setClassesModalVisible(false);
+              setSelectedActivity(null);
+            }}
+          >
+            Đóng
+          </Button>,
+        ]}
+        width={600}
+      >
+        {loadingClasses ? (
+          <div className="text-center py-8">
+            <Space direction="vertical">
+              <div className="text-gray-500">Đang tải...</div>
+            </Space>
+          </div>
+        ) : selectedActivity ? (
+          <div>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">
+                {selectedActivity.title}
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {selectedActivity.general_description}
+              </p>
+            </div>
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3 text-gray-700">
+                Danh sách lớp ({selectedActivity.classes?.length || 0} lớp)
+              </h4>
+              {selectedActivity.classes &&
+              selectedActivity.classes.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedActivity.classes.map((cls) => (
+                    <div
+                      key={cls.class_id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <TeamOutlined className="text-green-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {cls.class_name}
+                          </div>
+                          {cls.description && (
+                            <div className="text-xs text-gray-500">
+                              {cls.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Tag color="green">Đã chọn</Tag>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Empty
+                  description="Chưa có lớp nào được chọn"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              )}
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </AdvisorLayout>
   );
 };
