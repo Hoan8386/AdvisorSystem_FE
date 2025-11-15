@@ -8,6 +8,7 @@ import {
   Users,
   Bot,
   BookOpen,
+  MessageCircle,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
@@ -71,6 +72,16 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       bgColor: "bg-purple-50",
       hoverColor: "hover:bg-purple-100",
       dotColor: "bg-purple-600",
+    },
+    {
+      id: "chat",
+      path: "/advisor/chat",
+      label: "Tin nhắn",
+      icon: MessageCircle,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      hoverColor: "hover:bg-blue-100",
+      dotColor: "bg-blue-600",
     },
     {
       id: "rag-assistant",

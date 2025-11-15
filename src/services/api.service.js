@@ -414,6 +414,349 @@ const getMyWarningsAPI = () => {
   return axios.get(URL_BACKEND);
 };
 
+// ========== ADMIN APIs - Class Management ==========
+
+// Get all classes (Admin can see classes in their faculty)
+const getClassesApi = () => {
+  const URL_BACKEND = "/api/classes";
+  return axios.get(URL_BACKEND);
+};
+
+// Get class detail
+const getClassDetailApi = (classId) => {
+  const URL_BACKEND = `/api/classes/${classId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Create new class (Admin only)
+const createClassApi = (classData) => {
+  const URL_BACKEND = "/api/classes";
+  return axios.post(URL_BACKEND, classData);
+};
+
+// Update class (Admin only)
+const updateClassApi = (classId, classData) => {
+  const URL_BACKEND = `/api/classes/${classId}`;
+  return axios.put(URL_BACKEND, classData);
+};
+
+// Delete class (Admin only)
+const deleteClassApi = (classId) => {
+  const URL_BACKEND = `/api/classes/${classId}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Get students in a class
+const getClassStudentsApi = (classId) => {
+  const URL_BACKEND = `/api/classes/${classId}/students`;
+  return axios.get(URL_BACKEND);
+};
+
+// ========== ADMIN APIs - Semester Management ==========
+
+// Get all semesters
+const getSemestersApi = () => {
+  const URL_BACKEND = "/api/semesters";
+  return axios.get(URL_BACKEND);
+};
+
+// Get semester detail
+const getSemesterDetailApi = (semesterId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Create new semester (Admin only)
+const createSemesterApi = (semesterData) => {
+  const URL_BACKEND = "/api/semesters";
+  return axios.post(URL_BACKEND, semesterData);
+};
+
+// Update semester (Admin only)
+const updateSemesterApi = (semesterId, semesterData) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}`;
+  return axios.put(URL_BACKEND, semesterData);
+};
+
+// Delete semester (Admin only)
+const deleteSemesterApi = (semesterId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Get semester reports
+const getSemesterReportsApi = (semesterId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}/reports`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get specific student's semester report
+const getStudentSemesterReportApi = (semesterId, studentId) => {
+  const URL_BACKEND = `/api/semesters/${semesterId}/students/${studentId}/report`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get current semester
+const getCurrentSemesterApi = () => {
+  const URL_BACKEND = "/api/semesters/current";
+  return axios.get(URL_BACKEND);
+};
+
+// ========== ADMIN APIs - Course Management ==========
+
+// Get courses of my unit (Admin)
+const getMyUnitCoursesApi = (search = "") => {
+  const URL_BACKEND = "/api/courses/my-unit-courses";
+  return axios.get(URL_BACKEND, { params: { search } });
+};
+
+// Get all courses (Public)
+const getAllCoursesApi = (search = "", unit_id = null) => {
+  const URL_BACKEND = "/api/courses";
+  return axios.get(URL_BACKEND, { params: { search, unit_id } });
+};
+
+// Get course detail (Public)
+const getCourseDetailApi = (courseId) => {
+  const URL_BACKEND = `/api/courses/${courseId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Create course (Admin)
+const createCourseApi = (courseData) => {
+  const URL_BACKEND = "/api/courses";
+  return axios.post(URL_BACKEND, courseData);
+};
+
+// Update course (Admin)
+const updateCourseApi = (courseId, courseData) => {
+  const URL_BACKEND = `/api/courses/${courseId}`;
+  return axios.put(URL_BACKEND, courseData);
+};
+
+// Delete course (Admin)
+const deleteCourseApi = (courseId) => {
+  const URL_BACKEND = `/api/courses/${courseId}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Get students in a course (Advisor)
+const getCourseStudentsApi = (courseId, semesterId) => {
+  const URL_BACKEND = `/api/courses/${courseId}/students`;
+  return axios.get(URL_BACKEND, { params: { semester_id: semesterId } });
+};
+
+// ========== ADMIN APIs - Grade Management ==========
+
+// Create grade (Admin)
+const createGradeApi = (gradeData) => {
+  const URL_BACKEND = "/api/grades";
+  return axios.post(URL_BACKEND, gradeData);
+};
+
+// Update grade (Admin)
+const updateGradeApi = (gradeId, gradeData) => {
+  const URL_BACKEND = `/api/grades/${gradeId}`;
+  return axios.put(URL_BACKEND, gradeData);
+};
+
+// Delete grade (Admin)
+const deleteGradeApi = (gradeId) => {
+  const URL_BACKEND = `/api/grades/${gradeId}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Batch import grades (Admin)
+const batchImportGradesApi = (batchData) => {
+  const URL_BACKEND = "/api/grades/batch-import";
+  return axios.post(URL_BACKEND, batchData);
+};
+
+// Get my grades (Student)
+const getMyGradesApi = (semesterId = null) => {
+  const URL_BACKEND = "/api/grades/my-grades";
+  return axios.get(URL_BACKEND, { params: { semester_id: semesterId } });
+};
+
+// Get student grades (Advisor)
+const getStudentGradesDetailApi = (studentId, semesterId = null) => {
+  const URL_BACKEND = `/api/grades/student/${studentId}`;
+  return axios.get(URL_BACKEND, { params: { semester_id: semesterId } });
+};
+
+// Export class grades (Advisor)
+const exportClassGradesApi = (classId, semesterId) => {
+  const URL_BACKEND = `/api/grades/export-class-grades/${classId}/${semesterId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// ========== ADMIN APIs - Excel Import/Export ==========
+
+// Download grade import template (Admin)
+const downloadGradeTemplateApi = () => {
+  const URL_BACKEND = "/api/grades/download-template";
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// Import grades from Excel (Admin)
+const importGradesExcelApi = (file) => {
+  const URL_BACKEND = "/api/grades/import-excel";
+  const formData = new FormData();
+  formData.append('file', file);
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Export grades to Excel (Admin)
+const exportGradesExcelApi = (classId, semesterId) => {
+  const URL_BACKEND = `/api/grades/export-excel/${classId}/${semesterId}`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// ========== ADMIN APIs - Schedule Management ==========
+
+// Download schedule template (Admin)
+const downloadScheduleTemplateApi = () => {
+  const URL_BACKEND = "/api/schedules/template/download";
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// Import schedule from Excel (Admin)
+const importScheduleExcelApi = (file) => {
+  const URL_BACKEND = "/api/admin/schedules/import";
+  const formData = new FormData();
+  formData.append('file', file);
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Check schedule conflict (Admin, Advisor, Student)
+const checkScheduleConflictApi = (data) => {
+  const URL_BACKEND = "/api/schedules/check-conflict";
+  return axios.post(URL_BACKEND, data);
+};
+
+// ========== Import/Export Management APIs ==========
+
+// Download template file
+const downloadTemplateApi = (type) => {
+  const URL_BACKEND = `/api/import-export/templates/download?type=${type}`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// Import classes from Excel
+const importClassesApi = (file) => {
+  const URL_BACKEND = "/api/import-export/classes/import";
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Import advisors from Excel
+const importAdvisorsApi = (file) => {
+  const URL_BACKEND = "/api/import-export/advisors/import";
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Import students from Excel
+const importStudentsApi = (file) => {
+  const URL_BACKEND = "/api/import-export/students/import";
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Export classes list
+const exportClassesApi = () => {
+  const URL_BACKEND = "/api/import-export/classes/export";
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// Export students by class
+const exportStudentsByClassApi = (classId) => {
+  const URL_BACKEND = `/api/import-export/students/${classId}/export`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// ========== Dialog APIs ==========
+
+// Get conversations list
+const getConversationsApi = () => {
+  const URL_BACKEND = "/api/dialogs/conversations";
+  return axios.get(URL_BACKEND);
+};
+
+// Get messages in conversation
+const getMessagesApi = (partnerId) => {
+  const URL_BACKEND = `/api/dialogs/messages?partner_id=${partnerId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Send message
+const sendMessageApi = (data) => {
+  const URL_BACKEND = "/api/dialogs/messages";
+  return axios.post(URL_BACKEND, data);
+};
+
+// Mark message as read
+const markMessageReadApi = (messageId) => {
+  const URL_BACKEND = `/api/dialogs/messages/${messageId}/read`;
+  return axios.put(URL_BACKEND);
+};
+
+// Delete message
+const deleteMessageApi = (messageId) => {
+  const URL_BACKEND = `/api/dialogs/messages/${messageId}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Get unread count
+const getUnreadCountApi = () => {
+  const URL_BACKEND = "/api/dialogs/unread-count";
+  return axios.get(URL_BACKEND);
+};
+
+// Search messages
+const searchMessagesApi = (partnerId, keyword) => {
+  const URL_BACKEND = `/api/dialogs/messages/search?partner_id=${partnerId}&keyword=${encodeURIComponent(keyword)}`;
+  return axios.get(URL_BACKEND);
+};
+
 export {
     
     createUserApi,
@@ -485,4 +828,59 @@ export {
     // Student Academic APIs
     getMySemesterReportAPI,
     getMyWarningsAPI,
+    // Admin APIs - Class Management
+    getClassesApi,
+    getClassDetailApi,
+    createClassApi,
+    updateClassApi,
+    deleteClassApi,
+    getClassStudentsApi,
+    // Admin APIs - Semester Management
+    getSemestersApi,
+    getSemesterDetailApi,
+    createSemesterApi,
+    updateSemesterApi,
+    deleteSemesterApi,
+    getSemesterReportsApi,
+    getStudentSemesterReportApi,
+    getCurrentSemesterApi,
+    // Admin APIs - Course Management
+    getMyUnitCoursesApi,
+    getAllCoursesApi,
+    getCourseDetailApi,
+    createCourseApi,
+    updateCourseApi,
+    deleteCourseApi,
+    getCourseStudentsApi,
+    // Admin APIs - Grade Management
+    createGradeApi,
+    updateGradeApi,
+    deleteGradeApi,
+    batchImportGradesApi,
+    getMyGradesApi,
+    getStudentGradesDetailApi,
+    exportClassGradesApi,
+    // Admin APIs - Excel Import/Export
+    downloadGradeTemplateApi,
+    importGradesExcelApi,
+    exportGradesExcelApi,
+    // Admin APIs - Schedule Management
+    downloadScheduleTemplateApi,
+    importScheduleExcelApi,
+    checkScheduleConflictApi,
+    // Admin APIs - Import/Export Management
+    downloadTemplateApi,
+    importClassesApi,
+    importAdvisorsApi,
+    importStudentsApi,
+    exportClassesApi,
+    exportStudentsByClassApi,
+    // Dialog APIs
+    getConversationsApi,
+    getMessagesApi,
+    sendMessageApi,
+    markMessageReadApi,
+    deleteMessageApi,
+    getUnreadCountApi,
+    searchMessagesApi,
 };

@@ -70,6 +70,8 @@ export const LoginPage = () => {
           navigate("/advisor");
         } else if (res.data.user?.role === "student") {
           navigate("/student");
+        } else if (res.data.user?.role === "admin") {
+          navigate("/admin");
         } else {
           navigate("/");
         }
@@ -238,6 +240,37 @@ export const LoginPage = () => {
                         Cố vấn
                       </span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, role: "admin" })
+                      }
+                      className={`flex-1 flex flex-col items-center justify-center py-2.5 px-2 rounded-lg border-2 transition-all duration-300 ${
+                        formData.role === "admin"
+                          ? "border-purple-500 bg-purple-50"
+                          : "border-gray-200 bg-white hover:border-purple-300"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
+                          formData.role === "admin"
+                            ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <UserOutlined className="text-sm" />
+                      </div>
+                      <span
+                        className={`text-xs font-semibold ${
+                          formData.role === "admin"
+                            ? "text-purple-700"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        Admin
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -256,6 +289,8 @@ export const LoginPage = () => {
                       placeholder={
                         formData.role === "advisor"
                           ? "Nhập mã giảng viên (VD: GV001)"
+                          : formData.role === "admin"
+                          ? "Nhập mã admin (VD: AD001)"
                           : "Nhập mã sinh viên (VD: 210001)"
                       }
                       className="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-400 text-base"

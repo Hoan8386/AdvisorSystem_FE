@@ -14,6 +14,7 @@ import {
   Trophy,
   BookOpen,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -42,6 +43,12 @@ export const StudentLayout = ({ children }) => {
       path: "/student",
       label: "Thông báo",
       icon: Bell,
+    },
+    {
+      id: "chat",
+      path: "/student/chat",
+      label: "Tin nhắn",
+      icon: MessageCircle,
     },
     {
       id: "activities",

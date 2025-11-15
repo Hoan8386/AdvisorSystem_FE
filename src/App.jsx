@@ -37,7 +37,21 @@ import MyWarnings from "./pages/client/academic/MyWarnings";
 import RAGMain from "./pages/advisor/rag/RAGMain";
 import RAGDocumentManagement from "./pages/advisor/rag/RAGDocumentManagement";
 import RAGChatAssistant from "./pages/advisor/rag/RAGChatAssistant";
+import { AdvisorChat } from "./pages/advisor/client/chat/AdvisorChat";
+import { StudentChat } from "./pages/client/chat/StudentChat";
 import ChatbotWidget from "./components/chat/ChatbotWidget";
+// Admin imports
+import { AdminLayout } from "./components/layout/AdminLayout";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminClasses } from "./pages/admin/classes/AdminClasses";
+import { AdminClassStudents } from "./pages/admin/classes/AdminClassStudents";
+import { AdminSemesters } from "./pages/admin/semesters/AdminSemesters";
+import { AdminSemesterReports } from "./pages/admin/semesters/AdminSemesterReports";
+import { AdminAdvisors } from "./pages/admin/advisors/AdminAdvisors";
+import { AdminAdvisorClasses } from "./pages/admin/advisors/AdminAdvisorClasses";
+import { AdminCourses } from "./pages/admin/courses/AdminCourses";
+import { AdminGrades } from "./pages/admin/grades/AdminGrades";
+import { AdminSchedules } from "./pages/admin/schedules/AdminSchedules";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -146,6 +160,7 @@ function App() {
         },
         { path: "classes", element: <AdvisorClasses /> },
         { path: "classes/:classId", element: <ClassDetail /> },
+        { path: "chat", element: <AdvisorChat /> },
         { path: "profile", element: <AdvisorProfile /> },
         { path: "rag", element: <RAGMain /> },
         { path: "rag/documents", element: <RAGDocumentManagement /> },
@@ -166,6 +181,7 @@ function App() {
       children: [
         { index: true, element: <StudentPage /> },
         { path: "profile", element: <StudentProfile /> },
+        { path: "chat", element: <StudentChat /> },
         { path: "points", element: <StudentPoints /> },
         { path: "semester-report", element: <MySemesterReport /> },
         { path: "warnings", element: <MyWarnings /> },
@@ -176,6 +192,34 @@ function App() {
           path: "activities/my-cancellation-requests",
           element: <MyCancellationRequests />,
         },
+      ],
+    },
+
+    // ========== ADMIN ROUTES ==========
+    {
+      path: "/admin",
+      element: (
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AdminLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        { index: true, element: <AdminDashboard /> },
+        { path: "advisors", element: <AdminAdvisors /> },
+        {
+          path: "advisors/:advisorId/classes",
+          element: <AdminAdvisorClasses />,
+        },
+        { path: "classes", element: <AdminClasses /> },
+        { path: "classes/:classId/students", element: <AdminClassStudents /> },
+        { path: "semesters", element: <AdminSemesters /> },
+        {
+          path: "semesters/:semesterId/reports",
+          element: <AdminSemesterReports />,
+        },
+        { path: "courses", element: <AdminCourses /> },
+        { path: "grades", element: <AdminGrades /> },
+        { path: "schedules", element: <AdminSchedules /> },
       ],
     },
     // { path: "/unauthorized", element: <Unauthorized /> },
