@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Card,
   Upload,
@@ -24,6 +23,7 @@ import {
   ExportOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   getClassesApi,
   createClassApi,
@@ -40,6 +40,11 @@ export const AdminClasses = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [form] = Form.useForm();
@@ -57,7 +62,7 @@ export const AdminClasses = () => {
       }
     } catch (error) {
       console.error("Error fetching classes:", error);
-      message.error("Không thể tải danh sách lớp học");
+      toast.error("Không thể tải danh sách lớp học");
     } finally {
       setLoading(false);
     }
@@ -82,26 +87,30 @@ export const AdminClasses = () => {
 
   const handleDelete = async (classId) => {
     try {
+      setDeleteLoadingId(classId);
       const response = await deleteClassApi(classId);
       if (response?.success) {
-        message.success("Xóa lớp thành công");
+        toast.success("Xóa lớp thành công");
         fetchClasses();
       }
     } catch (error) {
       console.error("Error deleting class:", error);
-      message.error(error?.message || "Không thể xóa lớp");
+      toast.error(error?.message || "Không thể xóa lớp");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
   const handleSubmit = async () => {
     try {
+      setSubmitLoading(true);
       const values = await form.validateFields();
 
       if (editingClass) {
         // Update
         const response = await updateClassApi(editingClass.class_id, values);
         if (response?.success) {
-          message.success("Cập nhật lớp thành công");
+          toast.success("Cập nhật lớp thành công");
           setModalVisible(false);
           fetchClasses();
         }
@@ -109,21 +118,23 @@ export const AdminClasses = () => {
         // Create
         const response = await createClassApi(values);
         if (response?.success) {
-          message.success("Tạo lớp thành công");
+          toast.success("Tạo lớp thành công");
           setModalVisible(false);
           fetchClasses();
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      message.error(error?.message || "Có lỗi xảy ra");
+      toast.error(error?.message || "Có lỗi xảy ra");
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
   // Download template for classes
   const handleDownloadTemplate = async () => {
     try {
-      setLoading(true);
+      setDownloadLoading(true);
       const response = await downloadTemplateApi("classes");
 
       const blob = new Blob([response], {
@@ -142,24 +153,24 @@ export const AdminClasses = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Tải template thành công");
+      toast.success("Tải template thành công");
     } catch (error) {
       console.error("Error downloading template:", error);
-      message.error(error?.message || "Không thể tải template");
+      toast.error(error?.message || "Không thể tải template");
     } finally {
-      setLoading(false);
+      setDownloadLoading(false);
     }
   };
 
   // Import classes from Excel
   const handleImportClasses = async (file) => {
     try {
-      setLoading(true);
+      setImportLoading(true);
       const response = await importClassesApi(file);
 
       if (response?.success) {
         const { imported, errors } = response.data;
-        message.success(`Import thành công ${imported} lớp`);
+        toast.success(`Import thành công ${imported} lớp`);
 
         if (errors && errors.length > 0) {
           Modal.warning({
@@ -181,9 +192,9 @@ export const AdminClasses = () => {
       }
     } catch (error) {
       console.error("Error importing classes:", error);
-      message.error(error?.message || "Có lỗi xảy ra khi import file");
+      toast.error(error?.message || "Có lỗi xảy ra khi import file");
     } finally {
-      setLoading(false);
+      setImportLoading(false);
     }
 
     return false;
@@ -192,7 +203,7 @@ export const AdminClasses = () => {
   // Export classes to Excel
   const handleExportClasses = async () => {
     try {
-      setLoading(true);
+      setExportLoading(true);
       const response = await exportClassesApi();
 
       const blob = new Blob([response], {
@@ -211,12 +222,12 @@ export const AdminClasses = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Xuất danh sách lớp thành công");
+      toast.success("Xuất danh sách lớp thành công");
     } catch (error) {
       console.error("Error exporting classes:", error);
-      message.error(error?.message || "Không thể xuất danh sách");
+      toast.error(error?.message || "Không thể xuất danh sách");
     } finally {
-      setLoading(false);
+      setExportLoading(false);
     }
   };
 
@@ -262,6 +273,7 @@ export const AdminClasses = () => {
             type="link"
             icon={<EyeOutlined />}
             onClick={() => handleViewStudents(record.class_id)}
+            disabled={deleteLoadingId === record.class_id}
           >
             Xem SV
           </Button>
@@ -269,6 +281,7 @@ export const AdminClasses = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
+            disabled={deleteLoadingId === record.class_id}
           />
           <Popconfirm
             title="Xác nhận xóa lớp?"
@@ -277,7 +290,15 @@ export const AdminClasses = () => {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              loading={deleteLoadingId === record.class_id}
+              disabled={
+                deleteLoadingId !== null && deleteLoadingId !== record.class_id
+              }
+            />
           </Popconfirm>
         </Space>
       ),
@@ -298,7 +319,8 @@ export const AdminClasses = () => {
             <Button
               icon={<DownloadOutlined />}
               onClick={handleDownloadTemplate}
-              loading={loading}
+              loading={downloadLoading}
+              disabled={loading || importLoading || exportLoading}
             >
               Tải template
             </Button>
@@ -306,15 +328,23 @@ export const AdminClasses = () => {
               accept=".xlsx,.xls"
               showUploadList={false}
               beforeUpload={handleImportClasses}
+              disabled={
+                downloadLoading || loading || importLoading || exportLoading
+              }
             >
-              <Button icon={<UploadOutlined />} loading={loading}>
+              <Button
+                icon={<UploadOutlined />}
+                loading={importLoading}
+                disabled={downloadLoading || loading || exportLoading}
+              >
                 Import Excel
               </Button>
             </Upload>
             <Button
               icon={<ExportOutlined />}
               onClick={handleExportClasses}
-              loading={loading}
+              loading={exportLoading}
+              disabled={loading || downloadLoading || importLoading}
             >
               Xuất danh sách
             </Button>
@@ -322,6 +352,7 @@ export const AdminClasses = () => {
               icon={<ReloadOutlined />}
               onClick={fetchClasses}
               loading={loading}
+              disabled={downloadLoading || importLoading || exportLoading}
             >
               Làm mới
             </Button>
@@ -329,6 +360,9 @@ export const AdminClasses = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleCreate}
+              disabled={
+                loading || downloadLoading || importLoading || exportLoading
+              }
             >
               Thêm lớp mới
             </Button>
@@ -356,6 +390,7 @@ export const AdminClasses = () => {
         okText={editingClass ? "Cập nhật" : "Tạo"}
         cancelText="Hủy"
         width={600}
+        confirmLoading={submitLoading}
       >
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item

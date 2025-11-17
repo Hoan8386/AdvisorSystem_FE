@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Popconfirm,
   Card,
   Tag,
@@ -22,6 +21,7 @@ import {
   ReloadOutlined,
   BookOutlined,
 } from "@ant-design/icons";
+import { toast } from "react-toastify";
 import {
   getMyUnitCoursesApi,
   createCourseApi,
@@ -33,6 +33,8 @@ export const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
   const [unitInfo, setUnitInfo] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [form] = Form.useForm();
@@ -51,7 +53,7 @@ export const AdminCourses = () => {
       }
     } catch (error) {
       console.error("Error fetching courses:", error);
-      message.error(error?.message || "Không thể tải danh sách môn học");
+      toast.error(error?.message || "Không thể tải danh sách môn học");
     } finally {
       setLoading(false);
     }
@@ -79,41 +81,84 @@ export const AdminCourses = () => {
 
   const handleDelete = async (courseId) => {
     try {
+      setDeleteLoadingId(courseId);
       const response = await deleteCourseApi(courseId);
       if (response?.success) {
-        message.success("Xóa môn học thành công");
+        toast.success("Xóa môn học thành công");
         fetchCourses();
       }
     } catch (error) {
       console.error("Error deleting course:", error);
-      message.error(error?.message || "Không thể xóa môn học");
+      toast.error(error?.message || "Không thể xóa môn học");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
   const handleSubmit = async () => {
     try {
+      setSubmitLoading(true);
       const values = await form.validateFields();
 
       if (editingCourse) {
         // Update
         const response = await updateCourseApi(editingCourse.course_id, values);
         if (response?.success) {
-          message.success("Cập nhật môn học thành công");
+          toast.success("Cập nhật môn học thành công");
           setModalVisible(false);
           fetchCourses();
+        } else {
+          // Handle update error response
+          if (response?.errors) {
+            Object.keys(response.errors).forEach((field) => {
+              response.errors[field].forEach((msg) => {
+                toast.error(msg);
+              });
+            });
+          } else {
+            toast.error(response?.message || "Cập nhật môn học thất bại");
+          }
         }
       } else {
         // Create
         const response = await createCourseApi(values);
         if (response?.success) {
-          message.success("Tạo môn học thành công");
+          toast.success("Tạo môn học thành công");
           setModalVisible(false);
           fetchCourses();
+        } else {
+          // Handle create error response
+          if (response?.errors) {
+            Object.keys(response.errors).forEach((field) => {
+              response.errors[field].forEach((msg) => {
+                toast.error(msg);
+              });
+            });
+          } else {
+            toast.error(response?.message || "Tạo môn học thất bại");
+          }
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      message.error(error?.message || "Có lỗi xảy ra");
+
+      // Check if error is direct response object or axios error
+      const errorData = error?.response?.data || error;
+
+      // Handle validation errors from backend
+      if (errorData?.errors) {
+        const errors = errorData.errors;
+        Object.keys(errors).forEach((field) => {
+          const errorMessages = errors[field];
+          errorMessages.forEach((msg) => {
+            toast.error(msg);
+          });
+        });
+      } else {
+        toast.error(errorData?.message || error?.message || "Có lỗi xảy ra");
+      }
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -149,6 +194,7 @@ export const AdminCourses = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
+            disabled={deleteLoadingId === record.course_id}
           />
           <Popconfirm
             title="Xác nhận xóa môn học?"
@@ -157,7 +203,15 @@ export const AdminCourses = () => {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              loading={deleteLoadingId === record.course_id}
+              disabled={
+                deleteLoadingId !== null && deleteLoadingId !== record.course_id
+              }
+            />
           </Popconfirm>
         </Space>
       ),
@@ -199,6 +253,7 @@ export const AdminCourses = () => {
               icon={<ReloadOutlined />}
               onClick={fetchCourses}
               loading={loading}
+              disabled={submitLoading || deleteLoadingId !== null}
             >
               Làm mới
             </Button>
@@ -206,6 +261,7 @@ export const AdminCourses = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleCreate}
+              disabled={loading || submitLoading || deleteLoadingId !== null}
             >
               Thêm môn học mới
             </Button>
@@ -233,6 +289,7 @@ export const AdminCourses = () => {
         okText={editingCourse ? "Cập nhật" : "Tạo"}
         cancelText="Hủy"
         width={600}
+        confirmLoading={submitLoading}
       >
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item

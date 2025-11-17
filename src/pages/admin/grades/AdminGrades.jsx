@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import {
   Table,
   Button,
@@ -7,7 +8,6 @@ import {
   Form,
   Select,
   InputNumber,
-  message,
   Card,
   Tag,
   Popconfirm,
@@ -53,6 +53,7 @@ export const AdminGrades = () => {
   const [selectedSemester, setSelectedSemester] = useState(null);
   const [viewMode, setViewMode] = useState("list"); // 'list' or 'detail'
   const [selectedStudentDetail, setSelectedStudentDetail] = useState(null);
+  const [uploadFileList, setUploadFileList] = useState([]);
   const [form] = Form.useForm();
   const [batchForm] = Form.useForm();
 
@@ -136,7 +137,7 @@ export const AdminGrades = () => {
         }
       } catch (error) {
         console.error("Error fetching student grades:", error);
-        message.error("Không thể tải điểm sinh viên");
+        toast.error("Không thể tải điểm sinh viên");
       } finally {
         setLoading(false);
       }
@@ -157,7 +158,7 @@ export const AdminGrades = () => {
       }
     } catch (error) {
       console.error("Error fetching class grades:", error);
-      message.error("Không thể tải điểm lớp học");
+      toast.error("Không thể tải điểm lớp học");
     } finally {
       setLoading(false);
     }
@@ -179,32 +180,112 @@ export const AdminGrades = () => {
     setModalVisible(true);
   };
 
-  const handleEdit = (record) => {
-    setEditingGrade(record);
-    form.setFieldsValue({
-      student_id: record.student_id,
-      course_id: record.course_id,
-      semester_id: record.semester_id,
-      grade_value: record.grade_value,
-    });
-    setModalVisible(true);
+  const handleEdit = async (record) => {
+    try {
+      // If editing from student detail view (no grade_id), fetch the full grade data
+      if (!record.grade_id && selectedStudentDetail && record.course_code) {
+        const course = courses.find(
+          (c) => c.course_code === record.course_code
+        );
+        if (!course) {
+          toast.error("Không tìm thấy thông tin môn học");
+          return;
+        }
+
+        // Fetch student's grades to find the grade_id
+        const response = await getStudentGradesDetailApi(
+          selectedStudentDetail.student_id,
+          selectedSemester
+        );
+
+        console.log("API Response:", response);
+        console.log("Response data:", response?.data);
+
+        // Handle both response formats
+        const responseData = response?.data?.data || response?.data;
+        const grades = responseData?.grades;
+
+        console.log("Grades array:", grades);
+
+        if (grades && Array.isArray(grades)) {
+          const gradeData = grades.find(
+            (g) => g.course_code === record.course_code
+          );
+          console.log("Found grade data:", gradeData);
+
+          if (gradeData && gradeData.grade_id) {
+            // Found the grade_id, now set up the edit
+            setEditingGrade({
+              ...record,
+              grade_id: gradeData.grade_id,
+              course_id: course.course_id,
+              student_id: selectedStudentDetail.student_id,
+              semester_id: selectedSemester,
+            });
+
+            form.setFieldsValue({
+              student_id: selectedStudentDetail.student_id,
+              course_id: course.course_id,
+              semester_id: selectedSemester,
+              grade_value: parseFloat(record.grade_10) || record.grade_value,
+            });
+            setModalVisible(true);
+          } else {
+            toast.error("Không tìm thấy điểm của môn học này");
+          }
+        } else {
+          toast.error("Không thể tải thông tin điểm");
+        }
+      } else {
+        // Editing from class list view (has grade_id)
+        setEditingGrade(record);
+
+        // Find course_id from course_code if not available
+        let courseId = record.course_id;
+        if (!courseId && record.course_code) {
+          const course = courses.find(
+            (c) => c.course_code === record.course_code
+          );
+          courseId = course?.course_id;
+        }
+
+        form.setFieldsValue({
+          student_id: record.student_id || selectedStudentDetail?.student_id,
+          course_id: courseId,
+          semester_id: record.semester_id || selectedSemester,
+          grade_value: parseFloat(record.grade_10) || record.grade_value,
+        });
+        setModalVisible(true);
+      }
+    } catch (error) {
+      console.error("Error in handleEdit:", error);
+      toast.error("Có lỗi khi tải thông tin điểm");
+    }
   };
 
   const handleDelete = async (gradeId) => {
     try {
+      setLoading(true);
       const response = await deleteGradeApi(gradeId);
       if (response?.success) {
-        message.success("Xóa điểm thành công");
-        // Refresh grades list
+        toast.success("Xóa điểm thành công");
+        // Refresh class grades if available
+        if (selectedClass && selectedSemester) {
+          await fetchClassGrades(selectedClass, selectedSemester);
+        }
       }
     } catch (error) {
       console.error("Error deleting grade:", error);
-      message.error(error?.message || "Không thể xóa điểm");
+      const errorData = error?.response?.data || error;
+      toast.error(errorData?.message || error?.message || "Không thể xóa điểm");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
       const values = await form.validateFields();
 
       if (editingGrade) {
@@ -213,32 +294,82 @@ export const AdminGrades = () => {
           grade_value: values.grade_value,
         });
         if (response?.success) {
-          message.success("Cập nhật điểm thành công");
+          toast.success("Cập nhật điểm thành công");
           setModalVisible(false);
+          // Refresh class grades if available
+          if (selectedClass && selectedSemester) {
+            await fetchClassGrades(selectedClass, selectedSemester);
+          }
+        } else {
+          const errorData = response;
+          if (errorData?.errors) {
+            Object.keys(errorData.errors).forEach((field) => {
+              errorData.errors[field].forEach((msg) => {
+                toast.error(msg);
+              });
+            });
+          } else {
+            toast.error(errorData?.message || "Cập nhật điểm thất bại");
+          }
         }
       } else {
         // Create
         const response = await createGradeApi(values);
         if (response?.success) {
-          message.success("Nhập điểm thành công");
+          toast.success("Nhập điểm thành công");
           setModalVisible(false);
+          // Refresh class grades if available
+          if (selectedClass && selectedSemester) {
+            await fetchClassGrades(selectedClass, selectedSemester);
+          }
+        } else {
+          const errorData = response;
+          if (errorData?.errors) {
+            Object.keys(errorData.errors).forEach((field) => {
+              errorData.errors[field].forEach((msg) => {
+                toast.error(msg);
+              });
+            });
+          } else {
+            toast.error(errorData?.message || "Nhập điểm thất bại");
+          }
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      message.error(error?.message || "Có lỗi xảy ra");
+      const errorData = error?.response?.data || error;
+
+      if (errorData?.errors) {
+        Object.keys(errorData.errors).forEach((field) => {
+          errorData.errors[field].forEach((msg) => {
+            toast.error(msg);
+          });
+        });
+      } else {
+        toast.error(errorData?.message || error?.message || "Có lỗi xảy ra");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleBatchImport = () => {
     batchForm.resetFields();
+    setUploadFileList([]);
     setBatchModalVisible(true);
   };
 
   const handleBatchSubmit = async () => {
     try {
-      await batchForm.validateFields();
-      message.info("Vui lòng chọn file Excel để nhập điểm");
+      const values = await batchForm.validateFields();
+      if (!values.file || uploadFileList.length === 0) {
+        toast.warning("Vui lòng chọn file Excel");
+        return;
+      }
+
+      // Get file from upload list
+      const file = uploadFileList[0];
+      await handleImportExcel(file);
     } catch (error) {
       console.error("Error batch import:", error);
     }
@@ -267,10 +398,10 @@ export const AdminGrades = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Tải template thành công");
+      toast.success("Tải template thành công");
     } catch (error) {
       console.error("Error downloading template:", error);
-      message.error(error?.message || "Không thể tải template");
+      toast.error(error?.message || "Không thể tải template");
     } finally {
       setLoading(false);
     }
@@ -287,7 +418,7 @@ export const AdminGrades = () => {
         const { summary, errors } = data;
 
         // Show success message with summary
-        message.success(
+        toast.success(
           `Import hoàn tất: ${summary.success_count} thành công, ${summary.updated_count} cập nhật, ${summary.error_count} lỗi`
         );
 
@@ -312,22 +443,38 @@ export const AdminGrades = () => {
         // Refresh data if needed
         setBatchModalVisible(false);
         batchForm.resetFields();
-        // fetchGrades();
+        setUploadFileList([]);
+        // Refresh class grades if available
+        if (selectedClass && selectedSemester) {
+          await fetchClassGrades(selectedClass, selectedSemester);
+        }
       }
     } catch (error) {
       console.error("Error importing Excel:", error);
-      message.error(error?.message || "Có lỗi xảy ra khi import file");
+      const errorData = error?.response?.data || error;
+
+      if (errorData?.errors) {
+        Object.keys(errorData.errors).forEach((field) => {
+          errorData.errors[field].forEach((msg) => {
+            toast.error(msg);
+          });
+        });
+      } else {
+        toast.error(
+          errorData?.message ||
+            error?.message ||
+            "Có lỗi xảy ra khi import file"
+        );
+      }
     } finally {
       setLoading(false);
     }
-
-    return false; // Prevent default upload behavior
   };
 
   // Export grades to Excel
   const handleExportExcel = async () => {
     if (!selectedClass || !selectedSemester) {
-      message.warning("Vui lòng chọn lớp và học kỳ để xuất điểm");
+      toast.warning("Vui lòng chọn lớp và học kỳ để xuất điểm");
       return;
     }
 
@@ -361,10 +508,10 @@ export const AdminGrades = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Xuất điểm thành công");
+      toast.success("Xuất điểm thành công");
     } catch (error) {
       console.error("Error exporting Excel:", error);
-      message.error(error?.message || "Không thể xuất điểm");
+      toast.error(error?.message || "Không thể xuất điểm");
     } finally {
       setLoading(false);
     }
@@ -497,6 +644,35 @@ export const AdminGrades = () => {
         <Tag color={status === "passed" ? "green" : "red"} className="text-sm">
           {status === "passed" ? "Đạt" : "Không đạt"}
         </Tag>
+      ),
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      width: 150,
+      align: "center",
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          >
+            Sửa
+          </Button>
+          <Popconfirm
+            title="Xác nhận xóa điểm?"
+            description="Bạn có chắc chắn muốn xóa điểm này?"
+            onConfirm={() => handleDelete(record.grade_id)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+              Xóa
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -970,10 +1146,14 @@ export const AdminGrades = () => {
         }
         open={batchModalVisible}
         onOk={handleBatchSubmit}
-        onCancel={() => setBatchModalVisible(false)}
+        onCancel={() => {
+          setBatchModalVisible(false);
+          setUploadFileList([]);
+        }}
         okText="Nhập điểm"
         cancelText="Hủy"
         width={700}
+        confirmLoading={loading}
       >
         <Form form={batchForm} layout="vertical" className="mt-4">
           <div className="bg-blue-50 p-4 rounded-lg mb-4">
@@ -1003,8 +1183,16 @@ export const AdminGrades = () => {
             <Upload
               accept=".xlsx,.xls"
               maxCount={1}
-              beforeUpload={handleImportExcel}
-              fileList={[]}
+              fileList={uploadFileList}
+              beforeUpload={(file) => {
+                setUploadFileList([file]);
+                batchForm.setFieldsValue({ file: file });
+                return false; // Prevent auto upload
+              }}
+              onRemove={() => {
+                setUploadFileList([]);
+                batchForm.setFieldsValue({ file: null });
+              }}
             >
               <Button icon={<UploadOutlined />} block>
                 Chọn file Excel (.xlsx, .xls)

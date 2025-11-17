@@ -757,6 +757,26 @@ const searchMessagesApi = (partnerId, keyword) => {
   return axios.get(URL_BACKEND);
 };
 
+// Advisor APIs
+const getAdvisorsApi = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.role_filter) queryParams.append('role_filter', params.role_filter);
+  if (params.search) queryParams.append('search', params.search);
+  
+  const URL_BACKEND = `/api/advisors${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return axios.get(URL_BACKEND);
+};
+
+const updateAdvisorApi = (advisorId, data) => {
+  const URL_BACKEND = `/api/advisors/${advisorId}`;
+  return axios.put(URL_BACKEND, data);
+};
+
+const deleteAdvisorApi = (advisorId) => {
+  const URL_BACKEND = `/api/advisors/${advisorId}`;
+  return axios.delete(URL_BACKEND);
+};
+
 export {
     
     createUserApi,
@@ -872,15 +892,19 @@ export {
     downloadTemplateApi,
     importClassesApi,
     importAdvisorsApi,
-    importStudentsApi,
-    exportClassesApi,
-    exportStudentsByClassApi,
-    // Dialog APIs
-    getConversationsApi,
-    getMessagesApi,
-    sendMessageApi,
-    markMessageReadApi,
-    deleteMessageApi,
-    getUnreadCountApi,
-    searchMessagesApi,
+  importStudentsApi,
+  exportClassesApi,
+  exportStudentsByClassApi,
+  // Dialog APIs
+  getConversationsApi,
+  getMessagesApi,
+  sendMessageApi,
+  markMessageReadApi,
+  deleteMessageApi,
+  getUnreadCountApi,
+  searchMessagesApi,
+  // Advisor APIs
+  getAdvisorsApi,
+  updateAdvisorApi,
+  deleteAdvisorApi,
 };

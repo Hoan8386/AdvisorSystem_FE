@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   Table,
   Button,
   Card,
   Descriptions,
-  message,
   Space,
   Tag,
   Upload,
@@ -42,7 +42,7 @@ export const AdminClassStudents = () => {
         }
       } catch (error) {
         console.error("Error fetching class info:", error);
-        message.error("Không thể tải thông tin lớp");
+        toast.error("Không thể tải thông tin lớp");
       }
     };
 
@@ -55,7 +55,7 @@ export const AdminClassStudents = () => {
         }
       } catch (error) {
         console.error("Error fetching students:", error);
-        message.error("Không thể tải danh sách sinh viên");
+        toast.error("Không thể tải danh sách sinh viên");
       } finally {
         setLoading(false);
       }
@@ -74,7 +74,7 @@ export const AdminClassStudents = () => {
       }
     } catch (error) {
       console.error("Error fetching students:", error);
-      message.error("Không thể tải danh sách sinh viên");
+      toast.error("Không thể tải danh sách sinh viên");
     } finally {
       setLoading(false);
     }
@@ -102,10 +102,10 @@ export const AdminClassStudents = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Tải template thành công");
+      toast.success("Tải template thành công");
     } catch (error) {
       console.error("Error downloading template:", error);
-      message.error(error?.message || "Không thể tải template");
+      toast.error(error?.message || "Không thể tải template");
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export const AdminClassStudents = () => {
 
       if (response?.success) {
         const { imported, errors } = response.data;
-        message.success(`Import thành công ${imported} sinh viên`);
+        toast.success(`Import thành công ${imported} sinh viên`);
 
         if (errors && errors.length > 0) {
           Modal.warning({
@@ -141,7 +141,7 @@ export const AdminClassStudents = () => {
       }
     } catch (error) {
       console.error("Error importing students:", error);
-      message.error(error?.message || "Có lỗi xảy ra khi import file");
+      toast.error(error?.message || "Có lỗi xảy ra khi import file");
     } finally {
       setLoading(false);
     }
@@ -172,10 +172,10 @@ export const AdminClassStudents = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Xuất danh sách sinh viên thành công");
+      toast.success("Xuất danh sách sinh viên thành công");
     } catch (error) {
       console.error("Error exporting students:", error);
-      message.error(error?.message || "Không thể xuất danh sách");
+      toast.error(error?.message || "Không thể xuất danh sách");
     } finally {
       setLoading(false);
     }

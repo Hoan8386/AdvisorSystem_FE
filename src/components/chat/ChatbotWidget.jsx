@@ -108,13 +108,27 @@ const ChatbotWidget = () => {
       };
 
       if (data.status === "success" && data.data) {
-        const searchType = data.data.search_type;
+        const source = data.data.source;
 
-        if (searchType === "rag" && data.data.answer) {
+        // Xử lý response từ activity search
+        if (source === "activity") {
+          botMessage.content = data.data.response;
+          botMessage.searchType = "activity";
+          botMessage.activities = data.data.activities || [];
+          botMessage.totalActivities = data.data.total_activities || 0;
+        }
+        // Xử lý response từ RAG
+        else if (source === "rag") {
+          botMessage.content = data.data.response;
+          botMessage.searchType = "rag";
+          botMessage.documents = data.data.documents || [];
+        }
+        // Fallback cho các trường hợp khác (backward compatibility)
+        else if (data.data.search_type === "rag" && data.data.answer) {
           botMessage.content = data.data.answer;
           botMessage.searchType = "rag";
           botMessage.documents = data.data.documents || [];
-        } else if (searchType === "direct" && data.data.message) {
+        } else if (data.data.search_type === "direct" && data.data.message) {
           botMessage.content = data.data.message;
           botMessage.searchType = "direct";
         } else {
@@ -428,6 +442,57 @@ const ChatbotWidget = () => {
                             </p>
                           )}
 
+                          {/* Hiển thị activities nếu có */}
+                          {msg.activities && msg.activities.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                              <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                                🎯 Các hoạt động ({msg.totalActivities})
+                              </p>
+                              {msg.activities.map((activity, index) => (
+                                <motion.div
+                                  key={activity.activity_id || index}
+                                  whileHover={{ scale: 1.02 }}
+                                  className="bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-lg p-3 text-xs"
+                                >
+                                  <p className="font-bold text-green-800 mb-1">
+                                    {activity.title}
+                                  </p>
+                                  <p className="text-gray-600 text-xs mb-2">
+                                    {activity.general_description}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                                    <span>📍 {activity.location}</span>
+                                    <span>
+                                      ⏰{" "}
+                                      {new Date(
+                                        activity.start_time
+                                      ).toLocaleString("vi-VN")}
+                                    </span>
+                                  </div>
+                                  {activity.roles &&
+                                    activity.roles.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-1">
+                                        {activity.roles.map((role, idx) => (
+                                          <span
+                                            key={idx}
+                                            className={`text-xs px-2 py-1 rounded-full ${
+                                              role.point_type === "ren_luyen"
+                                                ? "bg-blue-100 text-blue-700"
+                                                : "bg-purple-100 text-purple-700"
+                                            }`}
+                                          >
+                                            {role.role_name}:{" "}
+                                            {role.points_awarded} điểm
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Hiển thị documents nếu có */}
                           {msg.documents && msg.documents.length > 0 && (
                             <div className="mt-4 space-y-2">
                               <p className="text-xs font-semibold text-gray-500 mb-2">
@@ -461,12 +526,16 @@ const ChatbotWidget = () => {
                           {msg.searchType && (
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                msg.searchType === "rag"
+                                msg.searchType === "activity"
+                                  ? "bg-green-100 text-green-700"
+                                  : msg.searchType === "rag"
                                   ? "bg-blue-100 text-blue-700"
                                   : "bg-gray-100 text-gray-700"
                               }`}
                             >
-                              {msg.searchType === "rag"
+                              {msg.searchType === "activity"
+                                ? "🎯 Hoạt động"
+                                : msg.searchType === "rag"
                                 ? "📚 Thông tin"
                                 : "💬 Trò chuyện"}
                             </span>

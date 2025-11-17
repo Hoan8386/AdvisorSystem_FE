@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   DatePicker,
-  message,
   Popconfirm,
   Card,
 } from "antd";
@@ -19,6 +18,7 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import {
   getSemestersApi,
@@ -31,6 +31,8 @@ export const AdminSemesters = () => {
   const navigate = useNavigate();
   const [semesters, setSemesters] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSemester, setEditingSemester] = useState(null);
   const [form] = Form.useForm();
@@ -48,7 +50,7 @@ export const AdminSemesters = () => {
       }
     } catch (error) {
       console.error("Error fetching semesters:", error);
-      message.error("Không thể tải danh sách học kỳ");
+      toast.error("Không thể tải danh sách học kỳ");
     } finally {
       setLoading(false);
     }
@@ -73,19 +75,23 @@ export const AdminSemesters = () => {
 
   const handleDelete = async (semesterId) => {
     try {
+      setDeleteLoadingId(semesterId);
       const response = await deleteSemesterApi(semesterId);
       if (response?.success) {
-        message.success("Xóa học kỳ thành công");
+        toast.success("Xóa học kỳ thành công");
         fetchSemesters();
       }
     } catch (error) {
       console.error("Error deleting semester:", error);
-      message.error(error?.message || "Không thể xóa học kỳ");
+      toast.error(error?.message || "Không thể xóa học kỳ");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
   const handleSubmit = async () => {
     try {
+      setSubmitLoading(true);
       const values = await form.validateFields();
 
       const data = {
@@ -101,7 +107,7 @@ export const AdminSemesters = () => {
           data
         );
         if (response?.success) {
-          message.success("Cập nhật học kỳ thành công");
+          toast.success("Cập nhật học kỳ thành công");
           setModalVisible(false);
           fetchSemesters();
         }
@@ -109,14 +115,16 @@ export const AdminSemesters = () => {
         // Create
         const response = await createSemesterApi(data);
         if (response?.success) {
-          message.success("Tạo học kỳ thành công");
+          toast.success("Tạo học kỳ thành công");
           setModalVisible(false);
           fetchSemesters();
         }
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      message.error(error?.message || "Có lỗi xảy ra");
+      toast.error(error?.message || "Có lỗi xảy ra");
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -163,6 +171,7 @@ export const AdminSemesters = () => {
             type="link"
             icon={<FileTextOutlined />}
             onClick={() => handleViewReports(record.semester_id)}
+            disabled={deleteLoadingId === record.semester_id}
           >
             Báo cáo
           </Button>
@@ -170,6 +179,7 @@ export const AdminSemesters = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
+            disabled={deleteLoadingId === record.semester_id}
           />
           <Popconfirm
             title="Xác nhận xóa học kỳ?"
@@ -178,7 +188,16 @@ export const AdminSemesters = () => {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              loading={deleteLoadingId === record.semester_id}
+              disabled={
+                deleteLoadingId !== null &&
+                deleteLoadingId !== record.semester_id
+              }
+            />
           </Popconfirm>
         </Space>
       ),
@@ -195,6 +214,7 @@ export const AdminSemesters = () => {
               icon={<ReloadOutlined />}
               onClick={fetchSemesters}
               loading={loading}
+              disabled={submitLoading || deleteLoadingId !== null}
             >
               Làm mới
             </Button>
@@ -202,6 +222,7 @@ export const AdminSemesters = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleCreate}
+              disabled={loading || submitLoading || deleteLoadingId !== null}
             >
               Thêm học kỳ mới
             </Button>
@@ -229,6 +250,7 @@ export const AdminSemesters = () => {
         okText={editingSemester ? "Cập nhật" : "Tạo"}
         cancelText="Hủy"
         width={600}
+        confirmLoading={submitLoading}
       >
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item

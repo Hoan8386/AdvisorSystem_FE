@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { toast } from "react-toastify";
 import {
   Card,
   Button,
   Space,
   Upload,
-  message,
   Modal,
   Form,
   Select,
@@ -28,6 +28,9 @@ import {
 
 export const AdminSchedules = () => {
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [checkLoading, setCheckLoading] = useState(false);
   const [checkConflictModalVisible, setCheckConflictModalVisible] =
     useState(false);
   const [conflictResult, setConflictResult] = useState(null);
@@ -54,7 +57,7 @@ export const AdminSchedules = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      message.error("Không thể tải dữ liệu");
+      toast.error("Không thể tải dữ liệu");
     } finally {
       setLoading(false);
     }
@@ -63,7 +66,7 @@ export const AdminSchedules = () => {
   // Download Excel template
   const handleDownloadTemplate = async () => {
     try {
-      setLoading(true);
+      setDownloadLoading(true);
       const response = await downloadScheduleTemplateApi();
 
       // Create blob and download
@@ -83,32 +86,32 @@ export const AdminSchedules = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Tải template thành công");
+      toast.success("Tải template thành công");
     } catch (error) {
       console.error("Error downloading template:", error);
-      message.error(error?.message || "Không thể tải template");
+      toast.error(error?.message || "Không thể tải template");
     } finally {
-      setLoading(false);
+      setDownloadLoading(false);
     }
   };
 
   // Import schedule from Excel
   const handleImportSchedule = async (file) => {
     try {
-      setLoading(true);
+      setImportLoading(true);
       const response = await importScheduleExcelApi(file);
 
       if (response?.success) {
         const { data } = response;
-        message.success(
+        toast.success(
           `Import thành công: ${data.courses_imported} lớp học, ${data.students_imported} sinh viên`
         );
       }
     } catch (error) {
       console.error("Error importing schedule:", error);
-      message.error(error?.message || "Có lỗi xảy ra khi import lịch học");
+      toast.error(error?.message || "Có lỗi xảy ra khi import lịch học");
     } finally {
-      setLoading(false);
+      setImportLoading(false);
     }
 
     return false; // Prevent default upload behavior
@@ -129,7 +132,7 @@ export const AdminSchedules = () => {
   const handleCheckConflict = async () => {
     try {
       const values = await form.validateFields();
-      setLoading(true);
+      setCheckLoading(true);
 
       // Note: activity_id would come from another source in real app
       // For demo, we'll need to add activity selection
@@ -169,12 +172,12 @@ export const AdminSchedules = () => {
             ),
           });
         } else {
-          message.success("✅ Không có xung đột lịch học");
+          toast.success("✅ Không có xung đột lịch học");
         }
       }
     } catch (error) {
       console.error("Error checking conflict:", error);
-      message.error(error?.message || "Có lỗi xảy ra khi kiểm tra xung đột");
+      toast.error(error?.message || "Có lỗi xảy ra khi kiểm tra xung đột");
     } finally {
       setLoading(false);
     }

@@ -39,6 +39,7 @@ const { Search } = Input;
 
 export const AdvisorChat = () => {
   const [conversations, setConversations] = useState([]);
+  const [filteredConversations, setFilteredConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,7 @@ export const AdvisorChat = () => {
   const [messageContent, setMessageContent] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [studentSearchKeyword, setStudentSearchKeyword] = useState("");
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export const AdvisorChat = () => {
       const response = await getConversationsApi();
       if (response?.success && response?.data) {
         setConversations(response.data);
+        setFilteredConversations(response.data);
       }
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -196,6 +199,24 @@ export const AdvisorChat = () => {
     }
   };
 
+  const handleSearchStudent = (keyword) => {
+    setStudentSearchKeyword(keyword);
+    if (!keyword.trim()) {
+      setFilteredConversations(conversations);
+      return;
+    }
+
+    const filtered = conversations.filter((conv) => {
+      const searchLower = keyword.toLowerCase().trim();
+      return (
+        conv.partner_name?.toLowerCase().includes(searchLower) ||
+        conv.partner_code?.toLowerCase().includes(searchLower) ||
+        conv.class_name?.toLowerCase().includes(searchLower)
+      );
+    });
+    setFilteredConversations(filtered);
+  };
+
   const renderMessageItem = (msg) => {
     const isSentByMe = msg.sender_type === "advisor";
     const isDeleted = !msg.content && !msg.attachment_path;
@@ -293,7 +314,7 @@ export const AdvisorChat = () => {
   return (
     <AdvisorLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">💬 Tin nhắn</h1>
+        {/* <h1 className="text-2xl font-bold text-gray-900">💬 Tin nhắn</h1> */}
         <div
           className="flex gap-4 overflow-hidden"
           style={{ height: "calc(100vh - 260px)" }}
@@ -315,10 +336,11 @@ export const AdvisorChat = () => {
           >
             {/* Sidebar Header */}
             <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600">
-              <div className="flex justify-between items-center text-white">
+              <div className="flex justify-between items-center text-white mb-3">
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   <UserOutlined />
-                  Sinh viên ({conversations.length})
+                  Sinh viên ({filteredConversations.length}/
+                  {conversations.length})
                 </h2>
                 <Button
                   icon={<ReloadOutlined />}
@@ -328,59 +350,79 @@ export const AdvisorChat = () => {
                   className="text-white hover:bg-white/20"
                 />
               </div>
+              <Input
+                placeholder="Tìm kiếm sinh viên (tên, mã SV, lớp)..."
+                prefix={<SearchOutlined className="text-white/70" />}
+                value={studentSearchKeyword}
+                onChange={(e) => handleSearchStudent(e.target.value)}
+                allowClear
+                className="bg-white/20 border-white/30 text-white placeholder-white/70"
+                style={{
+                  color: "white",
+                }}
+              />
             </div>
 
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
-              <List
-                loading={loading && !selectedConversation}
-                dataSource={conversations}
-                renderItem={(conv) => (
-                  <List.Item
-                    key={conv.partner_id}
-                    onClick={() => handleSelectConversation(conv)}
-                    className={`cursor-pointer transition-all duration-200 border-b border-gray-100 m-0 ${
-                      selectedConversation?.partner_id === conv.partner_id
-                        ? "bg-blue-50 border-l-4 border-l-blue-500"
-                        : "hover:bg-gray-50 border-l-4 border-l-transparent"
-                    }`}
-                    style={{ padding: "12px 16px" }}
-                  >
-                    <List.Item.Meta
-                      avatar={
-                        <Badge count={conv.unread_count} offset={[-5, 5]}>
-                          <Avatar
-                            src={conv.partner_avatar}
-                            icon={<UserOutlined />}
-                            size={50}
-                            className="border-2 border-white shadow"
-                          />
-                        </Badge>
-                      }
-                      title={
-                        <div className="font-semibold text-gray-800 line-clamp-1">
-                          {conv.partner_name}
-                        </div>
-                      }
-                      description={
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">
-                            {conv.partner_code} • {conv.class_name}
+              {filteredConversations.length === 0 && studentSearchKeyword ? (
+                <div className="p-4 text-center text-gray-500">
+                  <Empty
+                    description="Không tìm thấy sinh viên phù hợp"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                </div>
+              ) : (
+                <List
+                  loading={loading && !selectedConversation}
+                  dataSource={filteredConversations}
+                  renderItem={(conv) => (
+                    <List.Item
+                      key={conv.partner_id}
+                      onClick={() => handleSelectConversation(conv)}
+                      className={`cursor-pointer transition-all duration-200 border-b border-gray-100 m-0 ${
+                        selectedConversation?.partner_id === conv.partner_id
+                          ? "bg-blue-50 border-l-4 border-l-blue-500"
+                          : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                      }`}
+                      style={{ padding: "12px 16px" }}
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          <Badge count={conv.unread_count} offset={[-5, 5]}>
+                            <Avatar
+                              src={conv.partner_avatar}
+                              icon={<UserOutlined />}
+                              size={50}
+                              className="border-2 border-white shadow"
+                            />
+                          </Badge>
+                        }
+                        title={
+                          <div className="font-semibold text-gray-800 line-clamp-1">
+                            {conv.partner_name}
                           </div>
-                          <div className="text-sm text-gray-600 line-clamp-1">
-                            {conv.last_message || "Chưa có tin nhắn"}
-                          </div>
-                          {conv.last_message_time && (
-                            <div className="text-xs text-gray-400 mt-1">
-                              {dayjs(conv.last_message_time).fromNow()}
+                        }
+                        description={
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              {conv.partner_code} • {conv.class_name}
                             </div>
-                          )}
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
+                            <div className="text-sm text-gray-600 line-clamp-1">
+                              {conv.last_message || "Chưa có tin nhắn"}
+                            </div>
+                            {conv.last_message_time && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                {dayjs(conv.last_message_time).fromNow()}
+                              </div>
+                            )}
+                          </div>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
             </div>
           </Card>
 
