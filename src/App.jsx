@@ -37,8 +37,10 @@ import MyWarnings from "./pages/client/academic/MyWarnings";
 import RAGMain from "./pages/advisor/rag/RAGMain";
 import RAGDocumentManagement from "./pages/advisor/rag/RAGDocumentManagement";
 import RAGChatAssistant from "./pages/advisor/rag/RAGChatAssistant";
-import { AdvisorChat } from "./pages/advisor/client/chat/AdvisorChat";
+import AdvisorChat from "./pages/advisor/chat/AdvisorChat";
 import { StudentChat } from "./pages/client/chat/StudentChat";
+import { StudentMeetings } from "./pages/client/meetings/StudentMeetings";
+import { StudentMeetingDetail } from "./pages/client/meetings/StudentMeetingDetail";
 import ChatbotWidget from "./components/chat/ChatbotWidget";
 // Admin imports
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -52,6 +54,11 @@ import { AdminAdvisorClasses } from "./pages/admin/advisors/AdminAdvisorClasses"
 import { AdminCourses } from "./pages/admin/courses/AdminCourses";
 import { AdminGrades } from "./pages/admin/grades/AdminGrades";
 import { AdminSchedules } from "./pages/admin/schedules/AdminSchedules";
+import AdvisorMeetings from "./pages/advisor/meetings/AdvisorMeetings";
+import CreateEditMeeting from "./pages/advisor/meetings/CreateEditMeeting";
+import MeetingDetail from "./pages/advisor/meetings/MeetingDetail";
+import MeetingAttendance from "./pages/advisor/meetings/MeetingAttendance";
+import MeetingStatistics from "./pages/advisor/meetings/MeetingStatistics";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -160,6 +167,12 @@ function App() {
         },
         { path: "classes", element: <AdvisorClasses /> },
         { path: "classes/:classId", element: <ClassDetail /> },
+        { path: "meetings", element: <AdvisorMeetings /> },
+        { path: "meetings/create", element: <CreateEditMeeting /> },
+        { path: "meetings/statistics", element: <MeetingStatistics /> },
+        { path: "meetings/:id", element: <MeetingDetail /> },
+        { path: "meetings/:id/edit", element: <CreateEditMeeting /> },
+        { path: "meetings/:id/attendance", element: <MeetingAttendance /> },
         { path: "chat", element: <AdvisorChat /> },
         { path: "profile", element: <AdvisorProfile /> },
         { path: "rag", element: <RAGMain /> },
@@ -182,6 +195,8 @@ function App() {
         { index: true, element: <StudentPage /> },
         { path: "profile", element: <StudentProfile /> },
         { path: "chat", element: <StudentChat /> },
+        { path: "meetings", element: <StudentMeetings /> },
+        { path: "meetings/:id", element: <StudentMeetingDetail /> },
         { path: "points", element: <StudentPoints /> },
         { path: "semester-report", element: <MySemesterReport /> },
         { path: "warnings", element: <MyWarnings /> },

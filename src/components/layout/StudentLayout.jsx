@@ -45,6 +45,12 @@ export const StudentLayout = ({ children }) => {
       icon: Bell,
     },
     {
+      id: "meetings",
+      path: "/student/meetings",
+      label: "Cuộc họp",
+      icon: Calendar,
+    },
+    {
       id: "chat",
       path: "/student/chat",
       label: "Tin nhắn",

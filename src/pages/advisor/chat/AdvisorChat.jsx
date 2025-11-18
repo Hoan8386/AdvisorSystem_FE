@@ -11,6 +11,7 @@ import {
   message,
   Popconfirm,
   Divider,
+  Tooltip,
 } from "antd";
 import {
   SendOutlined,
@@ -18,15 +19,17 @@ import {
   SearchOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
-import { AdvisorLayout } from "../../../../components/layout/AdvisorLayout";
+import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
   getConversationsApi,
   getMessagesApi,
   sendMessageApi,
   deleteMessageApi,
   searchMessagesApi,
-} from "../../../../services/api.service";
+} from "../../../services/api.service";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -67,10 +70,19 @@ export const AdvisorChat = () => {
       if (response?.success && response?.data) {
         setConversations(response.data);
         setFilteredConversations(response.data);
+      } else if (response?.data) {
+        setConversations(response.data);
+        setFilteredConversations(response.data);
       }
     } catch (error) {
       console.error("Error fetching conversations:", error);
-      message.error("Không thể tải danh sách hội thoại");
+      if (error.response?.status === 404) {
+        console.warn("Conversations endpoint not found (404)");
+        setConversations([]);
+        setFilteredConversations([]);
+      } else {
+        message.error("Không thể tải danh sách hội thoại");
+      }
     } finally {
       setLoading(false);
     }
@@ -84,16 +96,24 @@ export const AdvisorChat = () => {
         setMessages(response.data);
         setIsSearching(false);
         setSearchKeyword("");
-        // Update unread count in conversations list
         setConversations((prev) =>
           prev.map((conv) =>
             conv.partner_id === partnerId ? { ...conv, unread_count: 0 } : conv
           )
         );
+      } else if (response?.data) {
+        setMessages(response.data);
+        setIsSearching(false);
+        setSearchKeyword("");
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
-      message.error("Không thể tải tin nhắn");
+      if (error.response?.status === 404) {
+        console.warn("Messages endpoint not found (404)");
+        setMessages([]);
+      } else {
+        message.error("Không thể tải tin nhắn");
+      }
     } finally {
       setLoading(false);
     }
@@ -125,7 +145,6 @@ export const AdvisorChat = () => {
       if (response?.success && response?.data) {
         setMessages((prev) => [...prev, response.data]);
         setMessageContent("");
-        // Update last message in conversations list
         setConversations((prev) =>
           prev.map((conv) =>
             conv.partner_id === selectedConversation.partner_id
@@ -224,10 +243,12 @@ export const AdvisorChat = () => {
     return (
       <div
         key={msg.message_id}
-        className={`flex ${isSentByMe ? "justify-end" : "justify-start"} mb-4`}
+        className={`flex ${
+          isSentByMe ? "justify-end" : "justify-start"
+        } mb-4 group`}
       >
         <div
-          className={`flex gap-2 max-w-[70%] ${
+          className={`flex gap-3 max-w-[70%] ${
             isSentByMe ? "flex-row-reverse" : "flex-row"
           }`}
         >
@@ -235,8 +256,8 @@ export const AdvisorChat = () => {
             <Avatar
               src={selectedConversation.partner_avatar}
               icon={<UserOutlined />}
-              size={32}
-              className="flex-shrink-0"
+              size={36}
+              className="flex-shrink-0 shadow-md ring-2 ring-white"
             />
           )}
           <div
@@ -245,47 +266,55 @@ export const AdvisorChat = () => {
             }`}
           >
             <div
-              className={`px-4 py-2.5 rounded-2xl shadow-sm ${
+              className={`px-4 py-3 rounded-2xl transition-all duration-200 ${
                 isDeleted
                   ? "bg-gray-100 text-gray-400 italic border border-gray-200"
                   : isSentByMe
-                  ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                  : "bg-white text-gray-800 border border-gray-200"
+                  ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl"
+                  : "bg-white text-gray-800 border border-gray-200 shadow-md hover:shadow-lg"
               }`}
               style={{
-                borderBottomRightRadius: isSentByMe ? "4px" : "16px",
-                borderBottomLeftRadius: isSentByMe ? "16px" : "4px",
+                borderBottomRightRadius: isSentByMe ? "6px" : "18px",
+                borderBottomLeftRadius: isSentByMe ? "18px" : "6px",
               }}
             >
               {isDeleted ? (
-                <span className="flex items-center gap-1">
-                  🚫 Tin nhắn đã bị xóa
+                <span className="flex items-center gap-2 text-sm">
+                  <DeleteOutlined className="text-gray-400" />
+                  Tin nhắn đã bị xóa
                 </span>
               ) : (
-                <span className="whitespace-pre-wrap break-words">
+                <span className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
                   {msg.content}
                 </span>
               )}
             </div>
             <div
-              className={`flex items-center gap-2 mt-1 px-1 ${
+              className={`flex items-center gap-2 mt-1.5 px-1 ${
                 isSentByMe ? "flex-row-reverse" : "flex-row"
               }`}
             >
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 font-medium">
                 {dayjs(msg.sent_at).format("HH:mm DD/MM/YYYY")}
               </span>
               {isSentByMe && !isDeleted && (
                 <>
-                  <span
-                    className={`text-xs ${
-                      msg.is_read === 1
-                        ? "text-gray-400"
-                        : "text-blue-500 font-medium"
-                    }`}
-                  >
-                    {msg.is_read === 1 ? "Đã đọc" : "Chưa đọc"}
-                  </span>
+                  <Tooltip title={msg.is_read === 1 ? "Đã xem" : "Chưa xem"}>
+                    <span
+                      className={`text-xs flex items-center gap-1 ${
+                        msg.is_read === 1
+                          ? "text-gray-400"
+                          : "text-blue-500 font-semibold"
+                      }`}
+                    >
+                      {msg.is_read === 1 ? (
+                        <CheckCircleOutlined className="text-sm" />
+                      ) : (
+                        <ClockCircleOutlined className="text-sm" />
+                      )}
+                      {msg.is_read === 1 ? "Đã đọc" : "Chưa đọc"}
+                    </span>
+                  </Tooltip>
                   <Popconfirm
                     title="Xóa tin nhắn"
                     description="Bạn có chắc chắn muốn xóa tin nhắn này?"
@@ -299,7 +328,7 @@ export const AdvisorChat = () => {
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
-                      className="h-auto p-0 hover:text-red-600"
+                      className="h-auto p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-600 hover:bg-red-50 rounded"
                     />
                   </Popconfirm>
                 </>
@@ -314,10 +343,9 @@ export const AdvisorChat = () => {
   return (
     <AdvisorLayout>
       <div className="space-y-6">
-        {/* <h1 className="text-2xl font-bold text-gray-900">💬 Tin nhắn</h1> */}
         <div
-          className="flex gap-4 overflow-hidden"
-          style={{ height: "calc(100vh - 260px)" }}
+          className="flex gap-5 overflow-hidden"
+          style={{ height: "calc(100vh - 220px)" }}
         >
           {/* Conversations List - Sidebar */}
           <Card
@@ -329,44 +357,49 @@ export const AdvisorChat = () => {
               flexDirection: "column",
             }}
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               border: "none",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              overflow: "hidden",
             }}
           >
             {/* Sidebar Header */}
-            <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600">
-              <div className="flex justify-between items-center text-white mb-3">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <UserOutlined />
-                  Sinh viên ({filteredConversations.length}/
-                  {conversations.length})
+            <div className="p-6 border-b bg-gradient-to-br from-blue-500 via-blue-550 to-blue-600">
+              <div className="flex justify-between items-center text-white mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2.5">
+                  <span className="text-2xl">💬</span>
+                  <span>Tin nhắn</span>
                 </h2>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={fetchConversations}
-                  loading={loading && !selectedConversation}
-                  type="text"
-                  className="text-white hover:bg-white/20"
+                <Tooltip title="Làm mới danh sách">
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={fetchConversations}
+                    loading={loading && !selectedConversation}
+                    type="text"
+                    className="text-white hover:bg-white/20 rounded-lg transition-all h-9 w-9"
+                  />
+                </Tooltip>
+              </div>
+              <div className="flex items-center gap-3 bg-white/15 backdrop-blur-sm border border-white/25 rounded-xl px-4 py-2 transition-all hover:bg-white/20">
+                <SearchOutlined className="text-white text-base" />
+                <Input
+                  placeholder="Tìm kiếm sinh viên..."
+                  value={studentSearchKeyword}
+                  onChange={(e) => handleSearchStudent(e.target.value)}
+                  allowClear
+                  className="bg-transparent border-0 text-white placeholder-white/60 font-medium"
+                  style={{
+                    border: "none",
+                    boxShadow: "none",
+                  }}
                 />
               </div>
-              <Input
-                placeholder="Tìm kiếm sinh viên (tên, mã SV, lớp)..."
-                prefix={<SearchOutlined className="text-white/70" />}
-                value={studentSearchKeyword}
-                onChange={(e) => handleSearchStudent(e.target.value)}
-                allowClear
-                className="bg-white/20 border-white/30 text-white placeholder-white/70"
-                style={{
-                  color: "white",
-                }}
-              />
             </div>
 
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
               {filteredConversations.length === 0 && studentSearchKeyword ? (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-6 text-center text-gray-500">
                   <Empty
                     description="Không tìm thấy sinh viên phù hợp"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -380,39 +413,71 @@ export const AdvisorChat = () => {
                     <List.Item
                       key={conv.partner_id}
                       onClick={() => handleSelectConversation(conv)}
-                      className={`cursor-pointer transition-all duration-200 border-b border-gray-100 m-0 ${
+                      className={`cursor-pointer transition-all duration-300 border-b border-gray-100 m-0 ${
                         selectedConversation?.partner_id === conv.partner_id
-                          ? "bg-blue-50 border-l-4 border-l-blue-500"
-                          : "hover:bg-gray-50 border-l-4 border-l-transparent"
+                          ? "bg-blue-50 border-l-4 border-l-blue-500 shadow-inner"
+                          : "hover:bg-gray-50 border-l-4 border-l-transparent hover:border-l-blue-200"
                       }`}
-                      style={{ padding: "12px 16px" }}
+                      style={{ padding: "14px 18px" }}
                     >
                       <List.Item.Meta
                         avatar={
-                          <Badge count={conv.unread_count} offset={[-5, 5]}>
+                          <Badge
+                            count={conv.unread_count}
+                            offset={[-6, 6]}
+                            style={{
+                              backgroundColor: "#ef4444",
+                              fontWeight: "600",
+                              fontSize: "11px",
+                              boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
+                            }}
+                          >
                             <Avatar
                               src={conv.partner_avatar}
                               icon={<UserOutlined />}
-                              size={50}
-                              className="border-2 border-white shadow"
+                              size={52}
+                              className="border-2 border-white shadow-lg hover:shadow-xl transition-all ring-2 ring-blue-100"
                             />
                           </Badge>
                         }
                         title={
-                          <div className="font-semibold text-gray-800 line-clamp-1">
+                          <div
+                            className={`font-semibold line-clamp-1 text-base transition-colors ${
+                              conv.unread_count > 0
+                                ? "text-gray-900"
+                                : "text-gray-800"
+                            }`}
+                          >
                             {conv.partner_name}
                           </div>
                         }
                         description={
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">
-                              {conv.partner_code} • {conv.class_name}
+                          <div className="space-y-2">
+                            <div className="text-xs text-gray-500 flex items-center gap-2">
+                              <span className="bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                {conv.partner_code}
+                              </span>
+                              <span className="text-gray-400">•</span>
+                              <span className="font-medium text-gray-600">
+                                {conv.class_name}
+                              </span>
                             </div>
-                            <div className="text-sm text-gray-600 line-clamp-1">
-                              {conv.last_message || "Chưa có tin nhắn"}
+                            <div
+                              className={`text-sm line-clamp-1 transition-all ${
+                                conv.unread_count > 0
+                                  ? "text-gray-800 font-semibold"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              {conv.last_message || (
+                                <span className="italic text-gray-400">
+                                  Chưa có tin nhắn
+                                </span>
+                              )}
                             </div>
                             {conv.last_message_time && (
-                              <div className="text-xs text-gray-400 mt-1">
+                              <div className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                <ClockCircleOutlined className="text-xs" />
                                 {dayjs(conv.last_message_time).fromNow()}
                               </div>
                             )}
@@ -436,54 +501,80 @@ export const AdvisorChat = () => {
               flexDirection: "column",
             }}
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               border: "none",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              overflow: "hidden",
             }}
           >
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-white shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        src={selectedConversation.partner_avatar}
-                        icon={<UserOutlined />}
-                        size={50}
-                        className="border-2 border-blue-500"
-                      />
+                <div className="p-6 bg-gradient-to-r from-blue-50 via-blue-50 to-indigo-50 border-b shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <Avatar
+                          src={selectedConversation.partner_avatar}
+                          icon={<UserOutlined />}
+                          size={60}
+                          className="border-3 border-blue-400 shadow-xl ring-4 ring-blue-100"
+                        />
+                        <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-md"></span>
+                      </div>
                       <div>
-                        <h3 className="text-lg font-bold text-gray-800">
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">
                           {selectedConversation.partner_name}
                         </h3>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
-                          <span>{selectedConversation.partner_code}</span>
-                          <span>•</span>
-                          <span>{selectedConversation.class_name}</span>
+                        <p className="text-sm text-gray-600 flex items-center gap-2.5">
+                          <span className="bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                            {selectedConversation.partner_code}
+                          </span>
+                          <span className="text-gray-400 font-bold">•</span>
+                          <span className="font-semibold text-gray-700">
+                            {selectedConversation.class_name}
+                          </span>
                         </p>
                       </div>
                     </div>
                     <Search
                       placeholder="Tìm kiếm tin nhắn..."
                       onSearch={handleSearchMessages}
-                      style={{ width: 280 }}
-                      enterButton={<SearchOutlined />}
+                      style={{ width: 340 }}
+                      size="large"
+                      enterButton={
+                        <Button
+                          type="primary"
+                          icon={<SearchOutlined />}
+                          className="bg-blue-500 hover:bg-blue-600"
+                        >
+                          Tìm
+                        </Button>
+                      }
                       allowClear
                       onClear={handleClearSearch}
+                      className="shadow-sm"
                     />
                   </div>
                   {isSearching && (
-                    <div className="mt-3 p-2 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-center justify-between">
-                      <span>
-                        🔍 Tìm thấy <strong>{messages.length}</strong> kết quả
-                        cho "<strong>{searchKeyword}</strong>"
+                    <div className="p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl text-sm text-blue-800 flex items-center justify-between border border-blue-200 shadow-sm">
+                      <span className="flex items-center gap-2 font-medium">
+                        <SearchOutlined className="text-blue-500" />
+                        Tìm thấy{" "}
+                        <strong className="text-blue-600">
+                          {messages.length}
+                        </strong>{" "}
+                        kết quả cho "
+                        <strong className="text-blue-700">
+                          {searchKeyword}
+                        </strong>
+                        "
                       </span>
                       <Button
                         type="link"
                         size="small"
                         onClick={handleClearSearch}
-                        className="text-blue-600"
+                        className="text-blue-600 font-semibold hover:text-blue-700"
                       >
                         Xóa tìm kiếm
                       </Button>
@@ -492,28 +583,32 @@ export const AdvisorChat = () => {
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+                <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 via-white to-blue-50/30 p-6">
                   {loading ? (
-                    <div className="flex items-center justify-center h-90">
+                    <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <div className="animate-spin rounded-full h-10 w-12 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                        <p className="text-gray-500">Đang tải tin nhắn...</p>
+                        <div className="animate-spin rounded-full h-14 w-14 border-4 border-blue-200 border-t-blue-500 mx-auto mb-4 shadow-lg"></div>
+                        <p className="text-gray-600 font-semibold text-base">
+                          Đang tải tin nhắn...
+                        </p>
                       </div>
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-90">
-                      <Empty
-                        description={
-                          <span className="text-gray-500">
-                            {isSearching
-                              ? "Không tìm thấy tin nhắn phù hợp"
-                              : "Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!"}
-                          </span>
-                        }
-                      />
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="text-7xl mb-5 animate-bounce">💬</div>
+                        <p className="text-gray-500 text-lg font-semibold">
+                          {isSearching
+                            ? "Không tìm thấy tin nhắn phù hợp"
+                            : "Chưa có tin nhắn nào"}
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                          {!isSearching && "Hãy bắt đầu cuộc trò chuyện!"}
+                        </p>
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div>
                       {messages.map(renderMessageItem)}
                       <div ref={messagesEndRef} />
                     </div>
@@ -521,7 +616,7 @@ export const AdvisorChat = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="p-4 bg-white border-t">
+                <div className="p-5 bg-white border-t shadow-inner">
                   <Space.Compact style={{ width: "100%" }} size="large">
                     <TextArea
                       value={messageContent}
@@ -534,7 +629,8 @@ export const AdvisorChat = () => {
                           handleSendMessage();
                         }
                       }}
-                      className="rounded-lg"
+                      className="rounded-xl text-base shadow-sm border-gray-300 focus:border-blue-400"
+                      style={{ padding: "12px 16px" }}
                     />
                     <Button
                       type="primary"
@@ -543,22 +639,31 @@ export const AdvisorChat = () => {
                       loading={sending}
                       disabled={!messageContent.trim()}
                       size="large"
-                      className="bg-blue-500 hover:bg-blue-600 min-w-[100px]"
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 min-w-[110px] rounded-xl shadow-lg hover:shadow-xl transition-all font-semibold"
+                      style={{
+                        height: "auto",
+                        minHeight: "48px",
+                        marginLeft: "20px",
+                      }}
                     >
                       Gửi
                     </Button>
                   </Space.Compact>
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    Nhấn Enter để gửi, Shift + Enter để xuống dòng
+                  </p>
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-50 to-gray-50">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">💬</div>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+                <div className="text-center p-8">
+                  <div className="text-8xl mb-6">💬</div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-3">
                     Chào mừng đến với Chat
                   </h3>
-                  <p className="text-gray-500">
-                    Chọn một sinh viên từ danh sách để bắt đầu trò chuyện
+                  <p className="text-gray-500 text-base max-w-md mx-auto leading-relaxed">
+                    Chọn một sinh viên từ danh sách bên trái để bắt đầu cuộc trò
+                    chuyện
                   </p>
                 </div>
               </div>
@@ -569,3 +674,5 @@ export const AdvisorChat = () => {
     </AdvisorLayout>
   );
 };
+
+export default AdvisorChat;

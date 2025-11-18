@@ -128,6 +128,16 @@ export const AdvisorClasses = () => {
         const students = response.data?.at_risk_students || [];
         console.log("Setting at-risk students:", students);
         setAtRiskStudents(students);
+
+        // Auto-select students with academic warnings
+        const studentsWithWarnings = students
+          .filter((student) => student.has_academic_warning === true)
+          .map((student) => student.student_id);
+        setSelectedWarningStudents(studentsWithWarnings);
+        console.log(
+          "Auto-selected students with warnings:",
+          studentsWithWarnings
+        );
       } else {
         console.log("API response not successful:", response);
       }
@@ -153,9 +163,22 @@ export const AdvisorClasses = () => {
       });
 
       if (response?.data?.success) {
-        toast.success(
-          `Đã tạo ${response.data.data?.created_count || 0} cảnh cáo học vụ`
-        );
+        const totalCreated = response.data.data?.total_created || 0;
+        const errors = response.data.data?.errors || [];
+
+        console.log("Response data:", { totalCreated, errors });
+
+        if (totalCreated > 0) {
+          toast.success(`Đã tạo ${totalCreated} cảnh cáo học vụ`);
+        }
+
+        if (errors.length > 0) {
+          // Show each error as separate toast
+          errors.forEach((error) => {
+            toast.error(error, { autoClose: 4000 });
+          });
+        }
+
         setSelectedWarningStudents([]);
         fetchAtRiskStudents();
       }
@@ -636,59 +659,59 @@ export const AdvisorClasses = () => {
                             width: 150,
                             align: "center",
                           },
-                          {
-                            title: "Thao tác",
-                            key: "action",
-                            width: 120,
-                            align: "center",
-                            render: (_, record) => (
-                              <Button
-                                type="link"
-                                size="small"
-                                icon={<EyeOutlined />}
-                                onClick={() => {
-                                  Modal.info({
-                                    title: record.title,
-                                    width: 800,
-                                    content: (
-                                      <div className="space-y-4 mt-4">
-                                        <div>
-                                          <div className="font-semibold mb-2">
-                                            Thông tin sinh viên:
-                                          </div>
-                                          <div className="pl-4">
-                                            <p>MSSV: {record.user_code}</p>
-                                            <p>Họ tên: {record.student_name}</p>
-                                            <p>Lớp: {record.class_name}</p>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <div className="font-semibold mb-2">
-                                            Nội dung cảnh cáo:
-                                          </div>
-                                          <div className="pl-4 whitespace-pre-wrap">
-                                            {record.content ||
-                                              "Không có nội dung"}
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <div className="font-semibold mb-2">
-                                            Lời khuyên:
-                                          </div>
-                                          <div className="pl-4 whitespace-pre-wrap">
-                                            {record.advice ||
-                                              "Không có lời khuyên"}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ),
-                                  });
-                                }}
-                              >
-                                Chi tiết
-                              </Button>
-                            ),
-                          },
+                          // {
+                          //   title: "Thao tác",
+                          //   key: "action",
+                          //   width: 120,
+                          //   align: "center",
+                          //   render: (_, record) => (
+                          //     // <Button
+                          //     //   type="link"
+                          //     //   size="small"
+                          //     //   icon={<EyeOutlined />}
+                          //     //   onClick={() => {
+                          //     //     Modal.info({
+                          //     //       title: record.title,
+                          //     //       width: 800,
+                          //     //       content: (
+                          //     //         <div className="space-y-4 mt-4">
+                          //     //           <div>
+                          //     //             <div className="font-semibold mb-2">
+                          //     //               Thông tin sinh viên:
+                          //     //             </div>
+                          //     //             <div className="pl-4">
+                          //     //               <p>MSSV: {record.user_code}</p>
+                          //     //               <p>Họ tên: {record.student_name}</p>
+                          //     //               <p>Lớp: {record.class_name}</p>
+                          //     //             </div>
+                          //     //           </div>
+                          //     //           <div>
+                          //     //             <div className="font-semibold mb-2">
+                          //     //               Nội dung cảnh cáo:
+                          //     //             </div>
+                          //     //             <div className="pl-4 whitespace-pre-wrap">
+                          //     //               {record.content ||
+                          //     //                 "Không có nội dung"}
+                          //     //             </div>
+                          //     //           </div>
+                          //     //           <div>
+                          //     //             <div className="font-semibold mb-2">
+                          //     //               Lời khuyên:
+                          //     //             </div>
+                          //     //             <div className="pl-4 whitespace-pre-wrap">
+                          //     //               {record.advice ||
+                          //     //                 "Không có lời khuyên"}
+                          //     //             </div>
+                          //     //           </div>
+                          //     //         </div>
+                          //     //       ),
+                          //     //     });
+                          //     //   }}
+                          //     // >
+                          //     //   Chi tiết
+                          //     // </Button>
+                          //   ),
+                          // },
                         ]}
                         dataSource={warningsList}
                         rowKey="warning_id"

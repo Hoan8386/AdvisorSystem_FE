@@ -9,6 +9,8 @@ import {
   message,
   Popconfirm,
   Alert,
+  Badge,
+  Tooltip,
 } from "antd";
 import {
   SendOutlined,
@@ -16,6 +18,9 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   SearchOutlined,
+  CloseCircleOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { StudentLayout } from "../../../components/layout/StudentLayout";
 import {
@@ -199,10 +204,12 @@ export const StudentChat = () => {
     return (
       <div
         key={msg.message_id}
-        className={`flex ${isSentByMe ? "justify-end" : "justify-start"} mb-4`}
+        className={`flex ${
+          isSentByMe ? "justify-end" : "justify-start"
+        } mb-4 group`}
       >
         <div
-          className={`flex gap-2 max-w-[70%] ${
+          className={`flex gap-3 max-w-[75%] ${
             isSentByMe ? "flex-row-reverse" : "flex-row"
           }`}
         >
@@ -210,8 +217,11 @@ export const StudentChat = () => {
             <Avatar
               src={advisor?.partner_avatar}
               icon={<UserOutlined />}
-              size={32}
-              className="flex-shrink-0"
+              size={40}
+              className="flex-shrink-0 shadow-md border-2 border-white"
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              }}
             />
           )}
           <div
@@ -220,47 +230,62 @@ export const StudentChat = () => {
             }`}
           >
             <div
-              className={`px-4 py-2.5 rounded-2xl shadow-sm ${
+              className={`px-5 py-3 rounded-2xl shadow-md transition-all duration-200 hover:shadow-lg ${
                 isDeleted
-                  ? "bg-gray-100 text-gray-400 italic border border-gray-200"
+                  ? "bg-gray-50 text-gray-400 italic border border-gray-200"
                   : isSentByMe
-                  ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                  : "bg-white text-gray-800 border border-gray-200"
+                  ? "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white"
+                  : "bg-white text-gray-800 border border-gray-100"
               }`}
               style={{
-                borderBottomRightRadius: isSentByMe ? "4px" : "16px",
-                borderBottomLeftRadius: isSentByMe ? "16px" : "4px",
+                borderBottomRightRadius: isSentByMe ? "6px" : "18px",
+                borderBottomLeftRadius: isSentByMe ? "18px" : "6px",
               }}
             >
               {isDeleted ? (
-                <span className="flex items-center gap-1">
-                  🚫 Tin nhắn đã bị xóa
+                <span className="flex items-center gap-2">
+                  <CloseCircleOutlined className="text-gray-400" />
+                  <span className="text-sm">Tin nhắn đã bị xóa</span>
                 </span>
               ) : (
-                <span className="whitespace-pre-wrap break-words">
+                <span className="whitespace-pre-wrap break-words leading-relaxed">
                   {msg.content}
                 </span>
               )}
             </div>
             <div
-              className={`flex items-center gap-2 mt-1 px-1 ${
+              className={`flex items-center gap-2 mt-1.5 px-1 ${
                 isSentByMe ? "flex-row-reverse" : "flex-row"
               }`}
             >
+              <span className="text-xs text-gray-400 font-medium">
+                {dayjs(msg.sent_at).format("HH:mm")}
+              </span>
+              <span className="text-xs text-gray-300">•</span>
               <span className="text-xs text-gray-400">
-                {dayjs(msg.sent_at).format("HH:mm DD/MM/YYYY")}
+                {dayjs(msg.sent_at).format("DD/MM/YYYY")}
               </span>
               {isSentByMe && !isDeleted && (
                 <>
-                  <span
-                    className={`text-xs ${
-                      msg.is_read === 1
-                        ? "text-gray-400"
-                        : "text-blue-500 font-medium"
-                    }`}
+                  <span className="text-xs text-gray-300">•</span>
+                  <Tooltip
+                    title={msg.is_read === 1 ? "Cố vấn đã đọc" : "Chưa đọc"}
                   >
-                    {msg.is_read === 1 ? "Đã đọc" : "Chưa đọc"}
-                  </span>
+                    <span
+                      className={`text-xs flex items-center gap-1 ${
+                        msg.is_read === 1 ? "text-green-500" : "text-blue-500"
+                      }`}
+                    >
+                      {msg.is_read === 1 ? (
+                        <CheckCircleOutlined className="text-xs" />
+                      ) : (
+                        <ClockCircleOutlined className="text-xs" />
+                      )}
+                      <span className="font-medium">
+                        {msg.is_read === 1 ? "Đã đọc" : "Đã gửi"}
+                      </span>
+                    </span>
+                  </Tooltip>
                   <Popconfirm
                     title="Xóa tin nhắn"
                     description="Bạn có chắc chắn muốn xóa tin nhắn này?"
@@ -274,7 +299,7 @@ export const StudentChat = () => {
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
-                      className="h-auto p-0 hover:text-red-600"
+                      className="h-auto p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-50 rounded-full"
                     />
                   </Popconfirm>
                 </>
@@ -288,7 +313,7 @@ export const StudentChat = () => {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-7xl mx-auto p-6">
         <Card
           bodyStyle={{
             padding: 0,
@@ -298,63 +323,85 @@ export const StudentChat = () => {
             overflow: "hidden",
           }}
           style={{
-            borderRadius: 12,
+            borderRadius: 16,
             border: "none",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+            overflow: "hidden",
           }}
         >
           {advisor ? (
             <>
-              {/* Chat Header */}
-              <div className="p-4 border-b bg-white shadow-sm">
+              {/* Chat Header - Enhanced */}
+              <div
+                className="p-5 border-b bg-gradient-to-r from-blue-50 via-white to-blue-50"
+                style={{
+                  borderBottom: "1px solid rgba(0,0,0,0.06)",
+                }}
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar
-                      src={advisor.partner_avatar}
-                      icon={<UserOutlined />}
-                      size={50}
-                      className="border-2 border-blue-500"
-                    />
+                  <div className="flex items-center gap-4">
+                    <Badge dot status="success" offset={[-5, 35]}>
+                      <Avatar
+                        src={advisor.partner_avatar}
+                        icon={<UserOutlined />}
+                        size={56}
+                        className="shadow-lg border-3 border-white"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        }}
+                      />
+                    </Badge>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-800">
-                        Cố vấn: {advisor.partner_name}
+                      <h3 className="text-xl font-bold text-gray-800 mb-1">
+                        {advisor.partner_name}
                       </h3>
-                      <p className="text-sm text-gray-500">
-                        💬 Liên hệ với cố vấn học tập của bạn
+                      <p className="text-sm text-gray-500 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        Cố vấn học tập • Đang hoạt động
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <Search
                       placeholder="Tìm kiếm tin nhắn..."
                       onSearch={handleSearchMessages}
-                      style={{ width: 250 }}
+                      style={{ width: 280 }}
                       enterButton={<SearchOutlined />}
                       allowClear
                       onClear={handleClearSearch}
-                    />
-                    <Button
-                      icon={<ReloadOutlined />}
-                      onClick={handleRefresh}
-                      loading={loading}
-                      type="default"
                       size="large"
-                    >
-                      Làm mới
-                    </Button>
+                      className="rounded-lg"
+                    />
+                    <Tooltip title="Làm mới">
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={handleRefresh}
+                        loading={loading}
+                        type="default"
+                        size="large"
+                        className="rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                      />
+                    </Tooltip>
                   </div>
                 </div>
                 {isSearching && (
-                  <div className="mt-3 p-2 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-center justify-between">
-                    <span>
-                      🔍 Tìm thấy <strong>{messages.length}</strong> kết quả cho
-                      "<strong>{searchKeyword}</strong>"
+                  <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 flex items-center justify-between">
+                    <span className="text-sm text-blue-700 flex items-center gap-2">
+                      <SearchOutlined className="text-lg" />
+                      Tìm thấy{" "}
+                      <strong className="font-bold">
+                        {messages.length}
+                      </strong>{" "}
+                      kết quả cho "
+                      <strong className="font-bold">{searchKeyword}</strong>"
                     </span>
                     <Button
-                      type="link"
+                      type="text"
                       size="small"
                       onClick={handleClearSearch}
-                      className="text-blue-600"
+                      className="text-blue-600 hover:bg-blue-100 rounded-lg"
+                      icon={<CloseCircleOutlined />}
                     >
                       Xóa tìm kiếm
                     </Button>
@@ -362,24 +409,43 @@ export const StudentChat = () => {
                 )}
               </div>
 
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-50 to-white">
+              {/* Messages Area - Enhanced */}
+              <div
+                className="flex-1 overflow-y-auto p-6"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)",
+                }}
+              >
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                      <p className="text-gray-500">Đang tải tin nhắn...</p>
+                      <div className="relative w-16 h-16 mx-auto mb-4">
+                        <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-200 rounded-full"></div>
+                        <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                      </div>
+                      <p className="text-gray-500 font-medium">
+                        Đang tải tin nhắn...
+                      </p>
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description={
-                        <span className="text-gray-500">
-                          {isSearching
-                            ? "Không tìm thấy tin nhắn phù hợp"
-                            : "Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện với cố vấn!"}
-                        </span>
+                        <div className="text-center">
+                          <p className="text-gray-500 text-base mb-2">
+                            {isSearching
+                              ? "Không tìm thấy tin nhắn phù hợp"
+                              : "Chưa có tin nhắn nào"}
+                          </p>
+                          {!isSearching && (
+                            <p className="text-gray-400 text-sm">
+                              Hãy bắt đầu cuộc trò chuyện với cố vấn của bạn!
+                            </p>
+                          )}
+                        </div>
                       }
                     />
                   </div>
@@ -391,8 +457,14 @@ export const StudentChat = () => {
                 )}
               </div>
 
-              {/* Message Input */}
-              <div className="p-4 bg-white border-t">
+              {/* Message Input - Enhanced */}
+              <div
+                className="p-5 bg-white border-t"
+                style={{
+                  borderTop: "1px solid rgba(0,0,0,0.06)",
+                  boxShadow: "0 -4px 12px rgba(0,0,0,0.05)",
+                }}
+              >
                 <Space.Compact style={{ width: "100%" }} size="large">
                   <TextArea
                     value={messageContent}
@@ -405,7 +477,11 @@ export const StudentChat = () => {
                         handleSendMessage();
                       }
                     }}
-                    className="rounded-lg"
+                    className="rounded-xl border-gray-200 focus:border-blue-400 transition-colors"
+                    style={{
+                      fontSize: "15px",
+                      padding: "12px 16px",
+                    }}
                   />
                   <Button
                     type="primary"
@@ -414,28 +490,49 @@ export const StudentChat = () => {
                     loading={sending}
                     disabled={!messageContent.trim()}
                     size="large"
-                    className="bg-blue-500 hover:bg-blue-600 min-w-[100px]"
+                    className="min-w-[110px] rounded-xl shadow-md hover:shadow-lg transition-all font-medium"
+                    style={{
+                      background: messageContent.trim()
+                        ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
+                        : undefined,
+                      border: "none",
+                      height: "auto",
+                    }}
                   >
                     Gửi
                   </Button>
                 </Space.Compact>
-                <div className="text-xs text-gray-400 mt-2 text-center">
-                  💡 Nhấn{" "}
-                  <kbd className="px-1 py-0.5 bg-gray-100 rounded">Enter</kbd>{" "}
-                  để gửi,{" "}
-                  <kbd className="px-1 py-0.5 bg-gray-100 rounded">
-                    Shift+Enter
-                  </kbd>{" "}
-                  để xuống dòng
+                <div className="text-xs text-gray-400 mt-3 text-center flex items-center justify-center gap-4">
+                  <span className="flex items-center gap-1.5">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded shadow-sm font-mono text-gray-600">
+                      Enter
+                    </kbd>
+                    <span>để gửi</span>
+                  </span>
+                  <span className="text-gray-300">•</span>
+                  <span className="flex items-center gap-1.5">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded shadow-sm font-mono text-gray-600">
+                      Shift + Enter
+                    </kbd>
+                    <span>để xuống dòng</span>
+                  </span>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-50 to-gray-50">
+            <div
+              className="flex items-center justify-center h-full"
+              style={{
+                background: "linear-gradient(135deg, #e0f2fe 0%, #f1f5f9 100%)",
+              }}
+            >
               {loading ? (
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                  <p className="text-gray-500">Đang tải...</p>
+                  <div className="relative w-16 h-16 mx-auto mb-4">
+                    <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                  </div>
+                  <p className="text-gray-500 font-medium">Đang tải...</p>
                 </div>
               ) : (
                 <Alert
@@ -444,11 +541,19 @@ export const StudentChat = () => {
                   type="warning"
                   showIcon
                   action={
-                    <Button size="small" onClick={fetchConversation}>
+                    <Button
+                      size="middle"
+                      onClick={fetchConversation}
+                      className="rounded-lg"
+                    >
                       Thử lại
                     </Button>
                   }
-                  style={{ maxWidth: 500 }}
+                  style={{
+                    maxWidth: 500,
+                    borderRadius: 12,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
                 />
               )}
             </div>

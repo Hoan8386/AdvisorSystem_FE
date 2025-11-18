@@ -91,9 +91,9 @@ const getMeetingFeedbacksApi = (meetingId) => {
 };
 
 // Get statistics
-const getMeetingStatisticsApi = (params = {}) => {
+const getMeetingStatisticsApi = () => {
   const URL_BACKEND = "/api/meetings/statistics/overview";
-  return axios.get(URL_BACKEND, { params });
+  return axios.get(URL_BACKEND);
 };
 
 export {

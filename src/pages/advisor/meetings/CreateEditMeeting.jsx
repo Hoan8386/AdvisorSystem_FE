@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
   Card,
   Form,
@@ -9,11 +10,16 @@ import {
   DatePicker,
   Space,
   TimePicker,
+  Divider,
+  Spin,
 } from "antd";
 import {
   ArrowLeftOutlined,
   SaveOutlined,
   CalendarOutlined,
+  EnvironmentOutlined,
+  LinkOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import {
@@ -40,6 +46,7 @@ export const CreateEditMeeting = () => {
     if (isEditMode) {
       fetchMeetingDetail();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchClasses = async () => {
@@ -128,9 +135,27 @@ export const CreateEditMeeting = () => {
       navigate("/advisor/meetings");
     } catch (error) {
       console.error("Error saving meeting:", error);
-      toast.error(
-        isEditMode ? "Không thể cập nhật cuộc họp" : "Không thể tạo cuộc họp"
-      );
+
+      // Handle validation errors from API
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        Object.keys(errors).forEach((fieldName) => {
+          const fieldErrors = errors[fieldName];
+          if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+            form.setFields([
+              {
+                name: fieldName,
+                errors: fieldErrors,
+              },
+            ]);
+          }
+        });
+        toast.error("Vui lòng kiểm tra lại thông tin");
+      } else {
+        toast.error(
+          isEditMode ? "Không thể cập nhật cuộc họp" : "Không thể tạo cuộc họp"
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -138,180 +163,250 @@ export const CreateEditMeeting = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <AdvisorLayout>
+        <div className="p-6">
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 50,
+                minHeight: "400px",
+              }}
+            >
+              <Spin size="large" />
+            </div>
+          </Card>
+        </div>
+      </AdvisorLayout>
     );
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/advisor/meetings")}
-          className="mb-4"
-        >
-          Quay lại danh sách
-        </Button>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-          {isEditMode ? "Chỉnh sửa cuộc họp" : "Tạo cuộc họp mới"}
-        </h1>
-        <p className="text-gray-500 mt-1">
-          {isEditMode
-            ? "Cập nhật thông tin cuộc họp"
-            : "Điền thông tin để tạo cuộc họp mới"}
-        </p>
-      </div>
-
-      <Card className="shadow-lg rounded-xl border-0">
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          autoComplete="off"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Form.Item
-              label="Lớp"
-              name="class_id"
-              rules={[{ required: true, message: "Vui lòng chọn lớp" }]}
-            >
-              <Select
-                placeholder="Chọn lớp"
-                size="large"
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                options={classes.map((cls) => ({
-                  value: cls.class_id,
-                  label: cls.class_name,
-                }))}
-                disabled={isEditMode}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Tiêu đề cuộc họp"
-              name="title"
-              rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
-            >
-              <Input placeholder="Ví dụ: Họp lớp đầu kỳ" size="large" />
-            </Form.Item>
-
-            <Form.Item
-              label="Ngày họp"
-              name="meeting_date"
-              rules={[{ required: true, message: "Vui lòng chọn ngày họp" }]}
-            >
-              <DatePicker
-                placeholder="Chọn ngày"
-                size="large"
-                format="DD/MM/YYYY"
-                className="w-full"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Giờ bắt đầu"
-              name="meeting_time"
-              rules={[{ required: true, message: "Vui lòng chọn giờ bắt đầu" }]}
-            >
-              <TimePicker
-                placeholder="Chọn giờ"
-                size="large"
-                format="HH:mm"
-                className="w-full"
-              />
-            </Form.Item>
-
-            <Form.Item label="Giờ kết thúc" name="end_time">
-              <TimePicker
-                placeholder="Chọn giờ kết thúc (tùy chọn)"
-                size="large"
-                format="HH:mm"
-                className="w-full"
-              />
-            </Form.Item>
-
-            <Form.Item label="Địa điểm" name="location">
-              <Input
-                placeholder="Ví dụ: Phòng A201"
-                size="large"
-                prefix={<CalendarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Link họp online"
-              name="meeting_link"
-              className="md:col-span-2"
-            >
-              <Input
-                placeholder="https://meet.google.com/xxx hoặc https://zoom.us/j/xxx"
-                size="large"
-                type="url"
-              />
-            </Form.Item>
-
-            {isEditMode && (
-              <Form.Item label="Trạng thái" name="status">
-                <Select
-                  size="large"
-                  options={[
-                    { value: "scheduled", label: "Sắp diễn ra" },
-                    { value: "completed", label: "Đã hoàn thành" },
-                    { value: "cancelled", label: "Đã hủy" },
-                  ]}
-                />
-              </Form.Item>
-            )}
+    <AdvisorLayout>
+      <div className="p-6">
+        <Card>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate("/advisor/meetings")}
+                className="mb-4"
+              >
+                Quay lại danh sách
+              </Button>
+              <h1 className="text-2xl font-bold">
+                {isEditMode ? "Chỉnh sửa cuộc họp" : "Tạo cuộc họp mới"}
+              </h1>
+              <p className="text-gray-500 mt-1">
+                {isEditMode
+                  ? "Cập nhật thông tin cuộc họp"
+                  : "Điền thông tin để tạo cuộc họp mới"}
+              </p>
+            </div>
           </div>
 
-          <Form.Item label="Nội dung cuộc họp" name="summary">
-            <TextArea
-              rows={6}
-              placeholder="Nhập nội dung, chương trình cuộc họp..."
-              maxLength={2000}
-              showCount
-            />
-          </Form.Item>
+          {/* Form */}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            autoComplete="off"
+          >
+            <Divider orientation="left">
+              <span className="text-lg font-semibold text-blue-600">
+                <CalendarOutlined className="mr-2" />
+                Thông tin cơ bản
+              </span>
+            </Divider>
 
-          <Form.Item label="Ý kiến lớp" name="class_feedback">
-            <TextArea
-              rows={4}
-              placeholder="Ghi chú ý kiến, phản hồi từ lớp (nếu có)..."
-              maxLength={1000}
-              showCount
-            />
-          </Form.Item>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Form.Item
+                label={<span className="font-semibold">Lớp học</span>}
+                name="class_id"
+                rules={[{ required: true, message: "Vui lòng chọn lớp" }]}
+              >
+                <Select
+                  placeholder="Chọn lớp"
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={classes.map((cls) => ({
+                    value: cls.class_id,
+                    label: cls.class_name,
+                  }))}
+                  disabled={isEditMode}
+                />
+              </Form.Item>
 
-          <Form.Item>
-            <Space className="w-full justify-end">
-              <Button
-                size="large"
-                onClick={() => navigate("/advisor/meetings")}
+              <Form.Item
+                label={<span className="font-semibold">Tiêu đề cuộc họp</span>}
+                name="title"
+                rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
               >
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                size="large"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={submitting}
-                className="bg-gradient-to-r from-blue-600 to-blue-700"
+                <Input placeholder="Ví dụ: Họp lớp đầu kỳ" />
+              </Form.Item>
+
+              <Form.Item
+                label={<span className="font-semibold">Ngày họp</span>}
+                name="meeting_date"
+                rules={[{ required: true, message: "Vui lòng chọn ngày họp" }]}
               >
-                {isEditMode ? "Cập nhật" : "Tạo cuộc họp"}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Card>
-    </div>
+                <DatePicker
+                  placeholder="Chọn ngày"
+                  format="DD/MM/YYYY"
+                  className="w-full"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={<span className="font-semibold">Giờ bắt đầu</span>}
+                name="meeting_time"
+                rules={[
+                  { required: true, message: "Vui lòng chọn giờ bắt đầu" },
+                ]}
+              >
+                <TimePicker
+                  placeholder="Chọn giờ"
+                  format="HH:mm"
+                  className="w-full"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={<span className="font-semibold">Giờ kết thúc</span>}
+                name="end_time"
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve();
+                      const meetingTime = form.getFieldValue("meeting_time");
+                      if (!meetingTime) return Promise.resolve();
+                      if (value.isAfter(meetingTime)) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error("Giờ kết thúc phải sau giờ bắt đầu")
+                      );
+                    },
+                  },
+                ]}
+              >
+                <TimePicker
+                  placeholder="Chọn giờ kết thúc (tùy chọn)"
+                  format="HH:mm"
+                  className="w-full"
+                />
+              </Form.Item>
+
+              {isEditMode && (
+                <Form.Item
+                  label={<span className="font-semibold">Trạng thái</span>}
+                  name="status"
+                >
+                  <Select
+                    options={[
+                      { value: "scheduled", label: "Sắp diễn ra" },
+                      { value: "completed", label: "Đã hoàn thành" },
+                      { value: "cancelled", label: "Đã hủy" },
+                    ]}
+                  />
+                </Form.Item>
+              )}
+            </div>
+
+            <Divider orientation="left">
+              <span className="text-lg font-semibold text-purple-600">
+                <EnvironmentOutlined className="mr-2" />
+                Địa điểm và liên kết
+              </span>
+            </Divider>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Form.Item
+                label={
+                  <span className="font-semibold">
+                    <EnvironmentOutlined className="mr-2 text-gray-400" />
+                    Địa điểm
+                  </span>
+                }
+                name="location"
+              >
+                <Input placeholder="Ví dụ: Phòng A201" />
+              </Form.Item>
+
+              <Form.Item
+                label={
+                  <span className="font-semibold">
+                    <LinkOutlined className="mr-2 text-gray-400" />
+                    Link họp online
+                  </span>
+                }
+                name="meeting_link"
+              >
+                <Input placeholder="https://meet.google.com/xxx" type="url" />
+              </Form.Item>
+            </div>
+
+            <Divider orientation="left">
+              <span className="text-lg font-semibold text-pink-600">
+                <FileTextOutlined className="mr-2" />
+                Nội dung cuộc họp
+              </span>
+            </Divider>
+
+            <Form.Item
+              label={<span className="font-semibold">Nội dung cuộc họp</span>}
+              name="summary"
+            >
+              <TextArea
+                rows={6}
+                placeholder="Nhập nội dung, chương trình cuộc họp..."
+                maxLength={2000}
+                showCount
+                className="rounded-lg"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={<span className="font-semibold">Ý kiến lớp</span>}
+              name="class_feedback"
+            >
+              <TextArea
+                rows={4}
+                placeholder="Ghi chú ý kiến, phản hồi từ lớp (nếu có)..."
+                maxLength={1000}
+                showCount
+                className="rounded-lg"
+              />
+            </Form.Item>
+
+            <Divider />
+
+            <Form.Item className="mb-0">
+              <Space className="w-full justify-end" size="middle">
+                <Button onClick={() => navigate("/advisor/meetings")}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<SaveOutlined />}
+                  loading={submitting}
+                >
+                  {isEditMode ? "Cập nhật" : "Tạo cuộc họp"}
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Card>
+      </div>
+    </AdvisorLayout>
   );
 };
 

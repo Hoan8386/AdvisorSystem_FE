@@ -48,6 +48,7 @@ import {
   getStudentSemesterReportAPI,
   batchUpdateSemesterReportsAPI,
   getAtRiskStudentsAPI,
+  updateStudentPositionAPI,
 } from "../../../services/api.service";
 
 const { Option } = Select;
@@ -95,6 +96,12 @@ export const ClassDetail = () => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState("students");
+
+  // Update position modal state
+  const [positionModalVisible, setPositionModalVisible] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedPosition, setSelectedPosition] = useState(null);
+  const [loadingPosition, setLoadingPosition] = useState(false);
 
   useEffect(() => {
     if (classId) {
@@ -338,6 +345,45 @@ export const ClassDetail = () => {
     }
   };
 
+  // Handle update position
+  const handleOpenPositionModal = (student) => {
+    setSelectedStudent(student);
+    setSelectedPosition(student.position);
+    setPositionModalVisible(true);
+  };
+
+  const handleClosePositionModal = () => {
+    setPositionModalVisible(false);
+    setSelectedStudent(null);
+    setSelectedPosition(null);
+  };
+
+  const handleSavePosition = async () => {
+    if (!selectedStudent || !selectedPosition) {
+      toast.error("Vui lòng chọn vị trí");
+      return;
+    }
+
+    try {
+      setLoadingPosition(true);
+      await updateStudentPositionAPI(
+        selectedStudent.student_id,
+        selectedPosition
+      );
+      toast.success("Cập nhật vị trí thành công");
+      handleClosePositionModal();
+      // Refresh students list
+      fetchClassStudents();
+    } catch (error) {
+      console.error("Error updating position:", error);
+      const errorMessage =
+        error.response?.data?.message || "Không thể cập nhật vị trí";
+      toast.error(errorMessage);
+    } finally {
+      setLoadingPosition(false);
+    }
+  };
+
   // Batch update semester reports
   const handleBatchUpdate = async () => {
     if (!selectedSemester) {
@@ -403,6 +449,26 @@ export const ClassDetail = () => {
       width: 250,
     },
     {
+      title: "Vị trí",
+      dataIndex: "position",
+      key: "position",
+      width: 130,
+      align: "center",
+      render: (position) => {
+        if (!position) return "-";
+        const positionConfig = {
+          leader: { color: "red", text: "Lớp trưởng" },
+          vice_leader: { color: "orange", text: "Lớp phó" },
+          member: { color: "default", text: "Thành viên" },
+        };
+        const config = positionConfig[position] || {
+          color: "default",
+          text: position,
+        };
+        return <Tag color={config.color}>{config.text}</Tag>;
+      },
+    },
+    {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
@@ -427,7 +493,7 @@ export const ClassDetail = () => {
       title: "Số lần cảnh báo",
       dataIndex: "warnings_count",
       key: "warnings_count",
-      width: 150,
+      width: 200,
       align: "center",
       render: (count) => {
         if (!count || count === 0) {
@@ -443,9 +509,18 @@ export const ClassDetail = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 280,
+      width: 500,
       render: (_, record) => (
-        <Space>
+        <div className="flex flex-nowrap gap-0 items-center text-xs">
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleOpenPositionModal(record)}
+            className="px-1 h-6 text-xs"
+          >
+            Chỉnh vị trí
+          </Button>
+          <span className="text-gray-300">|</span>
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -453,9 +528,11 @@ export const ClassDetail = () => {
             size="small"
             disabled={!selectedSemester}
             loading={loadingStudentGrades}
+            className="px-1 h-6 text-xs"
           >
             Xem điểm
           </Button>
+          <span className="text-gray-300">|</span>
           <Button
             type="link"
             icon={<TrophyOutlined />}
@@ -463,10 +540,11 @@ export const ClassDetail = () => {
             size="small"
             disabled={!selectedSemester}
             loading={loadingStudentPoints}
+            className="px-1 h-6 text-xs"
           >
-            Điểm RL & CTXH
+            Điểm RL
           </Button>
-        </Space>
+        </div>
       ),
     },
   ];
@@ -1537,6 +1615,51 @@ export const ClassDetail = () => {
               </Card>
             </div>
           ) : null}
+        </Modal>
+
+        {/* Update Position Modal */}
+        <Modal
+          title="Cập nhật vị trí"
+          open={positionModalVisible}
+          onCancel={handleClosePositionModal}
+          onOk={handleSavePosition}
+          confirmLoading={loadingPosition}
+          okText="Cập nhật"
+          cancelText="Hủy"
+          width={500}
+        >
+          {selectedStudent && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Sinh viên:</span>
+                <span>{selectedStudent.full_name}</span>
+                <Tag color="blue">{selectedStudent.user_code}</Tag>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Vị trí hiện tại:</span>
+                <Tag color="default">
+                  {selectedStudent.position === "leader"
+                    ? "Lớp trưởng"
+                    : selectedStudent.position === "vice_leader"
+                    ? "Lớp phó"
+                    : "Thành viên"}
+                </Tag>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Chọn vị trí mới:</span>
+                <Select
+                  value={selectedPosition}
+                  onChange={setSelectedPosition}
+                  style={{ width: 200 }}
+                  options={[
+                    { value: "leader", label: "Lớp trưởng" },
+                    { value: "vice_leader", label: "Lớp phó" },
+                    { value: "member", label: "Thành viên" },
+                  ]}
+                />
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
     </AdvisorLayout>

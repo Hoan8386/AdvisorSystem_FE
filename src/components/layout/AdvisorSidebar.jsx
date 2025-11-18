@@ -9,6 +9,7 @@ import {
   Bot,
   BookOpen,
   MessageCircle,
+  CalendarDays,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
@@ -72,6 +73,16 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       bgColor: "bg-purple-50",
       hoverColor: "hover:bg-purple-100",
       dotColor: "bg-purple-600",
+    },
+    {
+      id: "meetings",
+      path: "/advisor/meetings",
+      label: "Cuộc họp",
+      icon: CalendarDays,
+      color: "text-pink-600",
+      bgColor: "bg-pink-50",
+      hoverColor: "hover:bg-pink-100",
+      dotColor: "bg-pink-600",
     },
     {
       id: "chat",
@@ -148,6 +159,8 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
               location.pathname.startsWith("/advisor/activities")) ||
             (item.path === "/advisor/classes" &&
               location.pathname.startsWith("/advisor/classes")) ||
+            (item.path === "/advisor/meetings" &&
+              location.pathname.startsWith("/advisor/meetings")) ||
             (item.path === "/advisor/rag" &&
               location.pathname.startsWith("/advisor/rag"));
 

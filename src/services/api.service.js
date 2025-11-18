@@ -294,6 +294,12 @@ const getClassStudentsAPI = (classId) => {
   return axios.get(URL_BACKEND);
 };
 
+// Update student position (Advisor)
+const updateStudentPositionAPI = (studentId, position) => {
+  const URL_BACKEND = `/api/students/${studentId}`;
+  return axios.put(URL_BACKEND, { position });
+};
+
 // ========== SEMESTER APIs ==========
 
 // Get all semesters
@@ -825,6 +831,7 @@ export {
     getClassesAPI,
     getClassDetailAPI,
     getClassStudentsAPI,
+    updateStudentPositionAPI,
     // Semester APIs
     getSemestersAPI,
     getSemesterDetailAPI,
