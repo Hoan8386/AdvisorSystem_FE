@@ -783,6 +783,123 @@ const deleteAdvisorApi = (advisorId) => {
   return axios.delete(URL_BACKEND);
 };
 
+// ========== Dashboard APIs ==========
+
+// Get dashboard overview (Admin)
+const getDashboardOverviewApi = () => {
+  const URL_BACKEND = "/api/statistics/dashboard-overview";
+  return axios.get(URL_BACKEND);
+};
+
+// ========== MEETINGS APIs ==========
+
+// Get all meetings (Admin)
+const getMeetingsApi = (params = {}) => {
+  const URL_BACKEND = "/api/meetings";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Get meeting detail
+const getMeetingDetailApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Create meeting (Advisor, Admin)
+const createMeetingApi = (meetingData) => {
+  const URL_BACKEND = "/api/meetings";
+  return axios.post(URL_BACKEND, meetingData);
+};
+
+// Update meeting (Advisor, Admin)
+const updateMeetingApi = (meetingId, meetingData) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}`;
+  return axios.put(URL_BACKEND, meetingData);
+};
+
+// Delete meeting (Advisor, Admin)
+const deleteMeetingApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Update attendance
+const updateMeetingAttendanceApi = (meetingId, attendanceData) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/attendance`;
+  return axios.post(URL_BACKEND, attendanceData);
+};
+
+// Export minutes
+const exportMeetingMinutesApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/export-minutes`;
+  return axios.get(URL_BACKEND, { responseType: 'blob' });
+};
+
+// Upload minutes
+const uploadMeetingMinutesApi = (meetingId, file) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/upload-minutes`;
+  const formData = new FormData();
+  formData.append('minutes_file', file);
+  return axios.post(URL_BACKEND, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+// Download minutes
+const downloadMeetingMinutesApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/download-minutes`;
+  return axios.get(URL_BACKEND, { responseType: 'blob' });
+};
+
+// Get meeting feedbacks
+const getMeetingFeedbacksApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/feedbacks`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get meeting statistics
+const getMeetingStatisticsApi = (params = {}) => {
+  const URL_BACKEND = "/api/meetings/statistics/overview";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// ========== ATTENDANCE APIs (Activity) ==========
+
+// Export danh sách đăng ký hoạt động
+const exportRegistrationsAPI = (activityId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/export-registrations`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// Export file mẫu điểm danh
+const exportAttendanceTemplateAPI = (activityId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/export-attendance-template`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+  });
+};
+
+// Import file điểm danh
+const importAttendanceAPI = (activityId, file) => {
+  const URL_BACKEND = `/api/activities/${activityId}/import-attendance`;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Lấy thống kê điểm danh
+const getAttendanceStatisticsAPI = (activityId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/attendance-statistics`;
+  return axios.get(URL_BACKEND);
+};
+
 export {
     
     createUserApi,
@@ -914,4 +1031,23 @@ export {
   getAdvisorsApi,
   updateAdvisorApi,
   deleteAdvisorApi,
+  // Dashboard APIs
+  getDashboardOverviewApi,
+  // Meetings APIs
+  getMeetingsApi,
+  getMeetingDetailApi,
+  createMeetingApi,
+  updateMeetingApi,
+  deleteMeetingApi,
+  updateMeetingAttendanceApi,
+  exportMeetingMinutesApi,
+  uploadMeetingMinutesApi,
+  downloadMeetingMinutesApi,
+  getMeetingFeedbacksApi,
+  getMeetingStatisticsApi,
+  // Attendance APIs
+  exportRegistrationsAPI,
+  exportAttendanceTemplateAPI,
+  importAttendanceAPI,
+  getAttendanceStatisticsAPI,
 };

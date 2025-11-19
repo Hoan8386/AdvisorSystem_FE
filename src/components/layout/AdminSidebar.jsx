@@ -9,6 +9,7 @@ import {
   Calendar,
   GraduationCap,
   Clock,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
@@ -36,7 +37,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "dashboard",
       path: "/admin",
-      label: "Bang dieu khien",
+      label: "Bảng điều khiển",
       icon: BarChart3,
       color: "text-[#dc3545]",
       bgColor: "bg-red-50",
@@ -46,7 +47,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "advisors",
       path: "/admin/advisors",
-      label: "Giang vien",
+      label: "Giảng viên",
       icon: Users,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
@@ -56,7 +57,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "classes",
       path: "/admin/classes",
-      label: "Lop hoc",
+      label: "Lớp học",
       icon: GraduationCap,
       color: "text-[#dc3545]",
       bgColor: "bg-red-50",
@@ -66,7 +67,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "semesters",
       path: "/admin/semesters",
-      label: "Hoc ky",
+      label: "Học kỳ",
       icon: Calendar,
       color: "text-pink-600",
       bgColor: "bg-pink-50",
@@ -76,7 +77,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "courses",
       path: "/admin/courses",
-      label: "Mon hoc",
+      label: "Môn học",
       icon: BookOpen,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
@@ -86,7 +87,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "grades",
       path: "/admin/grades",
-      label: "Quan ly diem",
+      label: "Quản lý điểm",
       icon: BarChart3,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -96,12 +97,22 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     {
       id: "schedules",
       path: "/admin/schedules",
-      label: "Lich hoc",
+      label: "Lịch học",
       icon: Clock,
       color: "text-green-600",
       bgColor: "bg-green-50",
       hoverColor: "hover:bg-green-100",
       dotColor: "bg-green-600",
+    },
+    {
+      id: "meetings",
+      path: "/admin/meetings",
+      label: "Cuộc họp",
+      icon: MessageSquare,
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-50",
+      hoverColor: "hover:bg-cyan-100",
+      dotColor: "bg-cyan-600",
     },
   ];
 
@@ -148,9 +159,12 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       >
         {menuItems.map((item) => {
           const Icon = item.icon;
+          // Sửa lỗi active: /admin không nên match với /admin/advisors
           const isActive =
-            location.pathname === item.path ||
-            location.pathname.startsWith(item.path + "/");
+            item.path === "/admin"
+              ? location.pathname === "/admin"
+              : location.pathname === item.path ||
+                location.pathname.startsWith(item.path + "/");
 
           return (
             <button

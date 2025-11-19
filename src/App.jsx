@@ -21,6 +21,7 @@ import AdvisorActivities from "./pages/advisor/activities/AdvisorActivities";
 import CreateEditActivity from "./pages/advisor/activities/CreateEditActivity";
 import ActivityDetail from "./pages/advisor/activities/ActivityDetail";
 import ActivityRegistrations from "./pages/advisor/activities/ActivityRegistrations";
+import ActivityStatistics from "./pages/advisor/activities/ActivityStatistics";
 import AssignStudents from "./pages/advisor/activities/AssignStudents";
 import AdvisorClasses from "./pages/advisor/classes/AdvisorClasses";
 import { ClassDetail } from "./pages/advisor/classes/ClassDetail";
@@ -59,6 +60,7 @@ import CreateEditMeeting from "./pages/advisor/meetings/CreateEditMeeting";
 import MeetingDetail from "./pages/advisor/meetings/MeetingDetail";
 import MeetingAttendance from "./pages/advisor/meetings/MeetingAttendance";
 import MeetingStatistics from "./pages/advisor/meetings/MeetingStatistics";
+import AdminMeetings from "./pages/admin/AdminMeetings";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -162,6 +164,10 @@ function App() {
           element: <ActivityRegistrations />,
         },
         {
+          path: "activities/:id/statistics",
+          element: <ActivityStatistics />,
+        },
+        {
           path: "activities/:id/assign-students",
           element: <AssignStudents />,
         },
@@ -235,6 +241,7 @@ function App() {
         { path: "courses", element: <AdminCourses /> },
         { path: "grades", element: <AdminGrades /> },
         { path: "schedules", element: <AdminSchedules /> },
+        { path: "meetings", element: <AdminMeetings /> },
       ],
     },
     // { path: "/unauthorized", element: <Unauthorized /> },

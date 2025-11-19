@@ -16,6 +16,7 @@ import {
   Select,
   DatePicker,
   Popconfirm,
+  Input,
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -39,6 +40,7 @@ export const AdvisorActivities = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
+    title: "",
     status: null,
     dateRange: null,
   });
@@ -57,6 +59,13 @@ export const AdvisorActivities = () => {
 
       if (res && res.success) {
         let filteredData = res.data || [];
+
+        // Lọc theo tiêu đề
+        if (filters.title) {
+          filteredData = filteredData.filter((activity) =>
+            activity.title.toLowerCase().includes(filters.title.toLowerCase())
+          );
+        }
 
         // Lọc theo trạng thái
         if (filters.status) {
@@ -329,6 +338,19 @@ export const AdvisorActivities = () => {
           }}
         >
           <Space wrap size="middle">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Tìm kiếm tiêu đề
+              </label>
+              <Input
+                placeholder="Nhập tiêu đề hoạt động"
+                style={{ width: 250 }}
+                value={filters.title}
+                onChange={(e) =>
+                  setFilters({ ...filters, title: e.target.value })
+                }
+              />
+            </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Trạng thái

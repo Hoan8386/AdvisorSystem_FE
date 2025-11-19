@@ -22,6 +22,7 @@ export const ActivityRegistrations = () => {
   const { id } = useParams();
   const [activity, setActivity] = useState(null);
   const [registrations, setRegistrations] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
 
@@ -91,13 +92,15 @@ export const ActivityRegistrations = () => {
       setLoading(true);
       const res = await getActivityRegistrationsAPI(id);
       if (res && res.data) {
-        // API trả về { activity, total_registrations, registrations }
+        // API trả về { activity, summary, registrations }
         setRegistrations(res.data.registrations || []);
+        setSummary(res.data.summary || null);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách đăng ký");
       console.error(error);
       setRegistrations([]); // Set empty array on error
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -217,32 +220,39 @@ export const ActivityRegistrations = () => {
               children: (
                 <div className="space-y-4">
                   {/* Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card size="small" className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
-                        {registrationsList.length}
+                        {summary?.total_registrations || 0}
                       </div>
                       <div className="text-sm text-gray-600">Tổng đăng ký</div>
                     </Card>
+
                     <Card size="small" className="text-center">
                       <div className="text-2xl font-bold text-green-600">
-                        {
-                          registrationsList.filter(
-                            (r) => r.status === "attended"
-                          ).length
-                        }
+                        {summary?.by_status?.attended || 0}
                       </div>
                       <div className="text-sm text-gray-600">Đã tham gia</div>
                     </Card>
                     <Card size="small" className="text-center">
                       <div className="text-2xl font-bold text-yellow-600">
-                        {
-                          registrationsList.filter(
-                            (r) => r.status === "registered"
-                          ).length
-                        }
+                        {summary?.by_status?.registered || 0}
                       </div>
-                      <div className="text-sm text-gray-600">Đã đăng ký</div>
+                      <div className="text-sm text-gray-600">
+                        Chưa điểm danh
+                      </div>
+                    </Card>
+                    <Card size="small" className="text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        {summary?.by_status?.absent || 0}
+                      </div>
+                      <div className="text-sm text-gray-600">Vắng mặt</div>
+                    </Card>
+                    <Card size="small" className="text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        {summary?.by_status?.cancelled || 0}
+                      </div>
+                      <div className="text-sm text-gray-600">Hủy</div>
                     </Card>
                   </div>
 

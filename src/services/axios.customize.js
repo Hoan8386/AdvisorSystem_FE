@@ -40,6 +40,10 @@ instance.interceptors.response.use(function (response) {
     //  debugger
     //console.log(" check inside interceptor  ", response);
     NProgress.done();
+    // Nếu response là Blob (file download), trả về response object, không extract data
+    if (response.data instanceof Blob) {
+        return response;
+    }
     // Return response as is to maintain success/data structure
     return response.data || response;
 }, function (error) {

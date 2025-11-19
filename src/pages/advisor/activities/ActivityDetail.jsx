@@ -19,12 +19,18 @@ import {
   CalendarOutlined,
   EnvironmentOutlined,
   TeamOutlined,
+  DownloadOutlined,
+  UploadOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import {
   getActivityDetailAPI,
   deleteActivityAPI,
+  exportRegistrationsAPI,
+  exportAttendanceTemplateAPI,
+  importAttendanceAPI,
 } from "../../../services/api.service";
 
 export const ActivityDetail = () => {
@@ -73,6 +79,169 @@ export const ActivityDetail = () => {
         }
       },
     });
+  };
+
+  const handleExportRegistrations = async () => {
+    try {
+      const toastId = toast.loading("Đang xuất danh sách đăng ký...");
+      const response = await exportRegistrationsAPI(id);
+
+      // Lấy tên file từ Content-Disposition header hoặc tạo tên mặc định
+      let fileName = "DanhSachDangKy.xlsx";
+      const contentDisposition = response.headers?.["content-disposition"];
+      console.log("Content-Disposition:", contentDisposition);
+
+      if (contentDisposition) {
+        // Try different patterns for filename extraction
+        let matches = contentDisposition.match(
+          /filename\*=(?:UTF-8'')?(.+?)(?:;|$)/
+        );
+        if (!matches) {
+          matches = contentDisposition.match(/filename=(.+?)(?:;|$)/);
+        }
+        if (matches && matches[1]) {
+          fileName = decodeURIComponent(matches[1]).replace(/"/g, "").trim();
+          console.log("Extracted fileName:", fileName);
+        }
+      }
+
+      // Download file - response.data là Blob từ axios interceptor
+      const blob = response.data || response;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(toastId);
+      toast.success("Xuất danh sách đăng ký thành công");
+    } catch (error) {
+      const errorMsg =
+        error?.response?.status === 403
+          ? "Bạn không có quyền xuất danh sách này"
+          : error?.response?.status === 404
+          ? "Hoạt động không tồn tại"
+          : error?.message ||
+            "Lỗi khi xuất danh sách đăng ký. Vui lòng thử lại.";
+      toast.error(errorMsg);
+      console.error(error);
+    }
+  };
+
+  const handleExportAttendanceTemplate = async () => {
+    try {
+      const toastId = toast.loading("Đang xuất file mẫu điểm danh...");
+      const response = await exportAttendanceTemplateAPI(id);
+
+      // Lấy tên file từ Content-Disposition header hoặc tạo tên mặc định
+      let fileName = "DiemDanh.xlsx";
+      const contentDisposition = response.headers?.["content-disposition"];
+      console.log("Content-Disposition:", contentDisposition);
+
+      if (contentDisposition) {
+        // Try different patterns for filename extraction
+        let matches = contentDisposition.match(
+          /filename\*=(?:UTF-8'')?(.+?)(?:;|$)/
+        );
+        if (!matches) {
+          matches = contentDisposition.match(/filename=(.+?)(?:;|$)/);
+        }
+        if (matches && matches[1]) {
+          fileName = decodeURIComponent(matches[1]).replace(/"/g, "").trim();
+          console.log("Extracted fileName:", fileName);
+        }
+      }
+
+      // Download file - response.data là Blob từ axios interceptor
+      const blob = response.data || response;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(toastId);
+      toast.success("Xuất file mẫu điểm danh thành công");
+    } catch (error) {
+      const errorMsg =
+        error?.response?.status === 400
+          ? "Hoạt động chưa diễn ra hoặc không thể xuất file mẫu"
+          : error?.response?.status === 403
+          ? "Bạn không có quyền xuất file mẫu này"
+          : error?.response?.status === 404
+          ? "Hoạt động không tồn tại"
+          : error?.message ||
+            "Lỗi khi xuất file mẫu điểm danh. Vui lòng thử lại.";
+      toast.error(errorMsg);
+      console.error(error);
+    }
+  };
+
+  const handleImportAttendance = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xlsx,.xls";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Kiểm tra kích thước file (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File quá lớn. Tối đa 5MB.");
+        return;
+      }
+
+      let toastId;
+      try {
+        toastId = toast.loading("Đang nhập file điểm danh...");
+        const response = await importAttendanceAPI(id, file);
+
+        toast.dismiss(toastId);
+
+        // Hiển thị kết quả import bằng toast
+        const importData = response.data.data || response.data;
+        const message = `✅ Nhập thành công: ${
+          importData.total_updated || 0
+        } cập nhật${
+          importData.total_skipped > 0
+            ? `, ${importData.total_skipped} bỏ qua`
+            : ""
+        }${
+          importData.total_errors > 0 ? `, ${importData.total_errors} lỗi` : ""
+        }`;
+
+        toast.success(message);
+        fetchActivityDetail();
+      } catch (error) {
+        toast.dismiss(toastId);
+        const errorMsg =
+          error?.response?.status === 400
+            ? error?.response?.data?.message ||
+              "File không hợp lệ hoặc hoạt động chưa diễn ra"
+            : error?.response?.status === 403
+            ? "Bạn không có quyền cập nhật điểm danh"
+            : error?.response?.status === 404
+            ? "Hoạt động không tồn tại"
+            : error?.response?.status === 422
+            ? error?.response?.data?.message ||
+              "Dữ liệu không hợp lệ. Kiểm tra lại file."
+            : error?.message ||
+              "Lỗi khi nhập file điểm danh. Vui lòng thử lại.";
+        toast.error(errorMsg);
+        console.error(error);
+      }
+    };
+    input.click();
+  };
+
+  const handleViewAttendanceStatistics = () => {
+    navigate(`/advisor/activities/${id}/statistics`);
   };
 
   const statusConfig = {
@@ -145,59 +314,118 @@ export const ActivityDetail = () => {
   return (
     <AdvisorLayout>
       <div className="space-y-6 p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/advisor/activities")}
-              size="large"
-            />
-            <h1 className="text-2xl font-bold text-gray-900 m-0">
-              📋 Chi tiết hoạt động
-            </h1>
+        {/* Header Container */}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* --- DÒNG 1: Tiêu đề và Các nút thao tác chính --- */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            {/* Left: Back Button & Title */}
+            <div className="flex items-center gap-4">
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate("/advisor/activities")}
+                size="large"
+              />
+              <h1 className="text-2xl font-bold text-gray-900 m-0">
+                📋 Chi tiết hoạt động
+              </h1>
+            </div>
+
+            {/* Right: Main Actions (Phân công, Danh sách, Sửa, Xóa) */}
+            <Space size="middle" wrap>
+              <Button
+                type="primary"
+                icon={<UserOutlined />}
+                onClick={() =>
+                  navigate(`/advisor/activities/${id}/assign-students`)
+                }
+                style={{
+                  background:
+                    "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
+                  border: "none",
+                }}
+              >
+                Phân công sinh viên
+              </Button>
+              <Button
+                type="primary"
+                icon={<TeamOutlined />}
+                onClick={() =>
+                  navigate(`/advisor/activities/${id}/registrations`)
+                }
+                style={{
+                  background:
+                    "linear-gradient(135deg, #1677ff 0%, #0958d9 100%)",
+                  border: "none",
+                }}
+              >
+                Danh sách đăng ký
+              </Button>
+
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/advisor/activities/${id}/edit`)}
+              >
+                Chỉnh sửa
+              </Button>
+              <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+                Xóa
+              </Button>
+            </Space>
           </div>
 
-          <Space size="middle" wrap>
+          {/* --- DÒNG 2: Các nút Export/Import/Thống kê (Căn phải) --- */}
+          <div className="flex items-center justify-end flex-wrap gap-3">
             <Button
-              type="primary"
-              icon={<UserOutlined />}
-              onClick={() =>
-                navigate(`/advisor/activities/${id}/assign-students`)
-              }
+              icon={<DownloadOutlined />}
+              onClick={handleExportRegistrations}
+              title="Xuất tất cả sinh viên đã đăng ký hoạt động"
               style={{
-                background: "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
-                border: "none",
+                borderRadius: "6px",
+                color: "#1890ff",
+                borderColor: "#1890ff",
               }}
             >
-              Phân công sinh viên
+              Export danh sách
             </Button>
             <Button
-              type="primary"
-              icon={<TeamOutlined />}
-              onClick={() =>
-                navigate(`/advisor/activities/${id}/registrations`)
-              }
+              icon={<DownloadOutlined />}
+              onClick={handleExportAttendanceTemplate}
+              title="Xuất file Excel để điểm danh"
               style={{
-                background: "linear-gradient(135deg, #1677ff 0%, #0958d9 100%)",
-                border: "none",
+                borderRadius: "6px",
+                color: "#faad14",
+                borderColor: "#faad14",
               }}
             >
-              Danh sách đăng ký
+              Export mẫu điểm danh
             </Button>
             <Button
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/advisor/activities/${id}/edit`)}
+              icon={<UploadOutlined />}
+              onClick={handleImportAttendance}
+              title="Nhập file điểm danh và cập nhật trạng thái"
+              style={{
+                borderRadius: "6px",
+                color: "#52c41a",
+                borderColor: "#52c41a",
+              }}
             >
-              Chỉnh sửa
+              Import điểm danh
             </Button>
-            <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-              Xóa
+            <Button
+              icon={<BarChartOutlined />}
+              onClick={handleViewAttendanceStatistics}
+              title="Xem báo cáo tổng hợp"
+              style={{
+                borderRadius: "6px",
+                color: "#722ed1",
+                borderColor: "#722ed1",
+              }}
+            >
+              Thống kê điểm danh
             </Button>
-          </Space>
+          </div>
         </div>
-
         {/* Main Info */}
         <Card
           style={{
