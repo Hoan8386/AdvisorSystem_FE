@@ -29,7 +29,11 @@ export const MyWarnings = () => {
       setLoading(true);
       const res = await getMyWarningsAPI();
       if (res && res.success) {
-        setWarnings(res.data.warnings || []);
+        // API returns res.data as array of warnings
+        const warningList = Array.isArray(res.data)
+          ? res.data
+          : res.data.warnings || [];
+        setWarnings(warningList);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách cảnh cáo");

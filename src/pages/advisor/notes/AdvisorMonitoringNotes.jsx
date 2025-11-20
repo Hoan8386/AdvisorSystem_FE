@@ -23,7 +23,8 @@ import {
   getMonitoringNotesAPI,
   deleteMonitoringNoteAPI,
   getMonitoringNoteDetailAPI,
-} from "../../../services/pointFeedback.service";
+  getSemestersAPI,
+} from "../../../services/api.service";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 
@@ -35,6 +36,23 @@ function AdvisorMonitoringNotes() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(undefined);
   const [semesterFilter, setSemesterFilter] = useState(undefined);
+  const [semesters, setSemesters] = useState([]);
+
+  // Fetch semesters
+  const fetchSemesters = useCallback(async () => {
+    try {
+      const response = await getSemestersAPI();
+      if (response && response.data) {
+        const options = response.data.map((sem) => ({
+          label: `${sem.semester_name} - ${sem.academic_year}`,
+          value: sem.semester_id,
+        }));
+        setSemesters(options);
+      }
+    } catch (error) {
+      console.error("Lỗi tải học kỳ:", error);
+    }
+  }, []);
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
@@ -51,6 +69,10 @@ function AdvisorMonitoringNotes() {
     }
     setLoading(false);
   }, [categoryFilter, semesterFilter]);
+
+  useEffect(() => {
+    fetchSemesters();
+  }, [fetchSemesters]);
 
   useEffect(() => {
     fetchNotes();
@@ -132,7 +154,6 @@ function AdvisorMonitoringNotes() {
     {
       title: "Hành động",
       width: 150,
-      fixed: "right",
       render: (_, r) => (
         <Space size="small">
           <Button
@@ -165,7 +186,7 @@ function AdvisorMonitoringNotes() {
     <AdvisorLayout>
       <div className="p-6">
         <Card>
-          <div className="mb-6 flex justify-between items-center">
+          <div className="mb-5 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">Ghi chú theo dõi sinh viên</h1>
               <p className="text-gray-600 mt-1">
@@ -182,15 +203,16 @@ function AdvisorMonitoringNotes() {
             </Button>
           </div>
 
-          <Row gutter={16} className="mb-6">
-            <Col xs={24} md={8}>
+          <Row gutter={8} className="mb-4 flex-wrap items-end">
+            {/* Filter danh mục */}
+            <Col xs="auto">
               <div className="mb-2 text-sm font-medium">Danh mục</div>
               <Select
+                className="w-36" // width vừa phải
                 placeholder="Tất cả"
                 allowClear
                 value={categoryFilter}
                 onChange={setCategoryFilter}
-                className="w-full"
                 options={[
                   { label: "Học tập", value: "academic" },
                   { label: "Cá nhân", value: "personal" },
@@ -199,22 +221,28 @@ function AdvisorMonitoringNotes() {
                 ]}
               />
             </Col>
-            <Col xs={24} md={8}>
+
+            {/* Filter học kỳ */}
+            <Col xs="auto">
               <div className="mb-2 text-sm font-medium">Học kỳ</div>
               <Select
+                className="w-48"
                 placeholder="Tất cả"
                 allowClear
                 value={semesterFilter}
                 onChange={setSemesterFilter}
-                className="w-full"
-                options={[
-                  { label: "HK1 - 2024-2025", value: 1 },
-                  { label: "HK2 - 2024-2025", value: 2 },
-                ]}
+                options={semesters}
               />
             </Col>
-            <Col xs={24} md={8} className="flex items-end">
-              <Button block onClick={fetchNotes} loading={loading}>
+
+            {/* Nút làm mới */}
+            <Col xs="auto">
+              <Button
+                type="primary"
+                onClick={fetchNotes}
+                loading={loading}
+                className="mt-6 w-28"
+              >
                 Làm mới
               </Button>
             </Col>

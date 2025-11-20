@@ -315,7 +315,7 @@ export const ActivityDetail = () => {
     <AdvisorLayout>
       <div className="space-y-6 p-4">
         {/* Header Container */}
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-5">
           {/* --- DÒNG 1: Tiêu đề và Các nút thao tác chính --- */}
           <div className="flex items-center justify-between flex-wrap gap-4">
             {/* Left: Back Button & Title */}

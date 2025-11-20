@@ -187,7 +187,7 @@ export const CreateEditMeeting = () => {
     <AdvisorLayout>
       <div className="p-6">
         <Card>
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-5">
             <div>
               <Button
                 type="text"

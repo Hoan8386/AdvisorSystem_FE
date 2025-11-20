@@ -10,6 +10,8 @@ import {
   BookOpen,
   MessageCircle,
   CalendarDays,
+  Award,
+  FileText,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
@@ -83,6 +85,26 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       bgColor: "bg-pink-50",
       hoverColor: "hover:bg-pink-100",
       dotColor: "bg-pink-600",
+    },
+    {
+      id: "point-feedbacks",
+      path: "/advisor/point-feedbacks",
+      label: "Phản hồi điểm",
+      icon: Award,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      hoverColor: "hover:bg-yellow-100",
+      dotColor: "bg-yellow-600",
+    },
+    {
+      id: "monitoring-notes",
+      path: "/advisor/monitoring-notes",
+      label: "Ghi chú theo dõi",
+      icon: FileText,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      hoverColor: "hover:bg-indigo-100",
+      dotColor: "bg-indigo-600",
     },
     {
       id: "chat",

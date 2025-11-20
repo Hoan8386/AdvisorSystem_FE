@@ -164,7 +164,7 @@ export const MeetingStatistics = () => {
       <div className="p-6">
         <Card>
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-5">
             <div>
               <Button
                 type="text"
@@ -185,12 +185,12 @@ export const MeetingStatistics = () => {
           </div>
 
           {/* Meeting Statistics Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h2 className="text-lg font-semibold mb-4">
               <CalendarOutlined style={{ marginRight: 8 }} />
               Tổng Quan Cuộc Họp
             </h2>
-            <Row gutter={[16, 16]} className="mb-6">
+            <Row gutter={[16, 16]} className="mb-5">
               <Col xs={24} sm={12} md={6}>
                 <StatisticCard
                   icon={CalendarOutlined}
@@ -276,7 +276,7 @@ export const MeetingStatistics = () => {
           </div>
 
           {/* Attendance Statistics Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h2 className="text-lg font-semibold mb-4">
               <TeamOutlined style={{ marginRight: 8 }} />
               Thống Kê Điểm Danh

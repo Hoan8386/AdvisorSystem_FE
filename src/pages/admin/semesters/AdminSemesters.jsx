@@ -207,7 +207,7 @@ export const AdminSemesters = () => {
   return (
     <div className="p-6">
       <Card>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-5">
           <h1 className="text-2xl font-bold">Quản lý Học kỳ</h1>
           <Space>
             <Button

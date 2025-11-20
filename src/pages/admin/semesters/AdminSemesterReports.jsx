@@ -133,7 +133,7 @@ export const AdminSemesterReports = () => {
   return (
     <div className="p-6">
       <Card>
-        <div className="mb-6">
+        <div className="mb-5">
           <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate("/admin/semesters")}

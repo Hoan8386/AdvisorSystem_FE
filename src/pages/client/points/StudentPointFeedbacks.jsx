@@ -13,6 +13,7 @@ import {
   Row,
   Col,
   Empty,
+  Image,
 } from "antd";
 import {
   EyeOutlined,
@@ -25,16 +26,33 @@ import {
   getPointFeedbacksAPI,
   deletePointFeedbackAPI,
 } from "../../../services/pointFeedback.service";
+import { getSemestersAPI } from "../../../services/api.service";
 import dayjs from "dayjs";
 
 export default function StudentPointFeedbacks() {
   const navigate = useNavigate();
   const [feedbacks, setFeedbacks] = useState([]);
+  const [semesters, setSemesters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [statusFilter, setStatusFilter] = useState(undefined);
   const [semesterFilter, setSemesterFilter] = useState(undefined);
+
+  const fetchSemesters = useCallback(async () => {
+    try {
+      const response = await getSemestersAPI();
+      if (response && response.data) {
+        const semesterOptions = response.data.map((sem) => ({
+          label: sem.semester_name,
+          value: sem.semester_id,
+        }));
+        setSemesters(semesterOptions);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải học kỳ:", error);
+    }
+  }, []);
 
   const fetchFeedbacks = useCallback(async () => {
     try {
@@ -53,6 +71,10 @@ export default function StudentPointFeedbacks() {
       setLoading(false);
     }
   }, [statusFilter, semesterFilter]);
+
+  useEffect(() => {
+    fetchSemesters();
+  }, [fetchSemesters]);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -169,172 +191,195 @@ export default function StudentPointFeedbacks() {
 
   return (
     <StudentLayout>
-      <div className="p-6">
-        <Card className="mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">Phản hồi điểm của tôi</h1>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate("/student/point-feedbacks/create")}
-            >
-              Tạo phản hồi mới
-            </Button>
-          </div>
-
-          <Row gutter={16} className="mb-6">
-            <Col xs={24} sm={12} md={8}>
-              <div className="mb-2 text-sm font-medium">Trạng thái</div>
-              <Select
-                className="w-full"
-                placeholder="Tất cả trạng thái"
-                allowClear
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { label: "Chờ duyệt", value: "pending" },
-                  { label: "Đã duyệt", value: "approved" },
-                  { label: "Từ chối", value: "rejected" },
-                ]}
-              />
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <div className="mb-2 text-sm font-medium">Học kỳ</div>
-              <Select
-                className="w-full"
-                placeholder="Tất cả học kỳ"
-                allowClear
-                value={semesterFilter}
-                onChange={setSemesterFilter}
-                options={[
-                  { label: "Học kỳ 1", value: 1 },
-                  { label: "Học kỳ 2", value: 2 },
-                  { label: "Học kỳ hè", value: 3 },
-                ]}
-              />
-            </Col>
-            <Col xs={24} sm={12} md={8} className="flex items-end">
-              <Button block onClick={fetchFeedbacks} loading={loading}>
-                Làm mới
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card className="mb-5">
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-2xl font-bold">Phản hồi điểm của tôi</h1>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate("/student/point-feedbacks/create")}
+              >
+                Tạo phản hồi mới
               </Button>
-            </Col>
-          </Row>
+            </div>
 
-          <Spin spinning={loading}>
-            {feedbacks.length === 0 ? (
-              <Empty description="Không có phản hồi nào" />
-            ) : (
-              <Table
-                dataSource={feedbacks}
-                columns={columns}
-                rowKey="feedback_id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showTotal: (total) => `Tổng ${total} phản hồi`,
-                }}
-                scroll={{ x: 1200 }}
-              />
-            )}
-          </Spin>
-        </Card>
+            <Row gutter={8} className="mb-4 flex-wrap items-end">
+              {/* Filter trạng thái */}
+              <Col xs="auto">
+                <div className="mb-2 text-sm font-medium">Trạng thái</div>
+                <Select
+                  className="w-36"
+                  placeholder="Tất cả trạng thái"
+                  allowClear
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={[
+                    { label: "Chờ duyệt", value: "pending" },
+                    { label: "Đã duyệt", value: "approved" },
+                    { label: "Từ chối", value: "rejected" },
+                  ]}
+                />
+              </Col>
 
-        {/* Chi tiết Drawer */}
-        <Drawer
-          title="Chi tiết phản hồi"
-          onClose={() => setDrawerVisible(false)}
-          open={drawerVisible}
-          width={600}
-        >
-          {selectedFeedback && (
-            <div className="space-y-4">
-              <div>
-                <label className="font-medium block mb-2">Trạng thái:</label>
-                <Tag
-                  color={
-                    selectedFeedback.status === "pending"
-                      ? "orange"
-                      : selectedFeedback.status === "approved"
-                      ? "green"
-                      : "red"
-                  }
+              {/* Filter học kỳ */}
+              <Col xs="auto">
+                <div className="mb-2 text-sm font-medium">Học kỳ</div>
+                <Select
+                  className="w-36"
+                  placeholder="Tất cả học kỳ"
+                  allowClear
+                  value={semesterFilter}
+                  onChange={setSemesterFilter}
+                  options={semesters}
+                />
+              </Col>
+
+              {/* Nút làm mới */}
+              <Col xs="auto">
+                <Button
+                  type="primary"
+                  onClick={fetchFeedbacks}
+                  loading={loading}
+                  className="mt-6 w-28"
                 >
-                  {selectedFeedback.status === "pending"
-                    ? "Chờ duyệt"
-                    : selectedFeedback.status === "approved"
-                    ? "Đã duyệt"
-                    : "Từ chối"}
-                </Tag>
-              </div>
+                  Làm mới
+                </Button>
+              </Col>
+            </Row>
 
-              <div>
-                <label className="font-medium block mb-2">Học kỳ:</label>
-                <p>{selectedFeedback.semester?.semester_name}</p>
-              </div>
+            <Spin spinning={loading}>
+              {feedbacks.length === 0 ? (
+                <Empty description="Không có phản hồi nào" />
+              ) : (
+                <Table
+                  dataSource={feedbacks}
+                  columns={columns}
+                  rowKey="feedback_id"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Tổng ${total} phản hồi`,
+                  }}
+                  scroll={{ x: 1200 }}
+                />
+              )}
+            </Spin>
+          </Card>
 
-              <div>
-                <label className="font-medium block mb-2">
-                  Nội dung phản hồi:
-                </label>
-                <p className="bg-gray-50 p-3 rounded whitespace-pre-wrap">
-                  {selectedFeedback.feedback_content}
-                </p>
-              </div>
+          {/* Chi tiết Drawer */}
+          <Drawer
+            title="Chi tiết phản hồi"
+            onClose={() => setDrawerVisible(false)}
+            open={drawerVisible}
+            width={600}
+          >
+            {selectedFeedback && (
+              <div className="space-y-4">
+                <div>
+                  <label className="font-medium block mb-2">Trạng thái:</label>
+                  <Tag
+                    color={
+                      selectedFeedback.status === "pending"
+                        ? "orange"
+                        : selectedFeedback.status === "approved"
+                        ? "green"
+                        : "red"
+                    }
+                  >
+                    {selectedFeedback.status === "pending"
+                      ? "Chờ duyệt"
+                      : selectedFeedback.status === "approved"
+                      ? "Đã duyệt"
+                      : "Từ chối"}
+                  </Tag>
+                </div>
 
-              {selectedFeedback.attachment_path && (
+                <div>
+                  <label className="font-medium block mb-2">Học kỳ:</label>
+                  <p>{selectedFeedback.semester?.semester_name}</p>
+                </div>
+
                 <div>
                   <label className="font-medium block mb-2">
-                    Tệp đính kèm:
+                    Nội dung phản hồi:
                   </label>
-                  <a
-                    href={`/storage/${selectedFeedback.attachment_path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Tải xuống
-                  </a>
+                  <p className="bg-gray-50 p-3 rounded whitespace-pre-wrap">
+                    {selectedFeedback.feedback_content}
+                  </p>
                 </div>
-              )}
 
-              <div>
-                <label className="font-medium block mb-2">Ngày gửi:</label>
-                <p>
-                  {dayjs(selectedFeedback.created_at).format(
-                    "DD/MM/YYYY HH:mm"
-                  )}
-                </p>
+                {selectedFeedback.attachment_path && (
+                  <div>
+                    <label className="font-medium block mb-2">
+                      Tệp đính kèm:
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      {/\.(jpg|jpeg|png|gif)$/i.test(
+                        selectedFeedback.attachment_path
+                      ) ? (
+                        <div className="border rounded p-2 inline-block">
+                          <Image
+                            src={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                            alt="Attachment"
+                            style={{ maxHeight: "300px", width: "auto" }}
+                            preview={{ mask: "Xem" }}
+                          />
+                        </div>
+                      ) : null}
+                      <a
+                        href={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        📥 Tải xuống (
+                        {selectedFeedback.attachment_path.split("/").pop()})
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="font-medium block mb-2">Ngày gửi:</label>
+                  <p>
+                    {dayjs(selectedFeedback.created_at).format(
+                      "DD/MM/YYYY HH:mm"
+                    )}
+                  </p>
+                </div>
+
+                {selectedFeedback.status !== "pending" && (
+                  <>
+                    <div>
+                      <label className="font-medium block mb-2">
+                        Phản hồi của cố vấn:
+                      </label>
+                      <p className="bg-blue-50 p-3 rounded whitespace-pre-wrap">
+                        {selectedFeedback.advisor_response}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="font-medium block mb-2">Cố vấn:</label>
+                      <p>{selectedFeedback.advisor?.full_name}</p>
+                    </div>
+                    <div>
+                      <label className="font-medium block mb-2">
+                        Ngày phê duyệt:
+                      </label>
+                      <p>
+                        {dayjs(selectedFeedback.response_at).format(
+                          "DD/MM/YYYY HH:mm"
+                        )}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
-
-              {selectedFeedback.status !== "pending" && (
-                <>
-                  <div>
-                    <label className="font-medium block mb-2">
-                      Phản hồi của cố vấn:
-                    </label>
-                    <p className="bg-blue-50 p-3 rounded whitespace-pre-wrap">
-                      {selectedFeedback.advisor_response}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="font-medium block mb-2">Cố vấn:</label>
-                    <p>{selectedFeedback.advisor?.full_name}</p>
-                  </div>
-                  <div>
-                    <label className="font-medium block mb-2">
-                      Ngày phê duyệt:
-                    </label>
-                    <p>
-                      {dayjs(selectedFeedback.response_at).format(
-                        "DD/MM/YYYY HH:mm"
-                      )}
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </Drawer>
+            )}
+          </Drawer>
+        </div>
       </div>
     </StudentLayout>
   );

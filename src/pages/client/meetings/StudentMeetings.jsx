@@ -234,7 +234,7 @@ export const StudentMeetings = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
               <CalendarOutlined className="mr-3" />
               Cuộc họp lớp
@@ -245,7 +245,7 @@ export const StudentMeetings = () => {
           </div>
 
           {/* Filters */}
-          <Card className="mb-6 shadow-lg rounded-2xl border-0 bg-white/90 backdrop-blur-sm">
+          <Card className="mb-5 shadow-lg rounded-2xl border-0 bg-white/90 backdrop-blur-sm">
             <div className="flex flex-wrap gap-4">
               <Select
                 placeholder="Trạng thái"

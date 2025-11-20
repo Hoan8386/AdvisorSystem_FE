@@ -316,7 +316,7 @@ const RAGDocumentManagement = () => {
   return (
     <div className="p-6">
       {/* Statistics Cards */}
-      <Row gutter={16} className="mb-6">
+      <Row gutter={16} className="mb-5">
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic

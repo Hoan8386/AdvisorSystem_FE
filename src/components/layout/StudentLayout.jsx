@@ -15,6 +15,8 @@ import {
   BookOpen,
   AlertTriangle,
   MessageCircle,
+  Award,
+  FileText,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -73,6 +75,18 @@ export const StudentLayout = ({ children }) => {
       path: "/student/warnings",
       label: "Cảnh cáo học vụ",
       icon: AlertTriangle,
+    },
+    {
+      id: "point-feedbacks",
+      path: "/student/point-feedbacks",
+      label: "Phản hồi điểm",
+      icon: Award,
+    },
+    {
+      id: "monitoring-notes",
+      path: "/student/monitoring-notes",
+      label: "Ghi chú theo dõi",
+      icon: FileText,
     },
   ];
 

@@ -37,7 +37,7 @@ export const AdminDashboard = () => {
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-2 text-gray-900">Bảng điều khiển</h1>
       {dashboardData && (
-        <p className="text-gray-600 mb-6 text-lg">{dashboardData.unit_name}</p>
+        <p className="text-gray-600 mb-5 text-lg">{dashboardData.unit_name}</p>
       )}
 
       <Spin spinning={loading}>

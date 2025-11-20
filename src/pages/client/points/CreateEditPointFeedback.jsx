@@ -19,6 +19,7 @@ import {
   createPointFeedbackAPI,
   updatePointFeedbackAPI,
 } from "../../../services/pointFeedback.service";
+import { getSemestersAPI } from "../../../services/api.service";
 
 export default function CreateEditPointFeedback() {
   const { id } = useParams();
@@ -28,7 +29,23 @@ export default function CreateEditPointFeedback() {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [fileList, setFileList] = useState([]);
+  const [semesters, setSemesters] = useState([]);
   const isEdit = id !== undefined;
+
+  const fetchSemesters = useCallback(async () => {
+    try {
+      const response = await getSemestersAPI();
+      if (response && response.data) {
+        const semesterOptions = response.data.map((sem) => ({
+          label: sem.semester_name,
+          value: sem.semester_id,
+        }));
+        setSemesters(semesterOptions);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải học kỳ:", error);
+    }
+  }, []);
 
   const fetchFeedbackDetail = useCallback(async () => {
     try {
@@ -41,6 +58,19 @@ export default function CreateEditPointFeedback() {
           semester_id: data.semester_id,
           feedback_content: data.feedback_content,
         });
+
+        // Load existing attachment
+        if (data.attachment_path) {
+          setFileList([
+            {
+              uid: "-1",
+              name: data.attachment_path.split("/").pop(),
+              status: "done",
+              url: `http://localhost:8000/storage/${data.attachment_path}`,
+              isExisting: true,
+            },
+          ]);
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi khi tải dữ liệu");
@@ -49,6 +79,10 @@ export default function CreateEditPointFeedback() {
       setLoading(false);
     }
   }, [id, navigate, form]);
+
+  useEffect(() => {
+    fetchSemesters();
+  }, [fetchSemesters]);
 
   useEffect(() => {
     if (isEdit) {
@@ -68,8 +102,16 @@ export default function CreateEditPointFeedback() {
       formData.append("semester_id", values.semester_id);
       formData.append("feedback_content", values.feedback_content);
 
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        formData.append("attachment", fileList[0].originFileObj);
+      // Only add attachment if it's a new file (not existing)
+      if (fileList.length > 0) {
+        const file = fileList[0];
+        if (file.originFileObj) {
+          // New file uploaded
+          formData.append("attachment", file.originFileObj);
+        } else if (!file.isExisting && file.status === "done") {
+          // File from previous upload, no need to send again
+          // Just send the form data without attachment
+        }
       }
 
       if (isEdit) {
@@ -127,7 +169,7 @@ export default function CreateEditPointFeedback() {
 
   return (
     <StudentLayout>
-      <div className="p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <Card>
           <Button
             type="text"
@@ -138,7 +180,7 @@ export default function CreateEditPointFeedback() {
             Quay lại
           </Button>
 
-          <h1 className="text-2xl font-bold mb-6">
+          <h1 className="text-2xl font-bold mb-5">
             {isEdit ? "Chỉnh sửa phản hồi" : "Tạo phản hồi mới"}
           </h1>
 
@@ -158,14 +200,7 @@ export default function CreateEditPointFeedback() {
                 },
               ]}
             >
-              <Select
-                placeholder="Chọn học kỳ"
-                options={[
-                  { label: "Học kỳ 1", value: 1 },
-                  { label: "Học kỳ 2", value: 2 },
-                  { label: "Học kỳ hè", value: 3 },
-                ]}
-              />
+              <Select placeholder="Chọn học kỳ" options={semesters} />
             </Form.Item>
 
             <Form.Item
@@ -206,9 +241,20 @@ export default function CreateEditPointFeedback() {
                   }
                   return true;
                 }}
+                listType="text"
               >
-                <Button icon={<UploadOutlined />}>Chọn file</Button>
+                <Button icon={<UploadOutlined />}>
+                  {fileList.length > 0 ? "Thay đổi file" : "Chọn file"}
+                </Button>
               </Upload>
+              <p className="text-xs text-gray-500 mt-2">
+                Định dạng: jpg, jpeg, png, pdf | Tối đa: 5MB
+              </p>
+              {isEdit && feedback?.attachment_path && fileList.length === 0 && (
+                <p className="text-xs text-blue-600 mt-2">
+                  ✓ File hiện tại: {feedback.attachment_path.split("/").pop()}
+                </p>
+              )}
             </Form.Item>
 
             <Form.Item>

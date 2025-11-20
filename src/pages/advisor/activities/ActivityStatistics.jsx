@@ -221,7 +221,7 @@ export const ActivityStatistics = () => {
           }}
         >
           <div className="text-center">
-            <div className="mb-6">
+            <div className="mb-5">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Tỷ lệ tham gia
               </h3>

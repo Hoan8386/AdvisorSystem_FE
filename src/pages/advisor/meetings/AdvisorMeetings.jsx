@@ -294,7 +294,7 @@ export const AdvisorMeetings = () => {
     <AdvisorLayout>
       <div className="p-6">
         <Card>
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-5">
             <div>
               <h1 className="text-2xl font-bold">Quản lý Cuộc họp</h1>
               <p className="text-gray-500 mt-1">

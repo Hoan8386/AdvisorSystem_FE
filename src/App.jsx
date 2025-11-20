@@ -61,6 +61,13 @@ import MeetingDetail from "./pages/advisor/meetings/MeetingDetail";
 import MeetingAttendance from "./pages/advisor/meetings/MeetingAttendance";
 import MeetingStatistics from "./pages/advisor/meetings/MeetingStatistics";
 import AdminMeetings from "./pages/admin/AdminMeetings";
+import AdvisorPointFeedbacks from "./pages/advisor/points/AdvisorPointFeedbacks";
+import RespondPointFeedback from "./pages/advisor/points/RespondPointFeedback";
+import StudentPointFeedbacks from "./pages/client/points/StudentPointFeedbacks";
+import CreateEditPointFeedback from "./pages/client/points/CreateEditPointFeedback";
+import StudentMonitoringNotes from "./pages/client/notes/StudentMonitoringNotes";
+import AdvisorMonitoringNotes from "./pages/advisor/notes/AdvisorMonitoringNotes";
+import CreateEditMonitoringNote from "./pages/advisor/notes/CreateEditMonitoringNote";
 
 const LayoutClient = () => {
   const { isAppLoading } = useContext(AuthContext);
@@ -180,6 +187,20 @@ function App() {
         { path: "meetings/:id/edit", element: <CreateEditMeeting /> },
         { path: "meetings/:id/attendance", element: <MeetingAttendance /> },
         { path: "chat", element: <AdvisorChat /> },
+        { path: "point-feedbacks", element: <AdvisorPointFeedbacks /> },
+        {
+          path: "point-feedbacks/:id/respond",
+          element: <RespondPointFeedback />,
+        },
+        { path: "monitoring-notes", element: <AdvisorMonitoringNotes /> },
+        {
+          path: "monitoring-notes/create",
+          element: <CreateEditMonitoringNote />,
+        },
+        {
+          path: "monitoring-notes/:id/edit",
+          element: <CreateEditMonitoringNote />,
+        },
         { path: "profile", element: <AdvisorProfile /> },
         { path: "rag", element: <RAGMain /> },
         { path: "rag/documents", element: <RAGDocumentManagement /> },
@@ -204,6 +225,16 @@ function App() {
         { path: "meetings", element: <StudentMeetings /> },
         { path: "meetings/:id", element: <StudentMeetingDetail /> },
         { path: "points", element: <StudentPoints /> },
+        { path: "point-feedbacks", element: <StudentPointFeedbacks /> },
+        {
+          path: "point-feedbacks/create",
+          element: <CreateEditPointFeedback />,
+        },
+        {
+          path: "point-feedbacks/:id/edit",
+          element: <CreateEditPointFeedback />,
+        },
+        { path: "monitoring-notes", element: <StudentMonitoringNotes /> },
         { path: "semester-report", element: <MySemesterReport /> },
         { path: "warnings", element: <MyWarnings /> },
         { path: "activities", element: <StudentActivities /> },

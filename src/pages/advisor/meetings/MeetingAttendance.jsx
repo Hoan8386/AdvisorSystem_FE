@@ -234,7 +234,7 @@ export const MeetingAttendance = () => {
       <div className="p-6">
         <Card>
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-5">
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={() => navigate(`/advisor/meetings/${id}`)}
@@ -248,7 +248,7 @@ export const MeetingAttendance = () => {
           </div>
 
           {/* Statistics Cards */}
-          <Row gutter={[16, 16]} className="mb-6">
+          <Row gutter={[16, 16]} className="mb-5">
             <Col xs={24} sm={12} lg={6}>
               <Card className="hover:shadow-xl transition-shadow duration-300 border-0 bg-gradient-to-br from-blue-500 to-blue-600">
                 <Statistic
@@ -318,7 +318,7 @@ export const MeetingAttendance = () => {
           </Row>
 
           {/* Attendance Table */}
-          <div className="mb-6">
+          <div className="mb-5">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">
                 <UserAddOutlined className="mr-2" />

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 import { StudentLayout } from "../../../components/layout/StudentLayout";
+import { AuthContext } from "../../../components/context/auth.context";
 import {
   Card,
   Timeline,
@@ -17,18 +18,16 @@ import { getMonitoringNoteTimelineAPI } from "../../../services/pointFeedback.se
 import dayjs from "dayjs";
 
 export default function StudentMonitoringNotes() {
+  const { user } = useContext(AuthContext);
   const [timeline, setTimeline] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(undefined);
 
-  useEffect(() => {
-    loadTimeline();
-  }, []);
-
-  const loadTimeline = async () => {
+  const loadTimeline = useCallback(async () => {
     try {
       setLoading(true);
-      const studentId = localStorage.getItem("student_id");
+      // Get student ID from AuthContext user object
+      const studentId = user?.id;
       if (!studentId) {
         toast.error("Không tìm thấy thông tin sinh viên");
         return;
@@ -43,7 +42,11 @@ export default function StudentMonitoringNotes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadTimeline();
+  }, [loadTimeline]);
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -75,9 +78,9 @@ export default function StudentMonitoringNotes() {
 
   return (
     <StudentLayout>
-      <div className="p-6">
-        <Card className="mb-6">
-          <div className="mb-6">
+      <div className="max-w-7xl mx-auto mt-5 ">
+        <Card className="mb-5">
+          <div className="mb-5">
             <h1 className="text-2xl font-bold mb-2">
               Ghi chú theo dõi của tôi
             </h1>
@@ -89,7 +92,7 @@ export default function StudentMonitoringNotes() {
           </div>
 
           {timeline && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
               <div className="bg-blue-50 p-4 rounded-lg text-center">
                 <p className="text-2xl font-bold text-blue-600">
                   {timeline.total_notes}
@@ -123,11 +126,12 @@ export default function StudentMonitoringNotes() {
             </div>
           )}
 
-          <Row gutter={16} className="mb-6">
-            <Col xs={24} md={6}>
+          <Row gutter={8} className="mb-4 flex-wrap items-end">
+            {/* Filter danh mục */}
+            <Col xs="auto">
               <div className="mb-2 text-sm font-medium">Danh mục</div>
               <Select
-                className="w-full"
+                className="w-36" // chiều rộng vừa phải
                 placeholder="Tất cả danh mục"
                 allowClear
                 value={selectedCategory}
@@ -140,8 +144,15 @@ export default function StudentMonitoringNotes() {
                 ]}
               />
             </Col>
-            <Col xs={24} md={6} className="flex items-end">
-              <Button block onClick={loadTimeline} loading={loading}>
+
+            {/* Nút làm mới */}
+            <Col xs="auto">
+              <Button
+                type="primary"
+                onClick={loadTimeline}
+                loading={loading}
+                className="mt-6 w-28"
+              >
                 Làm mới
               </Button>
             </Col>

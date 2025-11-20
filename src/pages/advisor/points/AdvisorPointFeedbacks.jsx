@@ -12,6 +12,7 @@ import {
   Select,
   Row,
   Col,
+  Image,
 } from "antd";
 import { EyeOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
@@ -147,7 +148,7 @@ export default function AdvisorPointFeedbacks() {
   return (
     <AdvisorLayout>
       <div className="p-6">
-        <Card className="mb-6">
+        <Card className="mb-5">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Quản lý phản hồi điểm</h1>
             <Button type="primary" onClick={fetchFeedbacks} loading={loading}>
@@ -155,7 +156,7 @@ export default function AdvisorPointFeedbacks() {
             </Button>
           </div>
 
-          <Row gutter={16} className="mb-6">
+          <Row gutter={16} className="mb-5">
             <Col xs={24} sm={12} md={8}>
               <div className="mb-2 text-sm font-medium">Trạng thái</div>
               <Select
@@ -258,14 +259,29 @@ export default function AdvisorPointFeedbacks() {
                   <label className="font-medium block mb-2">
                     Tệp đính kèm:
                   </label>
-                  <a
-                    href={`/storage/${selectedFeedback.attachment_path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    Tải xuống
-                  </a>
+                  <div className="flex flex-col gap-2">
+                    {/\.(jpg|jpeg|png|gif)$/i.test(
+                      selectedFeedback.attachment_path
+                    ) ? (
+                      <div className="border rounded p-2 inline-block">
+                        <Image
+                          src={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                          alt="Attachment"
+                          style={{ maxHeight: "300px", width: "auto" }}
+                          preview={{ mask: "Xem" }}
+                        />
+                      </div>
+                    ) : null}
+                    <a
+                      href={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      📥 Tải xuống (
+                      {selectedFeedback.attachment_path.split("/").pop()})
+                    </a>
+                  </div>
                 </div>
               )}
 

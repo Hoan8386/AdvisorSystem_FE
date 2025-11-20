@@ -220,7 +220,7 @@ export const AdminCourses = () => {
 
   return (
     <div className="p-6">
-      <Card className="mb-6">
+      <Card className="mb-5">
         <Row gutter={16}>
           <Col span={12}>
             <Statistic
@@ -241,7 +241,7 @@ export const AdminCourses = () => {
       </Card>
 
       <Card>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-5">
           <div>
             <h1 className="text-2xl font-bold">Quản lý Môn học</h1>
             <p className="text-gray-500 mt-1">

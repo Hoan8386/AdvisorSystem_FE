@@ -308,7 +308,7 @@ export const AdminClasses = () => {
   return (
     <div className="p-6">
       <Card>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-5">
           <div>
             <h1 className="text-2xl font-bold">Quản lý Lớp học</h1>
             <p className="text-gray-500 mt-1">

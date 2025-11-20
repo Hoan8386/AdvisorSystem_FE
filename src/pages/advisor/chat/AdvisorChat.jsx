@@ -657,7 +657,7 @@ export const AdvisorChat = () => {
             ) : (
               <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-50 via-white to-indigo-50">
                 <div className="text-center p-8">
-                  <div className="text-8xl mb-6">💬</div>
+                  <div className="text-8xl mb-5">💬</div>
                   <h3 className="text-2xl font-bold text-gray-800 mb-3">
                     Chào mừng đến với Chat
                   </h3>

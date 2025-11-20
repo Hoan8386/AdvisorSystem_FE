@@ -654,6 +654,35 @@ const checkScheduleConflictApi = (data) => {
   return axios.post(URL_BACKEND, data);
 };
 
+// Get student schedule (Admin, Advisor)
+const getStudentScheduleApi = (studentId, semesterId = null) => {
+  const URL_BACKEND = `/api/admin/schedules/student/${studentId}`;
+  const params = semesterId ? { semester_id: semesterId } : {};
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Get class schedule (Admin, Advisor)
+const getClassScheduleApi = (classId, semesterId) => {
+  const URL_BACKEND = `/api/admin/schedules/class/${classId}`;
+  return axios.get(URL_BACKEND, {
+    params: { semester_id: semesterId },
+  });
+};
+
+// Search schedules (Admin only)
+const searchSchedulesApi = (filters) => {
+  const URL_BACKEND = "/api/admin/schedules/search";
+  return axios.post(URL_BACKEND, filters);
+};
+
+// Delete student schedule (Admin only)
+const deleteStudentScheduleApi = (studentId, semesterId) => {
+  const URL_BACKEND = `/api/admin/schedules/student/${studentId}`;
+  return axios.delete(URL_BACKEND, {
+    data: { semester_id: semesterId },
+  });
+};
+
 // ========== Import/Export Management APIs ==========
 
 // Download template file
@@ -900,6 +929,119 @@ const getAttendanceStatisticsAPI = (activityId) => {
   return axios.get(URL_BACKEND);
 };
 
+// ========== POINT FEEDBACK APIs (Phản hồi điểm rèn luyện) ==========
+
+// Lấy danh sách phản hồi (Student xem của mình, Advisor xem của lớp)
+const getPointFeedbacksAPI = (params) => {
+  // params: { semester_id, status, student_id }
+  const URL_BACKEND = "/api/point-feedbacks";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Xem chi tiết phản hồi
+const getPointFeedbackDetailAPI = (id) => {
+  const URL_BACKEND = `/api/point-feedbacks/${id}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Tạo phản hồi mới (Student only)
+const createPointFeedbackAPI = (data) => {
+  const URL_BACKEND = "/api/point-feedbacks";
+  const formData = new FormData();
+  formData.append('semester_id', data.semester_id);
+  formData.append('feedback_content', data.feedback_content);
+  if (data.attachment) {
+    formData.append('attachment', data.attachment);
+  }
+
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Cập nhật phản hồi (Student only - pending status)
+const updatePointFeedbackAPI = (id, data) => {
+  const URL_BACKEND = `/api/point-feedbacks/${id}`;
+  const formData = new FormData();
+  if (data.feedback_content) formData.append('feedback_content', data.feedback_content);
+  if (data.attachment) formData.append('attachment', data.attachment);
+
+  // Method PUT với FormData trong Laravel thường cần _method: PUT
+  formData.append('_method', 'PUT'); 
+  
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Xóa phản hồi (Student only - pending status)
+const deletePointFeedbackAPI = (id) => {
+  const URL_BACKEND = `/api/point-feedbacks/${id}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Cố vấn duyệt/từ chối phản hồi (Advisor only)
+const respondPointFeedbackAPI = (id, data) => {
+  // data: { status: 'approved' | 'rejected', advisor_response: string }
+  const URL_BACKEND = `/api/point-feedbacks/${id}/respond`;
+  return axios.post(URL_BACKEND, data);
+};
+
+// Thống kê phản hồi (Advisor only)
+const getPointFeedbackStatisticsAPI = (semesterId) => {
+  const URL_BACKEND = "/api/point-feedbacks/statistics/overview";
+  return axios.get(URL_BACKEND, { params: { semester_id: semesterId } });
+};
+
+// ========== STUDENT MONITORING NOTES APIs (Ghi chú theo dõi) ==========
+
+// Lấy danh sách ghi chú
+const getMonitoringNotesAPI = (params) => {
+  // params: { student_id, semester_id, category }
+  const URL_BACKEND = "/api/monitoring-notes";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Xem chi tiết ghi chú
+const getMonitoringNoteDetailAPI = (id) => {
+  const URL_BACKEND = `/api/monitoring-notes/${id}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Tạo ghi chú mới (Advisor only)
+const createMonitoringNoteAPI = (data) => {
+  const URL_BACKEND = "/api/monitoring-notes";
+  return axios.post(URL_BACKEND, data);
+};
+
+// Cập nhật ghi chú (Advisor only - own notes)
+const updateMonitoringNoteAPI = (id, data) => {
+  const URL_BACKEND = `/api/monitoring-notes/${id}`;
+  return axios.put(URL_BACKEND, data);
+};
+
+// Xóa ghi chú (Advisor only - own notes)
+const deleteMonitoringNoteAPI = (id) => {
+  const URL_BACKEND = `/api/monitoring-notes/${id}`;
+  return axios.delete(URL_BACKEND);
+};
+
+// Xem timeline ghi chú của sinh viên (Student & Advisor)
+const getStudentNoteTimelineAPI = (studentId) => {
+  const URL_BACKEND = `/api/monitoring-notes/student/${studentId}/timeline`;
+  return axios.get(URL_BACKEND);
+};
+
+// Thống kê ghi chú (Advisor only)
+const getMonitoringNoteStatisticsAPI = (semesterId) => {
+  const URL_BACKEND = "/api/monitoring-notes/statistics/overview";
+  return axios.get(URL_BACKEND, { params: { semester_id: semesterId } });
+};
+
 export {
     
     createUserApi,
@@ -1012,6 +1154,10 @@ export {
     downloadScheduleTemplateApi,
     importScheduleExcelApi,
     checkScheduleConflictApi,
+    getStudentScheduleApi,
+    getClassScheduleApi,
+    searchSchedulesApi,
+    deleteStudentScheduleApi,
     // Admin APIs - Import/Export Management
     downloadTemplateApi,
     importClassesApi,
@@ -1050,4 +1196,18 @@ export {
   exportAttendanceTemplateAPI,
   importAttendanceAPI,
   getAttendanceStatisticsAPI,
+  getPointFeedbacksAPI,
+    getPointFeedbackDetailAPI,
+    createPointFeedbackAPI,
+    updatePointFeedbackAPI,
+    deletePointFeedbackAPI,
+    respondPointFeedbackAPI,
+    getPointFeedbackStatisticsAPI,
+    getMonitoringNotesAPI,
+    getMonitoringNoteDetailAPI,
+    createMonitoringNoteAPI,
+    updateMonitoringNoteAPI,
+    deleteMonitoringNoteAPI,
+    getStudentNoteTimelineAPI,
+    getMonitoringNoteStatisticsAPI,
 };

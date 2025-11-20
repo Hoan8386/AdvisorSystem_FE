@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
-import { Card, Button, Form, Input, Spin, Tag, Modal, message } from "antd";
+import { Card, Button, Form, Input, Spin, Tag, Image } from "antd";
 import {
   ArrowLeftOutlined,
   CheckOutlined,
@@ -42,39 +42,35 @@ export default function RespondPointFeedback() {
   }, [fetchFeedbackDetail]);
 
   const handleSubmitResponse = async (status) => {
-    const responseText = form.getFieldValue("advisor_response");
-    if (!responseText) {
-      message.error("Vui lòng nhập phản hồi của cố vấn");
+    try {
+      // Validate form
+      await form.validateFields();
+    } catch {
+      toast.error("Vui lòng nhập đầy đủ thông tin phản hồi");
       return;
     }
 
-    Modal.confirm({
-      title: `Xác nhận ${status === "approved" ? "duyệt" : "từ chối"} phản hồi`,
-      content: `Bạn có chắc chắn muốn ${
-        status === "approved" ? "duyệt" : "từ chối"
-      } phản hồi này?`,
-      okText: "Xác nhận",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          setResponding(true);
-          await respondPointFeedbackAPI(id, {
-            status,
-            advisor_response: responseText,
-          });
-          toast.success(
-            `${status === "approved" ? "Duyệt" : "Từ chối"} phản hồi thành công`
-          );
-          navigate("/advisor/point-feedbacks");
-        } catch (error) {
-          toast.error(
-            error.response?.data?.message || "Lỗi khi xử lý phản hồi"
-          );
-        } finally {
-          setResponding(false);
-        }
-      },
-    });
+    const responseText = form.getFieldValue("advisor_response");
+    if (!responseText || responseText.trim() === "") {
+      toast.error("Vui lòng nhập phản hồi của cố vấn");
+      return;
+    }
+
+    try {
+      setResponding(true);
+      await respondPointFeedbackAPI(id, {
+        status,
+        advisor_response: responseText,
+      });
+      toast.success(
+        `${status === "approved" ? "Duyệt" : "Từ chối"} phản hồi thành công`
+      );
+      navigate("/advisor/point-feedbacks");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi xử lý phản hồi");
+    } finally {
+      setResponding(false);
+    }
   };
 
   if (loading) {
@@ -101,7 +97,7 @@ export default function RespondPointFeedback() {
   return (
     <AdvisorLayout>
       <div className="p-6">
-        <Card className="mb-6">
+        <Card className="mb-5">
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
@@ -111,9 +107,9 @@ export default function RespondPointFeedback() {
             Quay lại
           </Button>
 
-          <h1 className="text-2xl font-bold mb-6">Phê duyệt phản hồi điểm</h1>
+          <h1 className="text-2xl font-bold mb-5">Phê duyệt phản hồi điểm</h1>
 
-          <div className="bg-gray-50 p-6 rounded-lg mb-6">
+          <div className="bg-gray-50 p-6 rounded-lg mb-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="font-medium text-gray-700">Sinh viên</label>
@@ -161,14 +157,26 @@ export default function RespondPointFeedback() {
                 <label className="font-medium text-gray-700 block mb-2">
                   Tệp đính kèm
                 </label>
-                <a
-                  href={`/storage/${feedback.attachment_path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Tải xuống file
-                </a>
+                <div className="flex flex-col gap-3">
+                  {/\.(jpg|jpeg|png|gif)$/i.test(feedback.attachment_path) ? (
+                    <div className="border rounded p-2 inline-block">
+                      <Image
+                        src={`http://localhost:8000/storage/${feedback.attachment_path}`}
+                        alt="Attachment"
+                        style={{ maxHeight: "300px", width: "auto" }}
+                        preview={{ mask: "Xem" }}
+                      />
+                    </div>
+                  ) : null}
+                  <a
+                    href={`http://localhost:8000/storage/${feedback.attachment_path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Tải xuống ({feedback.attachment_path.split("/").pop()})
+                  </a>
+                </div>
               </div>
             )}
           </div>

@@ -264,7 +264,7 @@ export const StudentPage = () => {
     <StudentLayout>
       <div className="max-w-7xl mx-auto p-6">
         {/* Welcome Banner with Gradient */}
-        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-xl p-8 mb-6 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-xl p-8 mb-5 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
           <div className="relative flex items-center justify-between">
@@ -283,7 +283,7 @@ export const StudentPage = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
@@ -348,7 +348,7 @@ export const StudentPage = () => {
         </div>
 
         {/* Quick Actions Bar */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
               ⚡ Thao tác nhanh

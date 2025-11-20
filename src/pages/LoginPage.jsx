@@ -109,7 +109,7 @@ export const LoginPage = () => {
           {/* Left side - Brand section */}
           <div className="hidden lg:flex flex-col justify-center items-center text-white">
             <div className="mb-8">
-              <div className="inline-block p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 mb-6">
+              <div className="inline-block p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 mb-5">
                 <img
                   src={logo}
                   alt="Logo"

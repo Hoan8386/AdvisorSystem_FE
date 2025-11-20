@@ -716,7 +716,7 @@ export const MeetingDetail = () => {
       <div className="p-6">
         <Card>
           {/* Header */}
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-5">
             <div>
               <Button
                 icon={<ArrowLeftOutlined />}
