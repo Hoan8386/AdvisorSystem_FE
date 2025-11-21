@@ -37,7 +37,6 @@ import {
   getSemestersApi,
   getStudentScheduleApi,
   getClassScheduleApi,
-  searchSchedulesApi,
   deleteStudentScheduleApi,
 } from "../../../services/api.service";
 
@@ -52,28 +51,6 @@ const DAYS_OF_WEEK = [
   { value: 8, label: "Chủ nhật" },
 ];
 
-const timeSlots = [
-  "07:00",
-  "07:45",
-  "08:30",
-  "09:15",
-  "09:40",
-  "10:25",
-  "11:10",
-  "12:30",
-  "13:15",
-  "14:00",
-  "14:45",
-  "15:10",
-  "15:55",
-  "16:40",
-  "18:00",
-  "18:45",
-  "19:30",
-  "20:15",
-  "21:00",
-];
-
 export const AdminSchedules = () => {
   // Common states
   const [loading, setLoading] = useState(false);
@@ -85,7 +62,7 @@ export const AdminSchedules = () => {
 
   // Group B - Student schedule states
   const [studentScheduleData, setStudentScheduleData] = useState(null);
-  const [studentScheduleLoading, setStudentScheduleLoading] = useState(false);
+  const [_studentScheduleLoading, _setStudentScheduleLoading] = useState(false);
   const [studentScheduleForm] = Form.useForm();
 
   // Group B - Class schedule states
@@ -93,10 +70,12 @@ export const AdminSchedules = () => {
   const [classScheduleLoading, setClassScheduleLoading] = useState(false);
   const [classScheduleForm] = Form.useForm();
 
-  // Group B - Search states
-  const [searchResults, setSearchResults] = useState(null);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchForm] = Form.useForm();
+  // Group B - Search states removed
+
+  // Group B - Detail modal states
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailModalLoading, setDetailModalLoading] = useState(false);
+  const [detailModalData, setDetailModalData] = useState(null);
 
   // Group C - Delete states
   const [deleteForm] = Form.useForm();
@@ -175,7 +154,7 @@ export const AdminSchedules = () => {
   };
 
   // ==================== GROUP B: VIEW SCHEDULES ====================
-  const handleStudentScheduleChange = (studentId) => {
+  const _handleStudentScheduleChange = (studentId) => {
     const selectedClass = classes.find((c) =>
       c.students?.some((s) => s.student_id === studentId)
     );
@@ -186,30 +165,60 @@ export const AdminSchedules = () => {
     }
   };
 
-  const handleGetStudentSchedule = async () => {
+  const _handleGetStudentSchedule = async () => {
     try {
       const values = await studentScheduleForm.validateFields();
-      setStudentScheduleLoading(true);
+      _setStudentScheduleLoading(true);
 
       const response = await getStudentScheduleApi(
         values.student_id,
         values.semester_id
       );
 
-      if (response?.success) {
+      if (response?.success && response.data) {
         setStudentScheduleData(response.data);
         toast.success("Tải lịch sinh viên thành công");
+      } else {
+        toast.error("Không có dữ liệu lịch học");
       }
     } catch (error) {
       console.error("Error fetching student schedule:", error);
       toast.error(error?.message || "Không thể tải lịch sinh viên");
     } finally {
-      setStudentScheduleLoading(false);
+      _setStudentScheduleLoading(false);
     }
   };
 
   const handleClassScheduleChange = () => {
     // This is just for handling the change event in the UI
+  };
+
+  const handleDeleteClassChange = (classId) => {
+    // Update the class selection and reset student selection
+    deleteForm.setFieldsValue({
+      class_id: classId,
+      student_id: undefined,
+    });
+  };
+
+  const handleViewStudentScheduleDetail = async (studentId, semesterId) => {
+    try {
+      setDetailModalLoading(true);
+      const response = await getStudentScheduleApi(studentId, semesterId);
+
+      if (response?.success && response.data) {
+        setDetailModalData(response.data);
+        setIsDetailModalOpen(true);
+        toast.success("Tải lịch sinh viên thành công");
+      } else {
+        toast.error("Không có dữ liệu lịch học");
+      }
+    } catch (error) {
+      console.error("Error fetching student schedule detail:", error);
+      toast.error(error?.message || "Không thể tải lịch sinh viên");
+    } finally {
+      setDetailModalLoading(false);
+    }
   };
 
   const handleGetClassSchedule = async () => {
@@ -234,35 +243,6 @@ export const AdminSchedules = () => {
     }
   };
 
-  // ==================== GROUP B: SEARCH ====================
-  const handleSearchSchedules = async () => {
-    try {
-      const values = await searchForm.validateFields();
-      setSearchLoading(true);
-
-      const filters = {
-        semester_id: values.semester_id,
-        ...(values.class_id && { class_id: values.class_id }),
-        ...(values.day_of_week && { day_of_week: values.day_of_week }),
-        ...(values.start_time && { start_time: values.start_time }),
-        ...(values.end_time && { end_time: values.end_time }),
-        ...(values.course_code && { course_code: values.course_code }),
-      };
-
-      const response = await searchSchedulesApi(filters);
-
-      if (response?.success) {
-        setSearchResults(response.data);
-        toast.success(`Tìm thấy ${response.data.total_found} sinh viên`);
-      }
-    } catch (error) {
-      console.error("Error searching schedules:", error);
-      toast.error(error?.message || "Không thể tìm kiếm lịch học");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
   // ==================== GROUP C: DELETE ====================
   const handleDeleteSchedule = async (studentId, semesterId) => {
     try {
@@ -283,82 +263,8 @@ export const AdminSchedules = () => {
     }
   };
 
-  // Render schedule table
-  const renderScheduleTable = (schedules) => {
-    if (!schedules || schedules.length === 0) {
-      return <Empty description="Không có lịch học" />;
-    }
-
-    const columns = [
-      {
-        title: "Mã môn",
-        dataIndex: "course_code",
-        key: "course_code",
-        width: 100,
-      },
-      {
-        title: "Giai đoạn",
-        dataIndex: "phase",
-        key: "phase",
-        width: 100,
-      },
-      {
-        title: "Thứ",
-        dataIndex: "day_of_week",
-        key: "day_of_week",
-        width: 80,
-        render: (day) => {
-          const dayName = DAYS_OF_WEEK.find((d) => d.value === day)?.label;
-          return dayName || day;
-        },
-      },
-      {
-        title: "Thời gian",
-        dataIndex: "time_range",
-        key: "time_range",
-        width: 120,
-      },
-      {
-        title: "Phòng",
-        dataIndex: "room",
-        key: "room",
-        width: 80,
-      },
-      {
-        title: "Ngày bắt đầu",
-        dataIndex: "start_date",
-        key: "start_date",
-        width: 120,
-        render: (date) => new Date(date).toLocaleDateString("vi-VN"),
-      },
-      {
-        title: "Ngày kết thúc",
-        dataIndex: "end_date",
-        key: "end_date",
-        width: 120,
-        render: (date) => new Date(date).toLocaleDateString("vi-VN"),
-      },
-    ];
-
-    return (
-      <Table
-        columns={columns}
-        dataSource={schedules.map((s, idx) => ({
-          ...s,
-          key: idx,
-        }))}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          pageSizeOptions: ["5", "10", "20", "50"],
-        }}
-        size="small"
-      />
-    );
-  };
-
   // Render student schedule modal content
-  const renderStudentScheduleContent = () => {
+  const _renderStudentScheduleContent = () => {
     if (!studentScheduleData) {
       return (
         <Empty
@@ -368,28 +274,14 @@ export const AdminSchedules = () => {
       );
     }
 
-    const { student, schedule, schedules } = studentScheduleData;
+    const { student, semester, schedule } = studentScheduleData;
 
-    if (schedules && Array.isArray(schedules)) {
-      // Multiple semesters
-      return (
-        <Collapse
-          items={schedules.map((sem, idx) => ({
-            key: idx,
-            label: `${sem.semester} - ${sem.academic_year} (${sem.total_courses} môn)`,
-            children: renderScheduleTable(sem.flat_schedule),
-          }))}
-        />
-      );
-    }
-
-    // Single semester
     return (
       <div>
         <Card
           size="small"
           className="mb-4"
-          title={`${student.student_code} - ${student.full_name}`}
+          title={`${student.user_code} - ${student.full_name}`}
         >
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -408,14 +300,275 @@ export const AdminSchedules = () => {
               <p className="text-gray-600">Cố vấn</p>
               <p className="font-semibold">{student.advisor_name}</p>
             </div>
+            <div>
+              <p className="text-gray-600">Điện thoại</p>
+              <p className="font-semibold">{student.phone_number}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Chức vụ</p>
+              <p className="font-semibold">
+                {student.position === "leader"
+                  ? "Bí thư"
+                  : student.position === "secretary"
+                  ? "Thư ký"
+                  : "Thành viên"}
+              </p>
+            </div>
           </div>
         </Card>
 
-        <Card size="small" title={`Lịch học - Học kỳ ${schedule.semester}`}>
+        <Card
+          size="small"
+          title={`Lịch học - ${semester.semester_name} - ${semester.academic_year}`}
+        >
           <p className="text-gray-600 mb-4">
             Tổng số môn: <Tag color="blue">{schedule.total_courses}</Tag>
           </p>
-          {renderScheduleTable(schedule.flat_schedule)}
+
+          {schedule.registered_courses &&
+          schedule.registered_courses.length > 0 ? (
+            <div className="space-y-4">
+              {schedule.registered_courses.map((course, courseIdx) => (
+                <Card
+                  key={courseIdx}
+                  size="small"
+                  className="bg-gray-50"
+                  title={`${course.course_code} - ${course.course_name}`}
+                >
+                  {course.schedules && course.schedules.length > 0 ? (
+                    <div className="space-y-3">
+                      {course.schedules.map((sch, schIdx) => (
+                        <div
+                          key={schIdx}
+                          className="bg-white p-3 rounded border border-gray-200"
+                        >
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-gray-600 text-xs">Giai đoạn</p>
+                              <p className="font-semibold">{sch.phase}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Loại</p>
+                              <Tag color="blue">{sch.type}</Tag>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Ghi chú</p>
+                              <p className="text-sm">{sch.note}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4 mt-3">
+                            <div>
+                              <p className="text-gray-600 text-xs">Thứ</p>
+                              <p className="font-semibold">
+                                {
+                                  DAYS_OF_WEEK.find(
+                                    (d) => d.value === sch.day_of_week
+                                  )?.label
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Thời gian</p>
+                              <p className="font-semibold">
+                                {sch.start_time} - {sch.end_time}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Phòng</p>
+                              <Tag color="green">{sch.room}</Tag>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Tiết</p>
+                              <p className="text-sm">
+                                {sch.start_period} - {sch.end_period}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-100">
+                            <div>
+                              <p className="text-gray-600 text-xs">Từ</p>
+                              <p className="text-sm font-semibold">
+                                {new Date(sch.start_date).toLocaleDateString(
+                                  "vi-VN"
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Đến</p>
+                              <p className="text-sm font-semibold">
+                                {new Date(sch.end_date).toLocaleDateString(
+                                  "vi-VN"
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Empty description="Không có lịch học" />
+                  )}
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Empty description="Sinh viên không có môn học nào" />
+          )}
+        </Card>
+      </div>
+    );
+  };
+
+  // Render detail modal content
+  const renderDetailModalContent = () => {
+    if (!detailModalData) {
+      return <Empty description="Không có dữ liệu" />;
+    }
+
+    const { student, semester, schedule } = detailModalData;
+
+    return (
+      <div>
+        <Card
+          size="small"
+          className="mb-4"
+          title={`${student.user_code} - ${student.full_name}`}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-600">Email</p>
+              <p className="font-semibold">{student.email}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Lớp</p>
+              <p className="font-semibold">{student.class_name}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Khoa</p>
+              <p className="font-semibold">{student.faculty_name}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Cố vấn</p>
+              <p className="font-semibold">{student.advisor_name}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Điện thoại</p>
+              <p className="font-semibold">{student.phone_number}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Chức vụ</p>
+              <p className="font-semibold">
+                {student.position === "leader"
+                  ? "Bí thư"
+                  : student.position === "secretary"
+                  ? "Thư ký"
+                  : "Thành viên"}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          size="small"
+          title={`Lịch học - ${semester.semester_name} - ${semester.academic_year}`}
+        >
+          <p className="text-gray-600 mb-4">
+            Tổng số môn: <Tag color="blue">{schedule.total_courses}</Tag>
+          </p>
+
+          {schedule.registered_courses &&
+          schedule.registered_courses.length > 0 ? (
+            <div className="space-y-4">
+              {schedule.registered_courses.map((course, courseIdx) => (
+                <Card
+                  key={courseIdx}
+                  size="small"
+                  className="bg-gray-50"
+                  title={`${course.course_code} - ${course.course_name}`}
+                >
+                  {course.schedules && course.schedules.length > 0 ? (
+                    <div className="space-y-3">
+                      {course.schedules.map((sch, schIdx) => (
+                        <div
+                          key={schIdx}
+                          className="bg-white p-3 rounded border border-gray-200"
+                        >
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-gray-600 text-xs">Giai đoạn</p>
+                              <p className="font-semibold">{sch.phase}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Loại</p>
+                              <Tag color="blue">{sch.type}</Tag>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Ghi chú</p>
+                              <p className="text-sm">{sch.note}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4 mt-3">
+                            <div>
+                              <p className="text-gray-600 text-xs">Thứ</p>
+                              <p className="font-semibold">
+                                {
+                                  DAYS_OF_WEEK.find(
+                                    (d) => d.value === sch.day_of_week
+                                  )?.label
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Thời gian</p>
+                              <p className="font-semibold">
+                                {sch.start_time} - {sch.end_time}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Phòng</p>
+                              <Tag color="green">{sch.room}</Tag>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Tiết</p>
+                              <p className="text-sm">
+                                {sch.start_period} - {sch.end_period}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-100">
+                            <div>
+                              <p className="text-gray-600 text-xs">Từ</p>
+                              <p className="text-sm font-semibold">
+                                {new Date(sch.start_date).toLocaleDateString(
+                                  "vi-VN"
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-xs">Đến</p>
+                              <p className="text-sm font-semibold">
+                                {new Date(sch.end_date).toLocaleDateString(
+                                  "vi-VN"
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Empty description="Không có lịch học" />
+                  )}
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Empty description="Sinh viên không có môn học nào" />
+          )}
         </Card>
       </div>
     );
@@ -530,24 +683,47 @@ export const AdminSchedules = () => {
                 render: (count) => <Tag color="blue">{count}</Tag>,
               },
               {
-                title: "Lịch chi tiết",
+                title: "Thao tác",
                 key: "actions",
-                width: 120,
+                width: 180,
                 render: (_, record) => (
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<EyeOutlined />}
-                    onClick={() => {
-                      studentScheduleForm.setFieldsValue({
-                        student_id: record.student_id,
-                        semester_id: semester.semester_id,
-                      });
-                      handleGetStudentSchedule();
-                    }}
-                  >
-                    Xem
-                  </Button>
+                  <Space size="small">
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EyeOutlined />}
+                      onClick={() => {
+                        handleViewStudentScheduleDetail(
+                          record.student_id,
+                          semester.semester_id
+                        );
+                      }}
+                    >
+                      Xem
+                    </Button>
+                    <Popconfirm
+                      title="Xác nhận xóa"
+                      description="Bạn có chắc chắn muốn xóa lịch học của sinh viên này?"
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => {
+                        handleDeleteSchedule(
+                          record.student_id,
+                          semester.semester_id
+                        );
+                      }}
+                    >
+                      <Button
+                        type="link"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                      >
+                        Xóa
+                      </Button>
+                    </Popconfirm>
+                  </Space>
                 ),
               },
             ]}
@@ -628,96 +804,6 @@ export const AdminSchedules = () => {
       ),
     },
     {
-      key: "student_schedule",
-      label: "🎓 Nhóm B: Xem Lịch Sinh Viên",
-      children: (
-        <div>
-          <Card title="Xem lịch chi tiết của một sinh viên" className="mb-4">
-            <Form
-              form={studentScheduleForm}
-              layout="vertical"
-              className="mb-4"
-              initialValues={{ semester_id: semesters[0]?.semester_id }}
-              onFinish={handleGetStudentSchedule}
-            >
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <Form.Item
-                  name="semester_id"
-                  label="Học kỳ"
-                  rules={[{ required: true, message: "Vui lòng chọn học kỳ" }]}
-                >
-                  <Select placeholder="Chọn học kỳ" onFocus={loadInitialData}>
-                    {semesters.map((sem) => (
-                      <Select.Option
-                        key={sem.semester_id}
-                        value={sem.semester_id}
-                      >
-                        {sem.semester_name} - {sem.academic_year}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  name="class_id"
-                  label="Lớp"
-                  rules={[{ required: true, message: "Vui lòng chọn lớp" }]}
-                >
-                  <Select
-                    placeholder="Chọn lớp"
-                    onChange={handleStudentScheduleChange}
-                  >
-                    {classes.map((cls) => (
-                      <Select.Option key={cls.class_id} value={cls.class_id}>
-                        {cls.class_name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  name="student_id"
-                  label="Sinh viên"
-                  rules={[
-                    { required: true, message: "Vui lòng chọn sinh viên" },
-                  ]}
-                >
-                  <Select
-                    placeholder="Chọn sinh viên"
-                    showSearch
-                    optionFilterProp="children"
-                  >
-                    {classes
-                      .flatMap((c) => c.students || [])
-                      .map((student) => (
-                        <Select.Option
-                          key={student.student_id}
-                          value={student.student_id}
-                        >
-                          {student.user_code} - {student.full_name}
-                        </Select.Option>
-                      ))}
-                  </Select>
-                </Form.Item>
-              </div>
-
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={studentScheduleLoading}
-                icon={<EyeOutlined />}
-                size="large"
-              >
-                Xem Lịch
-              </Button>
-            </Form>
-
-            {studentScheduleLoading ? <Spin /> : renderStudentScheduleContent()}
-          </Card>
-        </div>
-      ),
-    },
-    {
       key: "class_schedule",
       label: "👥 Nhóm B: Xem Lịch Lớp",
       children: (
@@ -782,318 +868,6 @@ export const AdminSchedules = () => {
         </div>
       ),
     },
-    {
-      key: "search",
-      label: "🔍 Nhóm B: Tìm Kiếm Nâng Cao",
-      children: (
-        <div>
-          <Card title="Tìm kiếm sinh viên theo lịch học" className="mb-4">
-            <div className="bg-amber-50 p-4 rounded-lg mb-4">
-              <p className="font-semibold mb-2">💡 Chức năng:</p>
-              <ul className="list-disc ml-5 space-y-1 text-sm">
-                <li>Tìm sinh viên có lịch vào thứ cụ thể</li>
-                <li>Tìm sinh viên học môn cụ thể</li>
-                <li>Tìm sinh viên có lịch trong khoảng giờ nhất định</li>
-                <li>Kết hợp tìm kiếm theo múa tiêu chí</li>
-              </ul>
-            </div>
-
-            <Form
-              form={searchForm}
-              layout="vertical"
-              className="mb-4"
-              initialValues={{ semester_id: semesters[0]?.semester_id }}
-              onFinish={handleSearchSchedules}
-            >
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <Form.Item
-                  name="semester_id"
-                  label="Học kỳ (bắt buộc)"
-                  rules={[{ required: true, message: "Vui lòng chọn học kỳ" }]}
-                >
-                  <Select placeholder="Chọn học kỳ" onFocus={loadInitialData}>
-                    {semesters.map((sem) => (
-                      <Select.Option
-                        key={sem.semester_id}
-                        value={sem.semester_id}
-                      >
-                        {sem.semester_name} - {sem.academic_year}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item name="class_id" label="Lớp (tùy chọn)">
-                  <Select placeholder="Chọn lớp">
-                    {classes.map((cls) => (
-                      <Select.Option key={cls.class_id} value={cls.class_id}>
-                        {cls.class_name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item name="day_of_week" label="Thứ (tùy chọn)">
-                  <Select placeholder="Chọn thứ">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <Select.Option key={day.value} value={day.value}>
-                        {day.label}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item name="course_code" label="Mã môn học (tùy chọn)">
-                  <Input placeholder="VD: IT001" />
-                </Form.Item>
-
-                <Form.Item name="start_time" label="Giờ bắt đầu (tùy chọn)">
-                  <Select placeholder="Chọn giờ">
-                    {timeSlots.map((time) => (
-                      <Select.Option key={time} value={time}>
-                        {time}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item name="end_time" label="Giờ kết thúc (tùy chọn)">
-                  <Select placeholder="Chọn giờ">
-                    {timeSlots.map((time) => (
-                      <Select.Option key={time} value={time}>
-                        {time}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </div>
-
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={searchLoading}
-                icon={<SearchOutlined />}
-                size="large"
-              >
-                Tìm Kiếm
-              </Button>
-            </Form>
-
-            {searchLoading ? (
-              <Spin />
-            ) : searchResults ? (
-              <Card>
-                <div className="mb-4">
-                  <p className="text-gray-600 mb-2">Tiêu chí tìm kiếm:</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {searchResults.search_criteria.class_id && (
-                      <Tag>Lớp: {searchResults.search_criteria.class_id}</Tag>
-                    )}
-                    {searchResults.search_criteria.day_of_week && (
-                      <Tag>
-                        Thứ:{" "}
-                        {
-                          DAYS_OF_WEEK.find(
-                            (d) =>
-                              d.value ===
-                              searchResults.search_criteria.day_of_week
-                          )?.label
-                        }
-                      </Tag>
-                    )}
-                    {searchResults.search_criteria.start_time && (
-                      <Tag>Từ: {searchResults.search_criteria.start_time}</Tag>
-                    )}
-                    {searchResults.search_criteria.end_time && (
-                      <Tag>Đến: {searchResults.search_criteria.end_time}</Tag>
-                    )}
-                    {searchResults.search_criteria.course_code && (
-                      <Tag>
-                        Môn: {searchResults.search_criteria.course_code}
-                      </Tag>
-                    )}
-                  </div>
-                  <p className="text-lg font-bold mt-3 text-blue-600">
-                    Tìm thấy: {searchResults.total_found} sinh viên
-                  </p>
-                </div>
-
-                <Table
-                  columns={[
-                    {
-                      title: "MSSV",
-                      dataIndex: "user_code",
-                      key: "user_code",
-                      width: 100,
-                    },
-                    {
-                      title: "Tên sinh viên",
-                      dataIndex: "full_name",
-                      key: "full_name",
-                      width: 200,
-                    },
-                    {
-                      title: "Lớp",
-                      dataIndex: "class_name",
-                      key: "class_name",
-                      width: 120,
-                    },
-                    {
-                      title: "Email",
-                      dataIndex: "email",
-                      key: "email",
-                      width: 200,
-                    },
-                    {
-                      title: "Lịch trùng",
-                      key: "matched",
-                      width: 250,
-                      render: (_, record) => (
-                        <Collapse
-                          items={
-                            record.matched_schedules?.map((s, idx) => ({
-                              key: idx,
-                              label: `${s.course_code} - ${s.phase} (${s.time_range})`,
-                              children: (
-                                <div className="text-sm">
-                                  <p>Phòng: {s.room}</p>
-                                  <p>
-                                    Từ:{" "}
-                                    {new Date(s.start_date).toLocaleDateString(
-                                      "vi-VN"
-                                    )}
-                                  </p>
-                                  <p>
-                                    Đến:{" "}
-                                    {new Date(s.end_date).toLocaleDateString(
-                                      "vi-VN"
-                                    )}
-                                  </p>
-                                </div>
-                              ),
-                            })) || []
-                          }
-                        />
-                      ),
-                    },
-                  ]}
-                  dataSource={searchResults.students}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                  }}
-                  size="small"
-                />
-              </Card>
-            ) : null}
-          </Card>
-        </div>
-      ),
-    },
-    {
-      key: "delete",
-      label: "🗑️ Nhóm C: Xóa Lịch Sinh Viên",
-      children: (
-        <div>
-          <Card title="Xóa lịch học của sinh viên" className="mb-4">
-            <Alert
-              message="⚠️ Cảnh báo"
-              description="Thao tác xóa lịch học của sinh viên trong một học kỳ. Chỉ xóa dữ liệu trong MongoDB, không ảnh hưởng đến MySQL. Có thể import lại nếu cần."
-              type="warning"
-              showIcon
-              className="mb-4"
-            />
-
-            <Form
-              form={deleteForm}
-              layout="vertical"
-              className="mb-4"
-              initialValues={{ semester_id: semesters[0]?.semester_id }}
-            >
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <Form.Item
-                  name="semester_id"
-                  label="Học kỳ"
-                  rules={[{ required: true, message: "Vui lòng chọn học kỳ" }]}
-                >
-                  <Select placeholder="Chọn học kỳ" onFocus={loadInitialData}>
-                    {semesters.map((sem) => (
-                      <Select.Option
-                        key={sem.semester_id}
-                        value={sem.semester_id}
-                      >
-                        {sem.semester_name} - {sem.academic_year}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  name="class_id"
-                  label="Lớp"
-                  rules={[{ required: true, message: "Vui lòng chọn lớp" }]}
-                >
-                  <Select placeholder="Chọn lớp">
-                    {classes.map((cls) => (
-                      <Select.Option key={cls.class_id} value={cls.class_id}>
-                        {cls.class_name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  name="student_id"
-                  label="Sinh viên"
-                  rules={[
-                    { required: true, message: "Vui lòng chọn sinh viên" },
-                  ]}
-                >
-                  <Select
-                    placeholder="Chọn sinh viên"
-                    showSearch
-                    optionFilterProp="children"
-                  >
-                    {classes
-                      .flatMap((c) => c.students || [])
-                      .map((student) => (
-                        <Select.Option
-                          key={student.student_id}
-                          value={student.student_id}
-                        >
-                          {student.user_code} - {student.full_name}
-                        </Select.Option>
-                      ))}
-                  </Select>
-                </Form.Item>
-              </div>
-
-              <Popconfirm
-                title="Xác nhận xóa"
-                description="Bạn có chắc chắn muốn xóa lịch học của sinh viên này? Thao tác này không thể hoàn tác."
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-                onConfirm={() => {
-                  const values = deleteForm.getFieldsValue();
-                  handleDeleteSchedule(values.student_id, values.semester_id);
-                }}
-              >
-                <Button
-                  type="primary"
-                  danger
-                  icon={<DeleteOutlined />}
-                  size="large"
-                  loading={loading}
-                >
-                  Xóa Lịch Học
-                </Button>
-              </Popconfirm>
-            </Form>
-          </Card>
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -1112,6 +886,27 @@ export const AdminSchedules = () => {
           onChange={loadInitialData}
         />
       </Card>
+
+      {/* Detail Schedule Modal */}
+      <Modal
+        title="Chi tiết Lịch Học"
+        open={isDetailModalOpen}
+        onCancel={() => setIsDetailModalOpen(false)}
+        width={900}
+        footer={[
+          <Button key="close" onClick={() => setIsDetailModalOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+      >
+        {detailModalLoading ? (
+          <Spin />
+        ) : detailModalData ? (
+          renderDetailModalContent()
+        ) : (
+          <Empty description="Không có dữ liệu" />
+        )}
+      </Modal>
     </div>
   );
 };

@@ -24,6 +24,7 @@ import ActivityRegistrations from "./pages/advisor/activities/ActivityRegistrati
 import ActivityStatistics from "./pages/advisor/activities/ActivityStatistics";
 import AssignStudents from "./pages/advisor/activities/AssignStudents";
 import AdvisorClasses from "./pages/advisor/classes/AdvisorClasses";
+import AdvisorSchedules from "./pages/advisor/schedules/AdvisorSchedules";
 import { ClassDetail } from "./pages/advisor/classes/ClassDetail";
 import StudentPage from "./pages/Student.Notification.Page";
 import StudentProfile from "./pages/StudentProfile";
@@ -35,9 +36,9 @@ import MyCancellationRequests from "./pages/client/activities/MyCancellationRequ
 import StudentPoints from "./pages/client/points/StudentPoints";
 import MySemesterReport from "./pages/client/academic/MySemesterReport";
 import MyWarnings from "./pages/client/academic/MyWarnings";
-import RAGMain from "./pages/advisor/rag/RAGMain";
-import RAGDocumentManagement from "./pages/advisor/rag/RAGDocumentManagement";
-import RAGChatAssistant from "./pages/advisor/rag/RAGChatAssistant";
+import RAGMain from "./pages/admin/rag/RAGMain";
+import RAGDocumentManagement from "./pages/admin/rag/RAGDocumentManagement";
+import RAGChatAssistant from "./pages/admin/rag/RAGChatAssistant";
 import AdvisorChat from "./pages/advisor/chat/AdvisorChat";
 import { StudentChat } from "./pages/client/chat/StudentChat";
 import { StudentMeetings } from "./pages/client/meetings/StudentMeetings";
@@ -180,6 +181,7 @@ function App() {
         },
         { path: "classes", element: <AdvisorClasses /> },
         { path: "classes/:classId", element: <ClassDetail /> },
+        { path: "schedules", element: <AdvisorSchedules /> },
         { path: "meetings", element: <AdvisorMeetings /> },
         { path: "meetings/create", element: <CreateEditMeeting /> },
         { path: "meetings/statistics", element: <MeetingStatistics /> },
@@ -202,9 +204,6 @@ function App() {
           element: <CreateEditMonitoringNote />,
         },
         { path: "profile", element: <AdvisorProfile /> },
-        { path: "rag", element: <RAGMain /> },
-        { path: "rag/documents", element: <RAGDocumentManagement /> },
-        { path: "rag/chat", element: <RAGChatAssistant /> },
       ],
     },
 
@@ -273,6 +272,9 @@ function App() {
         { path: "grades", element: <AdminGrades /> },
         { path: "schedules", element: <AdminSchedules /> },
         { path: "meetings", element: <AdminMeetings /> },
+        { path: "rag", element: <RAGMain /> },
+        { path: "rag/documents", element: <RAGDocumentManagement /> },
+        { path: "rag/chat", element: <RAGChatAssistant /> },
       ],
     },
     // { path: "/unauthorized", element: <Unauthorized /> },

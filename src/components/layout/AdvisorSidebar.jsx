@@ -6,7 +6,6 @@ import {
   Home,
   Calendar,
   Users,
-  Bot,
   BookOpen,
   MessageCircle,
   CalendarDays,
@@ -77,6 +76,16 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       dotColor: "bg-purple-600",
     },
     {
+      id: "schedules",
+      path: "/advisor/schedules",
+      label: "Thời khóa biểu",
+      icon: BookOpen,
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      hoverColor: "hover:bg-teal-100",
+      dotColor: "bg-teal-600",
+    },
+    {
       id: "meetings",
       path: "/advisor/meetings",
       label: "Cuộc họp",
@@ -115,16 +124,6 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       bgColor: "bg-blue-50",
       hoverColor: "hover:bg-blue-100",
       dotColor: "bg-blue-600",
-    },
-    {
-      id: "rag-assistant",
-      path: "/advisor/rag",
-      label: "Trợ lý HUIT",
-      icon: Bot,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      hoverColor: "hover:bg-green-100",
-      dotColor: "bg-green-600",
     },
   ];
 
@@ -182,9 +181,7 @@ export const AdvisorSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
             (item.path === "/advisor/classes" &&
               location.pathname.startsWith("/advisor/classes")) ||
             (item.path === "/advisor/meetings" &&
-              location.pathname.startsWith("/advisor/meetings")) ||
-            (item.path === "/advisor/rag" &&
-              location.pathname.startsWith("/advisor/rag"));
+              location.pathname.startsWith("/advisor/meetings"));
 
           return (
             <button

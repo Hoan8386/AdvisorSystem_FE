@@ -9,7 +9,7 @@ import {
   Space,
   Tag,
   Upload,
-  Modal,
+  Popconfirm,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -17,6 +17,7 @@ import {
   DownloadOutlined,
   UploadOutlined,
   ExportOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 import {
   getClassDetailApi,
@@ -24,6 +25,7 @@ import {
   downloadTemplateApi,
   importStudentsApi,
   exportStudentsByClassApi,
+  resetStudentPasswordApi,
 } from "../../../services/api.service";
 
 export const AdminClassStudents = () => {
@@ -32,6 +34,9 @@ export const AdminClassStudents = () => {
   const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     const fetchClassInfo = async () => {
@@ -80,10 +85,22 @@ export const AdminClassStudents = () => {
     }
   };
 
+  const handleResetPassword = async (student) => {
+    try {
+      const response = await resetStudentPasswordApi(student.student_id);
+      if (response?.success) {
+        toast.success(response?.message || "Reset mật khẩu thành công");
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error(error?.message || "Không thể reset mật khẩu");
+    }
+  };
+
   // Download template for students
   const handleDownloadTemplate = async () => {
     try {
-      setLoading(true);
+      setDownloadLoading(true);
       const response = await downloadTemplateApi("students");
 
       const blob = new Blob([response], {
@@ -107,14 +124,14 @@ export const AdminClassStudents = () => {
       console.error("Error downloading template:", error);
       toast.error(error?.message || "Không thể tải template");
     } finally {
-      setLoading(false);
+      setDownloadLoading(false);
     }
   };
 
   // Import students from Excel
   const handleImportStudents = async (file) => {
     try {
-      setLoading(true);
+      setImportLoading(true);
       const response = await importStudentsApi(file);
 
       if (response?.success) {
@@ -143,7 +160,7 @@ export const AdminClassStudents = () => {
       console.error("Error importing students:", error);
       toast.error(error?.message || "Có lỗi xảy ra khi import file");
     } finally {
-      setLoading(false);
+      setImportLoading(false);
     }
 
     return false;
@@ -152,7 +169,7 @@ export const AdminClassStudents = () => {
   // Export students by class
   const handleExportStudents = async () => {
     try {
-      setLoading(true);
+      setExportLoading(true);
       const response = await exportStudentsByClassApi(classId);
 
       const blob = new Blob([response], {
@@ -177,7 +194,7 @@ export const AdminClassStudents = () => {
       console.error("Error exporting students:", error);
       toast.error(error?.message || "Không thể xuất danh sách");
     } finally {
-      setLoading(false);
+      setExportLoading(false);
     }
   };
 
@@ -207,6 +224,24 @@ export const AdminClassStudents = () => {
         <Tag color={status === "studying" ? "green" : "red"}>
           {status === "studying" ? "Đang học" : "Đã nghỉ"}
         </Tag>
+      ),
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      render: (_, record) => (
+        <Popconfirm
+          title="Reset mật khẩu"
+          description={`Bạn có chắc muốn reset mật khẩu cho "${record.full_name}" (${record.user_code})?`}
+          onConfirm={() => handleResetPassword(record)}
+          okText="Có"
+          cancelText="Không"
+          okButtonProps={{ danger: true }}
+        >
+          <Button icon={<LockOutlined />} danger size="small">
+            Reset MK
+          </Button>
+        </Popconfirm>
       ),
     },
   ];
@@ -254,7 +289,8 @@ export const AdminClassStudents = () => {
             <Button
               icon={<DownloadOutlined />}
               onClick={handleDownloadTemplate}
-              loading={loading}
+              loading={downloadLoading}
+              disabled={importLoading || exportLoading}
             >
               Tải template
             </Button>
@@ -262,15 +298,21 @@ export const AdminClassStudents = () => {
               accept=".xlsx,.xls"
               showUploadList={false}
               beforeUpload={handleImportStudents}
+              disabled={downloadLoading || exportLoading}
             >
-              <Button icon={<UploadOutlined />} loading={loading}>
+              <Button
+                icon={<UploadOutlined />}
+                loading={importLoading}
+                disabled={downloadLoading || exportLoading}
+              >
                 Import Excel
               </Button>
             </Upload>
             <Button
               icon={<ExportOutlined />}
               onClick={handleExportStudents}
-              loading={loading}
+              loading={exportLoading}
+              disabled={downloadLoading || importLoading}
             >
               Xuất danh sách
             </Button>
@@ -278,6 +320,7 @@ export const AdminClassStudents = () => {
               icon={<ReloadOutlined />}
               onClick={refreshStudents}
               loading={loading}
+              disabled={downloadLoading || importLoading || exportLoading}
             >
               Làm mới
             </Button>

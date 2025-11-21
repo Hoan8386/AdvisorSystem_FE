@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import {
   Table,
   Button,
@@ -7,8 +8,7 @@ import {
   Tag,
   Avatar,
   Upload,
-  Modal,
-  message,
+  Popconfirm,
 } from "antd";
 import {
   UserOutlined,
@@ -16,18 +16,22 @@ import {
   EyeOutlined,
   DownloadOutlined,
   UploadOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
   getClassesApi,
   downloadTemplateApi,
   importAdvisorsApi,
+  resetAdvisorPasswordApi,
 } from "../../../services/api.service";
 
 export const AdminAdvisors = () => {
   const navigate = useNavigate();
   const [advisors, setAdvisors] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
 
   useEffect(() => {
     fetchAdvisors();
@@ -64,7 +68,7 @@ export const AdminAdvisors = () => {
       }
     } catch (error) {
       console.error("Error fetching advisors:", error);
-      message.error("Không thể tải danh sách giảng viên");
+      toast.error("Không thể tải danh sách giảng viên");
     } finally {
       setLoading(false);
     }
@@ -73,7 +77,7 @@ export const AdminAdvisors = () => {
   // Download template for advisors
   const handleDownloadTemplate = async () => {
     try {
-      setLoading(true);
+      setDownloadLoading(true);
       const response = await downloadTemplateApi("advisors");
 
       const blob = new Blob([response], {
@@ -92,48 +96,36 @@ export const AdminAdvisors = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success("Tải template thành công");
+      toast.success("Tải template thành công");
     } catch (error) {
       console.error("Error downloading template:", error);
-      message.error(error?.message || "Không thể tải template");
+      toast.error(error?.message || "Không thể tải template");
     } finally {
-      setLoading(false);
+      setDownloadLoading(false);
     }
   };
 
   // Import advisors from Excel
   const handleImportAdvisors = async (file) => {
     try {
-      setLoading(true);
+      setImportLoading(true);
       const response = await importAdvisorsApi(file);
 
       if (response?.success) {
         const { imported, errors } = response.data;
-        message.success(`Import thành công ${imported} giảng viên`);
+        toast.success(`Import thành công ${imported} giảng viên`);
 
         if (errors && errors.length > 0) {
-          Modal.warning({
-            title: `Có ${errors.length} lỗi khi import`,
-            content: (
-              <div style={{ maxHeight: "400px", overflow: "auto" }}>
-                {errors.map((err, index) => (
-                  <div key={index} className="mb-2">
-                    {err}
-                  </div>
-                ))}
-              </div>
-            ),
-            width: 600,
-          });
+          toast.warning(`Có ${errors.length} lỗi khi import`);
         }
 
         fetchAdvisors();
       }
     } catch (error) {
       console.error("Error importing advisors:", error);
-      message.error(error?.message || "Có lỗi xảy ra khi import file");
+      toast.error(error?.message || "Có lỗi xảy ra khi import file");
     } finally {
-      setLoading(false);
+      setImportLoading(false);
     }
 
     return false;
@@ -143,6 +135,18 @@ export const AdminAdvisors = () => {
     navigate(`/admin/advisors/${advisor.advisor_id}/classes`, {
       state: { advisor },
     });
+  };
+
+  const handleResetPassword = async (advisor) => {
+    try {
+      const response = await resetAdvisorPasswordApi(advisor.advisor_id);
+      if (response?.success) {
+        toast.success(response?.message || "Reset mật khẩu thành công");
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error(error?.message || "Không thể reset mật khẩu");
+    }
   };
 
   const columns = [
@@ -195,15 +199,30 @@ export const AdminAdvisors = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 150,
+      width: 200,
       render: (_, record) => (
-        <Button
-          type="primary"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewClasses(record)}
-        >
-          Xem lớp
-        </Button>
+        <Space>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewClasses(record)}
+            size="small"
+          >
+            Xem lớp
+          </Button>
+          <Popconfirm
+            title="Reset mật khẩu"
+            description={`Bạn có chắc muốn reset mật khẩu cho "${record.full_name}" (${record.user_code})?`}
+            onConfirm={() => handleResetPassword(record)}
+            okText="Có"
+            cancelText="Không"
+            okButtonProps={{ danger: true }}
+          >
+            <Button icon={<LockOutlined />} danger size="small">
+              Reset MK
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -222,7 +241,8 @@ export const AdminAdvisors = () => {
             <Button
               icon={<DownloadOutlined />}
               onClick={handleDownloadTemplate}
-              loading={loading}
+              loading={downloadLoading}
+              disabled={importLoading}
             >
               Tải template
             </Button>
@@ -230,8 +250,13 @@ export const AdminAdvisors = () => {
               accept=".xlsx,.xls"
               showUploadList={false}
               beforeUpload={handleImportAdvisors}
+              disabled={downloadLoading}
             >
-              <Button icon={<UploadOutlined />} loading={loading}>
+              <Button
+                icon={<UploadOutlined />}
+                loading={importLoading}
+                disabled={downloadLoading}
+              >
                 Import Excel
               </Button>
             </Upload>
@@ -239,6 +264,7 @@ export const AdminAdvisors = () => {
               icon={<ReloadOutlined />}
               onClick={fetchAdvisors}
               loading={loading}
+              disabled={downloadLoading || importLoading}
             >
               Làm mới
             </Button>

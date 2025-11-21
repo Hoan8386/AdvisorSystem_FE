@@ -77,6 +77,8 @@ export const AdminLayout = () => {
       return "Quản lý Lịch học";
     } else if (location.pathname.includes("/admin/meetings")) {
       return "Quản lý Cuộc họp";
+    } else if (location.pathname.includes("/admin/rag")) {
+      return "Trợ lý AI HUIT";
     } else if (location.pathname.includes("/admin/profile")) {
       return "Hồ sơ cá nhân";
     } else if (location.pathname.includes("/admin")) {

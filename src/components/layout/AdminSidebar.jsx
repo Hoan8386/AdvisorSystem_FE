@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Clock,
   MessageSquare,
+  Bot,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
@@ -113,6 +114,16 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       bgColor: "bg-cyan-50",
       hoverColor: "hover:bg-cyan-100",
       dotColor: "bg-cyan-600",
+    },
+    {
+      id: "rag-assistant",
+      path: "/admin/rag",
+      label: "Trợ lý HUIT",
+      icon: Bot,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      hoverColor: "hover:bg-green-100",
+      dotColor: "bg-green-600",
     },
   ];
 

@@ -70,8 +70,8 @@ export const AdvisorLayout = ({ children }) => {
       return "Quản lý hoạt động";
     } else if (location.pathname.includes("/advisor/classes")) {
       return "Quản lý lớp học";
-    } else if (location.pathname.includes("/advisor/rag")) {
-      return "Trợ lý AI HUIT";
+    } else if (location.pathname.includes("/advisor/schedules")) {
+      return "Thời khóa biểu";
     } else {
       return "Trang chủ";
     }

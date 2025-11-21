@@ -45,6 +45,9 @@ export const AdminGrades = () => {
   const [studentGrades, setStudentGrades] = useState([]);
   const [classGradesData, setClassGradesData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [batchModalVisible, setBatchModalVisible] = useState(false);
   const [editingGrade, setEditingGrade] = useState(null);
@@ -378,7 +381,7 @@ export const AdminGrades = () => {
   // Download Excel template
   const handleDownloadTemplate = async () => {
     try {
-      setLoading(true);
+      setDownloadLoading(true);
       const response = await downloadGradeTemplateApi();
 
       // Create blob and download
@@ -403,14 +406,14 @@ export const AdminGrades = () => {
       console.error("Error downloading template:", error);
       toast.error(error?.message || "Không thể tải template");
     } finally {
-      setLoading(false);
+      setDownloadLoading(false);
     }
   };
 
   // Import grades from Excel
   const handleImportExcel = async (file) => {
     try {
-      setLoading(true);
+      setImportLoading(true);
       const response = await importGradesExcelApi(file);
 
       if (response?.success) {
@@ -467,7 +470,7 @@ export const AdminGrades = () => {
         );
       }
     } finally {
-      setLoading(false);
+      setImportLoading(false);
     }
   };
 
@@ -479,7 +482,7 @@ export const AdminGrades = () => {
     }
 
     try {
-      setLoading(true);
+      setExportLoading(true);
       const response = await exportGradesExcelApi(
         selectedClass,
         selectedSemester
@@ -513,7 +516,7 @@ export const AdminGrades = () => {
       console.error("Error exporting Excel:", error);
       toast.error(error?.message || "Không thể xuất điểm");
     } finally {
-      setLoading(false);
+      setExportLoading(false);
     }
   };
 
@@ -796,15 +799,21 @@ export const AdminGrades = () => {
             <Button
               icon={<DownloadOutlined />}
               onClick={handleDownloadTemplate}
-              loading={loading}
+              loading={downloadLoading}
+              disabled={exportLoading || importLoading}
             >
               Tải template
             </Button>
             <Button
               icon={<ExportOutlined />}
               onClick={handleExportExcel}
-              loading={loading}
-              disabled={!selectedClass || !selectedSemester}
+              loading={exportLoading}
+              disabled={
+                !selectedClass ||
+                !selectedSemester ||
+                downloadLoading ||
+                importLoading
+              }
             >
               Xuất điểm
             </Button>
@@ -812,16 +821,24 @@ export const AdminGrades = () => {
               icon={<ReloadOutlined />}
               onClick={() => {}}
               loading={loading}
+              disabled={downloadLoading || exportLoading || importLoading}
             >
               Làm mới
             </Button>
-            <Button icon={<UploadOutlined />} onClick={handleBatchImport}>
+            <Button
+              icon={<UploadOutlined />}
+              onClick={handleBatchImport}
+              disabled={downloadLoading || exportLoading || importLoading}
+            >
               Nhập hàng loạt
             </Button>
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleCreate}
+              disabled={
+                loading || downloadLoading || exportLoading || importLoading
+              }
             >
               Nhập điểm
             </Button>

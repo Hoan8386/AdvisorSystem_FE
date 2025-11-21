@@ -1042,6 +1042,20 @@ const getMonitoringNoteStatisticsAPI = (semesterId) => {
   return axios.get(URL_BACKEND, { params: { semester_id: semesterId } });
 };
 
+// ========== PASSWORD RESET APIs ==========
+
+// Reset advisor password (Admin only)
+const resetAdvisorPasswordApi = (advisorId) => {
+  const URL_BACKEND = `/api/advisors/${advisorId}/reset-password`;
+  return axios.post(URL_BACKEND);
+};
+
+// Reset student password (Admin only)
+const resetStudentPasswordApi = (studentId) => {
+  const URL_BACKEND = `/api/students/${studentId}/reset-password`;
+  return axios.post(URL_BACKEND);
+};
+
 export {
     
     createUserApi,
@@ -1210,4 +1224,7 @@ export {
     deleteMonitoringNoteAPI,
     getStudentNoteTimelineAPI,
     getMonitoringNoteStatisticsAPI,
+    // Password Reset APIs
+    resetAdvisorPasswordApi,
+    resetStudentPasswordApi,
 };
