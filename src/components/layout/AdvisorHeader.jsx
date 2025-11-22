@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
 import { getAccountAPI } from "../../services/api.service";
+import { getAvatarUrl } from "../../utils/avatarHelper";
 
 export const AdvisorHeader = ({ collapsed, onToggleCollapse }) => {
   const navigate = useNavigate();
@@ -22,8 +23,9 @@ export const AdvisorHeader = ({ collapsed, onToggleCollapse }) => {
   const fetchAdvisorInfo = async () => {
     try {
       const res = await getAccountAPI();
-      if (res) {
-        setAdvisorInfo(res);
+      if (res && res.data) {
+        const advisorData = res.data.data || res.data;
+        setAdvisorInfo(advisorData);
       }
     } catch (error) {
       console.error("Error fetching advisor info:", error);
@@ -138,7 +140,7 @@ export const AdvisorHeader = ({ collapsed, onToggleCollapse }) => {
             </div>
             <Avatar
               size={40}
-              src={advisorInfo?.avatar_url}
+              src={getAvatarUrl(advisorInfo?.avatar_url)}
               style={{
                 background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
                 flexShrink: 0,

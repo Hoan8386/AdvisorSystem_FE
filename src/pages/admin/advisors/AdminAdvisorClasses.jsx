@@ -6,6 +6,7 @@ import {
   UserOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
+import { getAvatarUrl } from "../../../utils/avatarHelper";
 
 export const AdminAdvisorClasses = () => {
   const { advisorId } = useParams();
@@ -86,7 +87,7 @@ export const AdminAdvisorClasses = () => {
                 <Avatar
                   size={80}
                   icon={<UserOutlined />}
-                  src={advisor.avatar_url}
+                  src={getAvatarUrl(advisor.avatar_url)}
                   style={{ backgroundColor: "#1890ff" }}
                 />
                 <div>

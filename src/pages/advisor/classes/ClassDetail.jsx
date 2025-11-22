@@ -865,7 +865,7 @@ export const ClassDetail = () => {
                               <Col xs={12} sm={8} md={6}>
                                 <Card size="small" className="text-center">
                                   <Statistic
-                                    title="Giỏi"
+                                    title="Xuất xắc"
                                     value={
                                       academicStatistics.statistics
                                         ?.excellent || 0
@@ -884,15 +884,33 @@ export const ClassDetail = () => {
                               <Col xs={12} sm={8} md={6}>
                                 <Card size="small" className="text-center">
                                   <Statistic
-                                    title="Khá"
+                                    title="Giỏi"
                                     value={
                                       academicStatistics.statistics?.good || 0
+                                    }
+                                    valueStyle={{ color: "#52c41a" }}
+                                    suffix={`/ ${academicStatistics.total_students}`}
+                                  />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {academicStatistics.percentages?.good?.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </div>
+                                </Card>
+                              </Col>
+                              <Col xs={12} sm={8} md={6}>
+                                <Card size="small" className="text-center">
+                                  <Statistic
+                                    title="Khá"
+                                    value={
+                                      academicStatistics.statistics?.poor || 0
                                     }
                                     valueStyle={{ color: "#1890ff" }}
                                     suffix={`/ ${academicStatistics.total_students}`}
                                   />
                                   <div className="text-xs text-gray-500 mt-1">
-                                    {academicStatistics.percentages?.good?.toFixed(
+                                    {academicStatistics.percentages?.poor?.toFixed(
                                       1
                                     )}
                                     %
@@ -925,29 +943,11 @@ export const ClassDetail = () => {
                                     value={
                                       academicStatistics.statistics?.weak || 0
                                     }
-                                    valueStyle={{ color: "#ff7a45" }}
+                                    valueStyle={{ color: "red" }}
                                     suffix={`/ ${academicStatistics.total_students}`}
                                   />
                                   <div className="text-xs text-gray-500 mt-1">
                                     {academicStatistics.percentages?.weak?.toFixed(
-                                      1
-                                    )}
-                                    %
-                                  </div>
-                                </Card>
-                              </Col>
-                              <Col xs={12} sm={8} md={6}>
-                                <Card size="small" className="text-center">
-                                  <Statistic
-                                    title="Kém"
-                                    value={
-                                      academicStatistics.statistics?.poor || 0
-                                    }
-                                    valueStyle={{ color: "#f5222d" }}
-                                    suffix={`/ ${academicStatistics.total_students}`}
-                                  />
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {academicStatistics.percentages?.poor?.toFixed(
                                       1
                                     )}
                                     %

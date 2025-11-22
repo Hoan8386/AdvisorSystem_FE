@@ -7,6 +7,7 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "../context/auth.context";
 import { useNavigate } from "react-router-dom";
+import { getAvatarUrl } from "../../utils/avatarHelper";
 
 const { Header } = Layout;
 
@@ -52,7 +53,11 @@ export const AdminHeader = () => {
 
       <Dropdown menu={{ items }} placement="bottomRight" arrow>
         <Space style={{ cursor: "pointer" }}>
-          <Avatar icon={<UserOutlined />} src={user?.avatar_url} size="large" />
+          <Avatar
+            icon={<UserOutlined />}
+            src={getAvatarUrl(user?.avatar_url)}
+            size="large"
+          />
           <div>
             <div className="font-semibold">{user?.full_name || "Admin"}</div>
             <div className="text-xs text-gray-500">Quản trị viên</div>

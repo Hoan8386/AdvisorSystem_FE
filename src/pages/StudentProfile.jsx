@@ -1,7 +1,12 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { AuthContext } from "../components/context/auth.context";
 import { StudentLayout } from "../components/layout/StudentLayout";
-import { getAccountAPI } from "../services/api.service";
+import {
+  getAccountAPI,
+  uploadStudentAvatarApi,
+  changeStudentPassword,
+} from "../services/api.service";
+import { getAvatarUrl } from "../utils/avatarHelper";
 import {
   Card,
   Row,
@@ -13,31 +18,30 @@ import {
   Input,
   message,
   Tag,
-  Space,
   Upload,
-  Statistic,
-  Divider,
+  Modal,
+  Tooltip,
 } from "antd";
-import {
-  EditOutlined,
-  SaveOutlined,
-  CloseOutlined,
-  CameraOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  BookOutlined,
-  BankOutlined,
-} from "@ant-design/icons";
+import { CameraOutlined, UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export const StudentProfile = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [form] = Form.useForm();
+
+  // State cho Avatar Modal
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  // State cho Password Modal
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+  const [passwordForm] = Form.useForm();
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const uploadRef = useRef(null);
 
   const fetchStudentInfo = async () => {
     try {
@@ -45,11 +49,6 @@ export const StudentProfile = () => {
       const res = await getAccountAPI();
       if (res && res.data) {
         setStudentInfo(res.data);
-        form.setFieldsValue({
-          full_name: res.data.full_name,
-          email: res.data.email,
-          phone_number: res.data.phone_number,
-        });
       }
     } catch (error) {
       message.error("Lỗi khi tải thông tin hồ sơ");
@@ -68,18 +67,110 @@ export const StudentProfile = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
-  const handleCancel = () => {
-    setEditing(false);
-    form.setFieldsValue({
-      full_name: studentInfo?.full_name,
-      email: studentInfo?.email,
-      phone_number: studentInfo?.phone_number,
-    });
+  // --- Xử lý Modal Avatar ---
+  const handleOpenAvatarModal = () => {
+    setAvatarPreview(null); // Reset preview mỗi khi mở modal
+    setIsAvatarModalVisible(true);
   };
 
-  const handleAvatarUpload = () => {
-    message.info("Chức năng tải ảnh đại diện sắp có!");
-    return false;
+  const handleCloseAvatarModal = () => {
+    setIsAvatarModalVisible(false);
+    setAvatarPreview(null);
+  };
+
+  const handleAvatarSelect = (file) => {
+    if (file.size > 2 * 1024 * 1024) {
+      message.error("Kích thước file không được vượt quá 2MB");
+      return false;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      message.error("Chỉ chấp nhận file hình ảnh (JPEG, PNG, GIF)");
+      return false;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatarPreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+    return false; // Ngăn không cho Upload component tự động upload
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarPreview) {
+      message.error("Vui lòng chọn hình ảnh mới để cập nhật");
+      return;
+    }
+
+    try {
+      setAvatarUploading(true);
+
+      // Xử lý file từ base64
+      const base64Data = avatarPreview.split(",")[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const file = new File([byteArray], "avatar.jpg", { type: "image/jpeg" });
+
+      const studentId = studentInfo?.student_id || user?.id;
+      if (!studentId) {
+        message.error("Không tìm thấy ID sinh viên");
+        return;
+      }
+
+      const res = await uploadStudentAvatarApi(studentId, file);
+      if (res && res.data) {
+        message.success("Upload ảnh đại diện thành công");
+        setStudentInfo({
+          ...studentInfo,
+          avatar_url: res.data.avatar_url,
+        });
+        handleCloseAvatarModal();
+      }
+    } catch (error) {
+      message.error(error?.response?.data?.message || "Lỗi khi upload ảnh");
+      console.error("Avatar upload error:", error);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+  // --------------------------
+
+  const handleChangePassword = async (values) => {
+    try {
+      setPasswordLoading(true);
+      const res = await changeStudentPassword(
+        values.current_password,
+        values.new_password,
+        values.new_password_confirmation
+      );
+      if (res) {
+        toast.success(res.message);
+        setIsPasswordModalVisible(false);
+        passwordForm.resetFields();
+      }
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.message || "Lỗi khi đổi mật khẩu";
+      toast.error(error.message);
+
+      if (errorMessage.includes("Mật khẩu hiện tại không đúng")) {
+        passwordForm.setFields([
+          {
+            name: "current_password",
+            errors: [errorMessage],
+          },
+        ]);
+      }
+      console.error("Change password error:", error);
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -138,7 +229,7 @@ export const StudentProfile = () => {
                         <div style={{ position: "relative", flexShrink: 0 }}>
                           <Avatar
                             size={140}
-                            src={studentInfo.avatar_url}
+                            src={getAvatarUrl(studentInfo.avatar_url)}
                             icon={<UserOutlined />}
                             style={{
                               background:
@@ -148,32 +239,28 @@ export const StudentProfile = () => {
                               fontSize: 60,
                             }}
                           />
-                          {editing && (
-                            <Upload
-                              maxCount={1}
-                              beforeUpload={handleAvatarUpload}
+                          {/* SỬA: Nút mở Modal Avatar (Không bọc Upload ở đây nữa) */}
+                          <Tooltip title="Đổi ảnh đại diện">
+                            <Button
+                              type="primary"
+                              shape="circle"
+                              icon={<CameraOutlined />}
+                              size="large"
+                              onClick={handleOpenAvatarModal} // Gọi hàm mở modal
                               style={{
                                 position: "absolute",
                                 right: 0,
                                 bottom: 0,
+                                background: "#1890ff",
+                                border: "4px solid white",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                width: 50,
+                                height: 50,
+                                fontSize: 24,
+                                cursor: "pointer",
                               }}
-                            >
-                              <Button
-                                type="primary"
-                                shape="circle"
-                                icon={<CameraOutlined />}
-                                size="large"
-                                style={{
-                                  background: "#1890ff",
-                                  border: "4px solid white",
-                                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                  width: 50,
-                                  height: 50,
-                                  fontSize: 24,
-                                }}
-                              />
-                            </Upload>
-                          )}
+                            />
+                          </Tooltip>
                         </div>
 
                         {/* Name & Tags */}
@@ -188,112 +275,31 @@ export const StudentProfile = () => {
                           >
                             {studentInfo.full_name}
                           </h2>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 12,
-                              alignItems: "center",
-                              marginBottom: 16,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <Tag
-                              color="blue"
-                              style={{
-                                padding: "6px 14px",
-                                fontSize: 13,
-                                fontWeight: 600,
-                                borderRadius: 6,
-                              }}
-                            >
-                              🆔 {studentInfo.user_code}
-                            </Tag>
-                            <Tag
-                              color={
-                                studentInfo.student?.status === "studying"
-                                  ? "green"
-                                  : "orange"
-                              }
-                              style={{
-                                padding: "6px 14px",
-                                fontSize: 13,
-                                fontWeight: 600,
-                                borderRadius: 6,
-                              }}
-                            >
-                              {studentInfo.student?.status === "studying"
-                                ? "🎓 Đang học"
-                                : "⏸️ Tạm dừng"}
-                            </Tag>
-                          </div>
-                          <p
-                            style={{
-                              margin: 0,
-                              color: "#666",
-                              fontSize: 14,
-                            }}
-                          >
-                            📅 Đã tạo:{" "}
-                            <strong>
-                              {new Date(
-                                studentInfo.created_at
-                              ).toLocaleDateString("vi-VN")}
-                            </strong>
-                          </p>
                         </div>
                       </div>
 
-                      {/* Edit/Save Buttons */}
+                      {/* Password Button */}
                       <div style={{ paddingTop: 12, flexShrink: 0 }}>
-                        {!editing ? (
-                          <Button
-                            type="primary"
-                            icon={<EditOutlined />}
-                            onClick={() => setEditing(true)}
-                            size="large"
-                            style={{
-                              background: "#1890ff",
-                              border: "none",
-                              fontWeight: 600,
-                              borderRadius: 8,
-                            }}
-                          >
-                            Chỉnh sửa
-                          </Button>
-                        ) : (
-                          <Space>
-                            <Button
-                              type="primary"
-                              icon={<SaveOutlined />}
-                              onClick={() => form.submit()}
-                              loading={loading}
-                              style={{
-                                background: "#52c41a",
-                                border: "none",
-                                fontWeight: 600,
-                                borderRadius: 8,
-                              }}
-                            >
-                              Lưu
-                            </Button>
-                            <Button
-                              icon={<CloseOutlined />}
-                              onClick={handleCancel}
-                              disabled={loading}
-                              style={{
-                                borderRadius: 8,
-                              }}
-                            >
-                              Hủy
-                            </Button>
-                          </Space>
-                        )}
+                        <Button
+                          icon={<LockOutlined />}
+                          onClick={() => setIsPasswordModalVisible(true)}
+                          size="large"
+                          style={{
+                            background: "#722ed1",
+                            color: "white",
+                            border: "none",
+                            fontWeight: 600,
+                            borderRadius: 8,
+                          }}
+                        >
+                          Đổi mật khẩu
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </Card>
 
-                {/* Personal Info */}
+                {/* ... (Phần Card Thông tin cá nhân, Học tập, Thống kê giữ nguyên) ... */}
                 <Card
                   title={
                     <h3
@@ -318,7 +324,6 @@ export const StudentProfile = () => {
                   }}
                 >
                   <Row gutter={[24, 24]}>
-                    {/* Họ và tên */}
                     <Col xs={24} sm={12}>
                       <div>
                         <label
@@ -334,47 +339,23 @@ export const StudentProfile = () => {
                         </label>
                         <input
                           type="text"
-                          value={
-                            editing
-                              ? form.getFieldValue("full_name") ||
-                                studentInfo.full_name
-                              : studentInfo.full_name
-                          }
-                          onChange={(e) => {
-                            if (editing) {
-                              form.setFieldValue("full_name", e.target.value);
-                            }
-                          }}
-                          disabled={!editing}
+                          value={studentInfo.full_name}
+                          disabled
                           placeholder="Họ và tên"
                           style={{
                             width: "100%",
                             padding: "12px 16px",
                             fontSize: 14,
                             borderRadius: 8,
-                            border: editing
-                              ? "2px solid #1890ff"
-                              : "1px solid #e0e0e0",
-                            backgroundColor: editing ? "#fff" : "#fafafa",
-                            color: "#333",
-                            transition: "all 0.3s",
+                            border: "1px solid #e0e0e0",
+                            backgroundColor: "#fafafa",
+                            color: "#555",
                             boxSizing: "border-box",
-                            cursor: editing ? "text" : "default",
-                          }}
-                          onFocus={(e) => {
-                            if (editing) {
-                              e.target.style.boxShadow =
-                                "0 0 0 3px rgba(24, 144, 255, 0.1)";
-                            }
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = "none";
+                            cursor: "not-allowed",
                           }}
                         />
                       </div>
                     </Col>
-
-                    {/* Mã sinh viên */}
                     <Col xs={24} sm={12}>
                       <div>
                         <label
@@ -400,15 +381,13 @@ export const StudentProfile = () => {
                             borderRadius: 8,
                             border: "1px solid #e0e0e0",
                             backgroundColor: "#fafafa",
-                            color: "#999",
+                            color: "#555",
                             boxSizing: "border-box",
                             cursor: "not-allowed",
                           }}
                         />
                       </div>
                     </Col>
-
-                    {/* Email */}
                     <Col xs={24} sm={12}>
                       <div>
                         <label
@@ -424,46 +403,23 @@ export const StudentProfile = () => {
                         </label>
                         <input
                           type="email"
-                          value={
-                            editing
-                              ? form.getFieldValue("email") || studentInfo.email
-                              : studentInfo.email
-                          }
-                          onChange={(e) => {
-                            if (editing) {
-                              form.setFieldValue("email", e.target.value);
-                            }
-                          }}
-                          disabled={!editing}
+                          value={studentInfo.email}
+                          disabled
                           placeholder="Email"
                           style={{
                             width: "100%",
                             padding: "12px 16px",
                             fontSize: 14,
                             borderRadius: 8,
-                            border: editing
-                              ? "2px solid #1890ff"
-                              : "1px solid #e0e0e0",
-                            backgroundColor: editing ? "#fff" : "#fafafa",
-                            color: "#333",
-                            transition: "all 0.3s",
+                            border: "1px solid #e0e0e0",
+                            backgroundColor: "#fafafa",
+                            color: "#555",
                             boxSizing: "border-box",
-                            cursor: editing ? "text" : "default",
-                          }}
-                          onFocus={(e) => {
-                            if (editing) {
-                              e.target.style.boxShadow =
-                                "0 0 0 3px rgba(24, 144, 255, 0.1)";
-                            }
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = "none";
+                            cursor: "not-allowed",
                           }}
                         />
                       </div>
                     </Col>
-
-                    {/* Số điện thoại */}
                     <Col xs={24} sm={12}>
                       <div>
                         <label
@@ -479,108 +435,27 @@ export const StudentProfile = () => {
                         </label>
                         <input
                           type="tel"
-                          value={
-                            editing
-                              ? form.getFieldValue("phone_number") ||
-                                studentInfo.phone_number
-                              : studentInfo.phone_number
-                          }
-                          onChange={(e) => {
-                            if (editing) {
-                              form.setFieldValue(
-                                "phone_number",
-                                e.target.value
-                              );
-                            }
-                          }}
-                          disabled={!editing}
+                          value={studentInfo.phone_number}
+                          disabled
                           placeholder="Số điện thoại"
                           style={{
                             width: "100%",
                             padding: "12px 16px",
                             fontSize: 14,
                             borderRadius: 8,
-                            border: editing
-                              ? "2px solid #1890ff"
-                              : "1px solid #e0e0e0",
-                            backgroundColor: editing ? "#fff" : "#fafafa",
-                            color: "#333",
-                            transition: "all 0.3s",
+                            border: "1px solid #e0e0e0",
+                            backgroundColor: "#fafafa",
+                            color: "#555",
                             boxSizing: "border-box",
-                            cursor: editing ? "text" : "default",
-                          }}
-                          onFocus={(e) => {
-                            if (editing) {
-                              e.target.style.boxShadow =
-                                "0 0 0 3px rgba(24, 144, 255, 0.1)";
-                            }
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = "none";
+                            cursor: "not-allowed",
                           }}
                         />
-                      </div>
-                    </Col>
-
-                    {/* Buttons */}
-                    <Col xs={24}>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                          justifyContent: "flex-end",
-                          paddingTop: 8,
-                        }}
-                      >
-                        {!editing ? (
-                          <Button
-                            type="primary"
-                            icon={<EditOutlined />}
-                            onClick={() => setEditing(true)}
-                            size="large"
-                            style={{
-                              background: "#1890ff",
-                              border: "none",
-                              fontWeight: 600,
-                              borderRadius: 8,
-                            }}
-                          >
-                            Chỉnh sửa
-                          </Button>
-                        ) : (
-                          <>
-                            <Button
-                              type="primary"
-                              icon={<SaveOutlined />}
-                              onClick={() => form.submit()}
-                              loading={loading}
-                              style={{
-                                background: "#52c41a",
-                                border: "none",
-                                fontWeight: 600,
-                                borderRadius: 8,
-                              }}
-                            >
-                              Lưu
-                            </Button>
-                            <Button
-                              icon={<CloseOutlined />}
-                              onClick={handleCancel}
-                              disabled={loading}
-                              style={{
-                                borderRadius: 8,
-                              }}
-                            >
-                              Hủy
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </Col>
                   </Row>
                 </Card>
 
-                {/* Academic Info */}
+                {/* ... (Phần Academic Info và Stats giữ nguyên) ... */}
                 {studentInfo.student && (
                   <Card
                     title={
@@ -606,7 +481,6 @@ export const StudentProfile = () => {
                     }}
                   >
                     <Row gutter={[24, 24]}>
-                      {/* Class Info */}
                       <Col xs={24} sm={12} lg={8}>
                         <Card
                           style={{
@@ -654,8 +528,6 @@ export const StudentProfile = () => {
                           </div>
                         </Card>
                       </Col>
-
-                      {/* Faculty Info */}
                       <Col xs={24} sm={12} lg={8}>
                         <Card
                           style={{
@@ -703,8 +575,6 @@ export const StudentProfile = () => {
                           </div>
                         </Card>
                       </Col>
-
-                      {/* Status */}
                       <Col xs={24} sm={12} lg={8}>
                         <Card
                           style={{
@@ -777,8 +647,7 @@ export const StudentProfile = () => {
                     </Row>
                   </Card>
                 )}
-
-                {/* Quick Stats Section */}
+                {/* Stats */}
                 <div>
                   <h3
                     style={{
@@ -791,7 +660,6 @@ export const StudentProfile = () => {
                     📊 Thống kê nhanh
                   </h3>
                   <Row gutter={[16, 16]}>
-                    {/* Email Status */}
                     <Col xs={24} sm={12} lg={6}>
                       <Card
                         style={{
@@ -804,14 +672,7 @@ export const StudentProfile = () => {
                         bodyStyle={{ padding: 20 }}
                         hoverable
                       >
-                        <div
-                          style={{
-                            fontSize: 32,
-                            marginBottom: 12,
-                          }}
-                        >
-                          📧
-                        </div>
+                        <div style={{ fontSize: 32, marginBottom: 12 }}>📧</div>
                         <div
                           style={{
                             fontSize: 14,
@@ -835,8 +696,6 @@ export const StudentProfile = () => {
                         </Tag>
                       </Card>
                     </Col>
-
-                    {/* Phone Status */}
                     <Col xs={24} sm={12} lg={6}>
                       <Card
                         style={{
@@ -849,14 +708,7 @@ export const StudentProfile = () => {
                         bodyStyle={{ padding: 20 }}
                         hoverable
                       >
-                        <div
-                          style={{
-                            fontSize: 32,
-                            marginBottom: 12,
-                          }}
-                        >
-                          📱
-                        </div>
+                        <div style={{ fontSize: 32, marginBottom: 12 }}>📱</div>
                         <div
                           style={{
                             fontSize: 14,
@@ -880,8 +732,6 @@ export const StudentProfile = () => {
                         </Tag>
                       </Card>
                     </Col>
-
-                    {/* Academic Status */}
                     <Col xs={24} sm={12} lg={6}>
                       <Card
                         style={{
@@ -894,14 +744,7 @@ export const StudentProfile = () => {
                         bodyStyle={{ padding: 20 }}
                         hoverable
                       >
-                        <div
-                          style={{
-                            fontSize: 32,
-                            marginBottom: 12,
-                          }}
-                        >
-                          🎓
-                        </div>
+                        <div style={{ fontSize: 32, marginBottom: 12 }}>🎓</div>
                         <div
                           style={{
                             fontSize: 14,
@@ -931,8 +774,6 @@ export const StudentProfile = () => {
                         </Tag>
                       </Card>
                     </Col>
-
-                    {/* Creation Date */}
                     <Col xs={24} sm={12} lg={6}>
                       <Card
                         style={{
@@ -945,14 +786,7 @@ export const StudentProfile = () => {
                         bodyStyle={{ padding: 20 }}
                         hoverable
                       >
-                        <div
-                          style={{
-                            fontSize: 32,
-                            marginBottom: 12,
-                          }}
-                        >
-                          📅
-                        </div>
+                        <div style={{ fontSize: 32, marginBottom: 12 }}>📅</div>
                         <div
                           style={{
                             fontSize: 14,
@@ -982,6 +816,181 @@ export const StudentProfile = () => {
             )}
           </Spin>
         </div>
+
+        {/* SỬA: Avatar Upload Modal - Dùng Modal component chuẩn */}
+        <Modal
+          title="Cập nhật ảnh đại diện"
+          open={isAvatarModalVisible}
+          onCancel={handleCloseAvatarModal}
+          footer={[
+            <Button key="cancel" onClick={handleCloseAvatarModal}>
+              Hủy
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={avatarUploading}
+              onClick={handleAvatarUpload}
+            >
+              Cập nhật
+            </Button>,
+          ]}
+        >
+          <Spin spinning={avatarUploading}>
+            <div style={{ textAlign: "center" }}>
+              <Avatar
+                size={150}
+                // Hiển thị preview nếu có, không thì hiển thị ảnh hiện tại
+                src={avatarPreview || getAvatarUrl(studentInfo?.avatar_url)}
+                icon={<UserOutlined />}
+                style={{
+                  marginBottom: "20px",
+                  border: "4px solid #f0f0f0",
+                }}
+              />
+              <div>
+                <Upload
+                  accept="image/*"
+                  showUploadList={false}
+                  beforeUpload={handleAvatarSelect}
+                >
+                  <Button type="primary" icon={<CameraOutlined />}>
+                    Chọn ảnh
+                  </Button>
+                </Upload>
+                <p style={{ color: "#999", fontSize: 12, marginTop: 12 }}>
+                  Định dạng: JPEG, PNG, JPG, GIF. Kích thước tối đa: 2MB
+                </p>
+              </div>
+            </div>
+          </Spin>
+        </Modal>
+
+        {/* Change Password Modal */}
+        <Modal
+          title={
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <LockOutlined style={{ fontSize: 20, color: "#722ed1" }} />
+              <span>Đổi mật khẩu</span>
+            </div>
+          }
+          open={isPasswordModalVisible}
+          onCancel={() => {
+            setIsPasswordModalVisible(false);
+            passwordForm.resetFields();
+          }}
+          footer={null}
+          width={450}
+          bodyStyle={{ paddingTop: 20 }}
+        >
+          <Form
+            form={passwordForm}
+            layout="vertical"
+            onFinish={handleChangePassword}
+            autoComplete="off"
+          >
+            <Form.Item
+              label={
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <LockOutlined style={{ color: "#722ed1" }} />
+                  <span>Mật khẩu hiện tại</span>
+                </div>
+              }
+              name="current_password"
+              rules={[
+                { required: true, message: "Vui lòng nhập mật khẩu hiện tại" },
+              ]}
+              hasFeedback
+            >
+              <Input.Password
+                placeholder="Nhập mật khẩu hiện tại"
+                size="large"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <LockOutlined style={{ color: "#722ed1" }} />
+                  <span>Mật khẩu mới</span>
+                </div>
+              }
+              name="new_password"
+              rules={[
+                { required: true, message: "Vui lòng nhập mật khẩu mới" },
+                {
+                  min: 6,
+                  message: "Mật khẩu phải có ít nhất 6 ký tự",
+                },
+              ]}
+              hasFeedback
+            >
+              <Input.Password placeholder="Nhập mật khẩu mới" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <LockOutlined style={{ color: "#722ed1" }} />
+                  <span>Xác nhận mật khẩu mới</span>
+                </div>
+              }
+              name="new_password_confirmation"
+              rules={[
+                { required: true, message: "Vui lòng xác nhận mật khẩu mới" },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue("new_password") === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error("Mật khẩu xác nhận không khớp")
+                    );
+                  },
+                }),
+              ]}
+              hasFeedback
+            >
+              <Input.Password
+                placeholder="Xác nhận mật khẩu mới"
+                size="large"
+              />
+            </Form.Item>
+
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={passwordLoading}
+                style={{
+                  background: "#722ed1",
+                  border: "none",
+                  flex: 1,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  height: 40,
+                }}
+              >
+                Xác nhận
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsPasswordModalVisible(false);
+                  passwordForm.resetFields();
+                }}
+                disabled={passwordLoading}
+                style={{
+                  flex: 1,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  height: 40,
+                }}
+              >
+                Hủy
+              </Button>
+            </div>
+          </Form>
+        </Modal>
       </div>
     </StudentLayout>
   );

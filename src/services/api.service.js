@@ -64,6 +64,37 @@ const changePassword = (current_password,new_password,new_password_confirmation)
     return axios.post(URL_BACKEND,data);
 }
 
+const changeStudentPassword = (current_password,new_password,new_password_confirmation)=>{
+  const URL_BACKEND = "/api/students/change-password"
+   const data ={
+        current_password:current_password,
+        new_password:new_password,
+        new_password_confirmation:new_password_confirmation
+    }
+    return axios.post(URL_BACKEND,data);
+}
+
+const changeAdvisorPassword = (current_password,new_password,new_password_confirmation)=>{
+  const URL_BACKEND = "/api/advisors/change-password"
+   const data ={
+        current_password:current_password,
+        new_password:new_password,
+        new_password_confirmation:new_password_confirmation
+    }
+    return axios.post(URL_BACKEND,data);
+}
+
+// Admin change password - sử dụng cùng endpoint với advisor vì admin cũng có thể dùng
+const changeAdminPassword = (current_password,new_password,new_password_confirmation)=>{
+  const URL_BACKEND = "/api/advisors/change-password"
+   const data ={
+        current_password:current_password,
+        new_password:new_password,
+        new_password_confirmation:new_password_confirmation
+    }
+    return axios.post(URL_BACKEND,data);
+}
+
 // ========== NOTIFICATION APIs ==========
 
 // Get all notifications (for both advisor and student)
@@ -812,6 +843,34 @@ const deleteAdvisorApi = (advisorId) => {
   return axios.delete(URL_BACKEND);
 };
 
+const createAdvisorApi = (data) => {
+  const URL_BACKEND = "/api/advisors";
+  return axios.post(URL_BACKEND, data);
+};
+
+const getAdvisorDetailApi = (advisorId) => {
+  const URL_BACKEND = `/api/advisors/${advisorId}`;
+  return axios.get(URL_BACKEND);
+};
+
+const uploadAdvisorAvatarApi = (advisorId, file) => {
+  const URL_BACKEND = `/api/advisors/${advisorId}/avatar`;
+  const formData = new FormData();
+  formData.append("avatar", file);
+  return axios.post(URL_BACKEND, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
+const uploadStudentAvatarApi = (studentId, file) => {
+  const URL_BACKEND = `/api/students/${studentId}/avatar`;
+  const formData = new FormData();
+  formData.append("avatar", file);
+  return axios.post(URL_BACKEND, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
 // ========== Dashboard APIs ==========
 
 // Get dashboard overview (Admin)
@@ -1065,6 +1124,9 @@ export {
     updateUserApi,
     forgotPassword,
     changePassword,
+    changeStudentPassword,
+    changeAdvisorPassword,
+    changeAdminPassword,
     // Notification APIs
     getNotificationsAPI,
     getNotificationDetailAPI,
@@ -1191,6 +1253,10 @@ export {
   getAdvisorsApi,
   updateAdvisorApi,
   deleteAdvisorApi,
+  createAdvisorApi,
+  getAdvisorDetailApi,
+  uploadAdvisorAvatarApi,
+  uploadStudentAvatarApi,
   // Dashboard APIs
   getDashboardOverviewApi,
   // Meetings APIs

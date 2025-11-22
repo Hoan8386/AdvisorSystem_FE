@@ -17,6 +17,7 @@ import {
 import { EyeOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import { getPointFeedbacksAPI } from "../../../services/pointFeedback.service";
+import { getSemestersAPI } from "../../../services/api.service";
 import dayjs from "dayjs";
 
 export default function AdvisorPointFeedbacks() {
@@ -27,6 +28,7 @@ export default function AdvisorPointFeedbacks() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [statusFilter, setStatusFilter] = useState(undefined);
   const [semesterFilter, setSemesterFilter] = useState(undefined);
+  const [semesters, setSemesters] = useState([]);
 
   const fetchFeedbacks = useCallback(async () => {
     try {
@@ -49,6 +51,20 @@ export default function AdvisorPointFeedbacks() {
   useEffect(() => {
     fetchFeedbacks();
   }, [fetchFeedbacks]);
+
+  useEffect(() => {
+    const fetchSemesters = async () => {
+      try {
+        const response = await getSemestersAPI();
+        if (response && response.data) {
+          setSemesters(response.data);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách học kỳ:", error);
+      }
+    };
+    fetchSemesters();
+  }, []);
 
   const handleViewDetail = (record) => {
     setSelectedFeedback(record);
@@ -180,11 +196,10 @@ export default function AdvisorPointFeedbacks() {
                 allowClear
                 value={semesterFilter}
                 onChange={setSemesterFilter}
-                options={[
-                  { label: "Học kỳ 1", value: 1 },
-                  { label: "Học kỳ 2", value: 2 },
-                  { label: "Học kỳ hè", value: 3 },
-                ]}
+                options={semesters.map((semester) => ({
+                  label: semester.semester_name,
+                  value: semester.semester_id,
+                }))}
               />
             </Col>
           </Row>

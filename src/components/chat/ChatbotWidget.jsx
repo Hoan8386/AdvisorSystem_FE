@@ -4,10 +4,13 @@ import {
   UserOutlined,
   LoadingOutlined,
   CloseOutlined,
+  PlusOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { registerActivityAPI } from "../../services/api.service";
 
 const ChatbotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +19,8 @@ const ChatbotWidget = () => {
   const [loading, setLoading] = useState(false);
   const [threadId, setThreadId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [registering, setRegistering] = useState(null); // Track which activity is registering
+  const [registered, setRegistered] = useState(new Set()); // Track registered activities
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -76,7 +81,7 @@ const ChatbotWidget = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:3636/documents/vector/process-query",
+        "http://localhost:3636/documents/vector/chat/process-query",
         {
           method: "POST",
           headers: headers,
@@ -111,6 +116,10 @@ const ChatbotWidget = () => {
         // Xử lý response từ source "general"
         botMessage.content = data.data.response;
         botMessage.searchType = "general";
+        // Store activities if available
+        if (data.data.activities) {
+          botMessage.activities = data.data.activities;
+        }
       } else {
         botMessage.content = data.error || "Xin lỗi, đã có lỗi xảy ra.";
         botMessage.isError = true;
@@ -143,6 +152,70 @@ const ChatbotWidget = () => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const clearConversation = () => {
+    setMessages([]);
+    setThreadId(null);
+    setInputValue("");
+  };
+
+  const handleRegisterActivity = async (activityRoleId, activityTitle) => {
+    try {
+      setRegistering(activityRoleId);
+      const response = await registerActivityAPI(activityRoleId);
+
+      if (response?.success) {
+        // Add success message
+        const successMessage = {
+          id: Date.now() + Math.random(),
+          type: "bot",
+          content: `✅ Đăng ký hoạt động "${activityTitle}" thành công! Bạn sẽ nhận được thông báo cập nhật sớm.`,
+          timestamp: new Date().toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          isSuccess: true,
+        };
+        setMessages((prev) => [...prev, successMessage]);
+
+        // Track registered activity
+        setRegistered((prev) => new Set([...prev, activityRoleId]));
+      } else {
+        // Add error message
+        const errorMessage = {
+          id: Date.now() + Math.random(),
+          type: "bot",
+          content: `❌ Đăng ký thất bại: ${
+            response?.message || "Vui lòng thử lại"
+          }`,
+          timestamp: new Date().toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          isError: true,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error("Error registering activity:", error);
+      const errorMessage = {
+        id: Date.now() + Math.random(),
+        type: "bot",
+        content: `❌ ${
+          error?.response?.data?.message ||
+          "Không thể đăng ký hoạt động. Vui lòng thử lại."
+        }`,
+        timestamp: new Date().toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        isError: true,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setRegistering(null);
     }
   };
 
@@ -328,12 +401,21 @@ const ChatbotWidget = () => {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-10 h-10 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:rotate-90"
-                >
-                  <CloseOutlined className="text-white text-lg" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={clearConversation}
+                    className="w-10 h-10 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:scale-110"
+                    title="Tạo đoạn hội thoại mới"
+                  >
+                    <PlusOutlined className="text-white text-lg" />
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="w-10 h-10 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:rotate-90"
+                  >
+                    <CloseOutlined className="text-white text-lg" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -433,6 +515,116 @@ const ChatbotWidget = () => {
                             </span>
                           )}
                         </div>
+
+                        {/* Display Activities */}
+                        {msg.activities && msg.activities.length > 0 && (
+                          <div className="mt-4 w-full space-y-3">
+                            {msg.activities.map((activity) => (
+                              <div
+                                key={activity.activity_id}
+                                className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all"
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <h4 className="font-bold text-blue-900 text-sm">
+                                    📌 {activity.title}
+                                  </h4>
+                                  <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-semibold">
+                                    {activity.status === "upcoming"
+                                      ? "Sắp diễn ra"
+                                      : "Đang diễn ra"}
+                                  </span>
+                                </div>
+
+                                <div className="space-y-2 mb-3 text-xs text-gray-700">
+                                  <p>
+                                    <span className="font-semibold text-gray-900">
+                                      📅 Thời gian:
+                                    </span>{" "}
+                                    {new Date(
+                                      activity.start_time
+                                    ).toLocaleDateString("vi-VN")}{" "}
+                                    -{" "}
+                                    {new Date(
+                                      activity.end_time
+                                    ).toLocaleDateString("vi-VN")}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-gray-900">
+                                      📍 Địa điểm:
+                                    </span>{" "}
+                                    {activity.location}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-gray-900">
+                                      🎓 Khoa:
+                                    </span>{" "}
+                                    {activity.organizer_unit.unit_name}
+                                  </p>
+                                  {activity.roles.length > 0 && (
+                                    <p>
+                                      <span className="font-semibold text-gray-900">
+                                        ⭐ Điểm CTXH:
+                                      </span>{" "}
+                                      {activity.roles[0].points_awarded} điểm
+                                      {activity.roles[0].max_slots && (
+                                        <span className="ml-2 text-orange-600 font-semibold">
+                                          ({activity.roles[0].max_slots} chỗ)
+                                        </span>
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <button
+                                  onClick={() => {
+                                    const roleId =
+                                      activity.roles[0]?.activity_role_id;
+                                    if (roleId) {
+                                      handleRegisterActivity(
+                                        roleId,
+                                        activity.title
+                                      );
+                                    }
+                                  }}
+                                  disabled={
+                                    registering ===
+                                      activity.roles[0]?.activity_role_id ||
+                                    registered.has(
+                                      activity.roles[0]?.activity_role_id
+                                    )
+                                  }
+                                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-all text-xs flex items-center justify-center gap-2 ${
+                                    registered.has(
+                                      activity.roles[0]?.activity_role_id
+                                    )
+                                      ? "bg-green-500 hover:bg-green-600 text-white cursor-not-allowed"
+                                      : registering ===
+                                        activity.roles[0]?.activity_role_id
+                                      ? "bg-blue-500 text-white cursor-wait"
+                                      : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white hover:shadow-lg"
+                                  }`}
+                                >
+                                  {registered.has(
+                                    activity.roles[0]?.activity_role_id
+                                  ) ? (
+                                    <>
+                                      <CheckCircleOutlined className="text-lg" />
+                                      Đã đăng ký
+                                    </>
+                                  ) : registering ===
+                                    activity.roles[0]?.activity_role_id ? (
+                                    <>
+                                      <LoadingOutlined className="text-lg animate-spin" />
+                                      Đang xử lý...
+                                    </>
+                                  ) : (
+                                    <>✍️ Đăng ký tham gia</>
+                                  )}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ))}

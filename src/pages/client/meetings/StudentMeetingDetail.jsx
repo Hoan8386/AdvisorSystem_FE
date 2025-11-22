@@ -11,7 +11,6 @@ import {
   Modal,
   Form,
   Input,
-  Rate,
   Empty,
 } from "antd";
 import {
@@ -93,7 +92,7 @@ export const StudentMeetingDetail = () => {
 
   const handleSendFeedback = async (values) => {
     try {
-      await sendMeetingFeedbackApi(id, values);
+      await sendMeetingFeedbackApi(id, values.feedback_content);
       toast.success("Gửi phản hồi thành công");
       setIsFeedbackModalOpen(false);
       feedbackForm.resetFields();
@@ -315,19 +314,12 @@ export const StudentMeetingDetail = () => {
                           <span className="font-semibold">
                             {fb.student?.full_name}
                           </span>
-                          <Tag color="blue" className="ml-2">
-                            {fb.student?.student_code}
-                          </Tag>
+                       
                         </div>
                         <span className="text-gray-500 text-sm">
                           {dayjs(fb.created_at).format("DD/MM/YYYY HH:mm")}
                         </span>
                       </div>
-                      {fb.rating && (
-                        <div className="mb-2">
-                          <Rate disabled value={fb.rating} />
-                        </div>
-                      )}
                       <div className="text-gray-700">{fb.feedback_content}</div>
                     </div>
                   ),
@@ -393,18 +385,11 @@ export const StudentMeetingDetail = () => {
               layout="vertical"
             >
               <Form.Item
-                name="rating"
-                label="Đánh giá"
-                rules={[{ required: true, message: "Vui lòng đánh giá" }]}
-              >
-                <Rate />
-              </Form.Item>
-              <Form.Item
                 name="feedback_content"
                 label="Nội dung phản hồi"
                 rules={[{ required: true, message: "Vui lòng nhập phản hồi" }]}
               >
-                <TextArea rows={4} placeholder="Nhập phản hồi của bạn..." />
+                <TextArea rows={6} placeholder="Nhập phản hồi của bạn về cuộc họp..." />
               </Form.Item>
               <Form.Item className="mb-0">
                 <Button type="primary" htmlType="submit" size="large" block>

@@ -18,6 +18,7 @@ import {
   Badge,
   Empty,
   Checkbox,
+  Popconfirm,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -51,7 +52,6 @@ import {
 import dayjs from "dayjs";
 
 const { TextArea } = Input;
-const { confirm } = Modal;
 
 export const MeetingDetail = () => {
   const { id } = useParams();
@@ -62,6 +62,7 @@ export const MeetingDetail = () => {
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [feedbackContent, setFeedbackContent] = useState("");
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [deleteMinutesLoading, setDeleteMinutesLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
 
   useEffect(() => {
@@ -156,26 +157,28 @@ export const MeetingDetail = () => {
       setUploadLoading(false);
     }
   };
+  const handleConfirmDeleteMinutes = async () => {
+    try {
+      setDeleteMinutesLoading(true);
+      const response = await deleteMeetingMinutesApi(id);
+      console.log("Delete minutes response:", response);
 
-  const handleDeleteMinutes = () => {
-    confirm({
-      title: "Xác nhận xóa",
-      icon: <ExclamationCircleOutlined />,
-      content: "Bạn có chắc chắn muốn xóa biên bản này?",
-      okText: "Xóa",
-      okType: "danger",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          await deleteMeetingMinutesApi(id);
-          toast.success("Xóa biên bản thành công");
-          fetchMeetingDetail();
-        } catch (error) {
-          console.error("Error deleting minutes:", error);
-          toast.error("Không thể xóa biên bản");
-        }
-      },
-    });
+      if (response?.success || response?.data?.success) {
+        toast.success(response?.message || "Xóa biên bản thành công");
+        fetchMeetingDetail();
+      } else {
+        toast.error(response?.message || "Không thể xóa biên bản");
+      }
+    } catch (error) {
+      console.error("Error deleting minutes:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể xóa biên bản";
+      toast.error(errorMessage);
+    } finally {
+      setDeleteMinutesLoading(false);
+    }
   };
 
   const handleSendFeedback = async () => {
@@ -572,14 +575,23 @@ export const MeetingDetail = () => {
                   >
                     Tải biên bản
                   </Button>
-                  <Button
-                    danger
-                    size="large"
-                    icon={<DeleteOutlined />}
-                    onClick={handleDeleteMinutes}
+                  <Popconfirm
+                    title="Xóa biên bản"
+                    description="Bạn có chắc chắn muốn xóa biên bản này?"
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okType="danger"
+                    onConfirm={handleConfirmDeleteMinutes}
                   >
-                    Xóa biên bản
-                  </Button>
+                    <Button
+                      danger
+                      size="large"
+                      icon={<DeleteOutlined />}
+                      loading={deleteMinutesLoading}
+                    >
+                      Xóa biên bản
+                    </Button>
+                  </Popconfirm>
                 </Space>
               </div>
             </Card>

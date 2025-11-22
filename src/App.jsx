@@ -62,6 +62,7 @@ import MeetingDetail from "./pages/advisor/meetings/MeetingDetail";
 import MeetingAttendance from "./pages/advisor/meetings/MeetingAttendance";
 import MeetingStatistics from "./pages/advisor/meetings/MeetingStatistics";
 import AdminMeetings from "./pages/admin/AdminMeetings";
+import { AdminProfile } from "./pages/admin/AdminProfile";
 import AdvisorPointFeedbacks from "./pages/advisor/points/AdvisorPointFeedbacks";
 import RespondPointFeedback from "./pages/advisor/points/RespondPointFeedback";
 import StudentPointFeedbacks from "./pages/client/points/StudentPointFeedbacks";
@@ -256,6 +257,7 @@ function App() {
       ),
       children: [
         { index: true, element: <AdminDashboard /> },
+        { path: "profile", element: <AdminProfile /> },
         { path: "advisors", element: <AdminAdvisors /> },
         {
           path: "advisors/:advisorId/classes",
