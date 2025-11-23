@@ -21,6 +21,8 @@ import {
   UserAddOutlined,
   TrophyOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -35,9 +37,12 @@ export const AssignStudents = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [activityData, setActivityData] = useState(null);
+
+  // States cho các danh sách sinh viên
   const [availableStudents, setAvailableStudents] = useState([]);
-  const [unavailableStudents, setUnavailableStudents] = useState([]);
-  const [cancelledStudents, setCancelledStudents] = useState([]);
+  const [registeredStudents, setRegisteredStudents] = useState([]); // Đã đăng ký tham gia hoạt động này
+  const [busyStudents, setBusyStudents] = useState([]); // Bận (trùng lịch, lý do khác)
+
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
   const [assigning, setAssigning] = useState(false);
@@ -53,9 +58,7 @@ export const AssignStudents = () => {
   const fetchActivityDetail = async () => {
     try {
       const res = await getActivityDetailAPI(id);
-      console.log("Activity detail response:", res);
       if (res && res.data) {
-        console.log("Activity roles:", res.data.roles);
         setActivityRoles(res.data.roles || []);
       }
     } catch (error) {
@@ -71,17 +74,26 @@ export const AssignStudents = () => {
         setActivityData(res.data);
         setAvailableStudents(res.data.available_students || []);
 
-        // Tách sinh viên đã đăng ký (registered) và đã hủy (cancelled)
-        const unavailable = res.data.unavailable_students || [];
-        const registered = unavailable.filter(
-          (s) => s.current_registration?.registration_status === "registered"
-        );
-        const cancelled = unavailable.filter(
-          (s) => s.current_registration?.registration_status === "cancelled"
+        // Xử lý danh sách unavailable dựa trên lý do
+        const unavailableList = res.data.unavailable_students || [];
+
+        // Lọc những sinh viên đã đăng ký tham gia hoạt động NÀY
+        // Dựa vào text "Đã đăng ký" trong reason_cannot_assign (dựa trên JSON mẫu)
+        const registered = unavailableList.filter(
+          (s) =>
+            s.reason_cannot_assign &&
+            s.reason_cannot_assign.toLowerCase().includes("đã đăng ký")
         );
 
-        setUnavailableStudents(registered);
-        setCancelledStudents(cancelled);
+        // Những sinh viên còn lại là Bận (Trùng môn, lý do khác...)
+        const busy = unavailableList.filter(
+          (s) =>
+            !s.reason_cannot_assign ||
+            !s.reason_cannot_assign.toLowerCase().includes("đã đăng ký")
+        );
+
+        setRegisteredStudents(registered);
+        setBusyStudents(busy);
       }
     } catch (error) {
       toast.error(
@@ -94,33 +106,24 @@ export const AssignStudents = () => {
   };
 
   const handleAssignStudents = async () => {
-    console.log("=== handleAssignStudents CALLED ===");
-    console.log("selectedRole:", selectedRole);
-    console.log("selectedStudents:", selectedStudents);
-
     if (!selectedRole) {
-      console.log("Validation failed: No role selected");
       toast.warning("Vui lòng chọn vai trò");
       return;
     }
 
     if (selectedStudents.length === 0) {
-      console.log("Validation failed: No students selected");
       toast.warning("Vui lòng chọn ít nhất một sinh viên");
       return;
     }
 
     try {
       setAssigning(true);
-
       const assignments = selectedStudents.map((studentId) => ({
         student_id: studentId,
         activity_role_id: selectedRole,
       }));
 
-      console.log("Calling API with:", { activityId: id, assignments });
       const res = await assignStudentsAPI(id, assignments);
-      console.log("API response:", res);
 
       if (res && res.data) {
         const { total_assigned, total_skipped, skipped } = res.data;
@@ -141,13 +144,20 @@ export const AssignStudents = () => {
                 </p>
                 <div className="mt-2">
                   <strong>Chi tiết:</strong>
-                  <pre style={{ fontSize: "12px", marginTop: "8px" }}>
+                  <pre
+                    style={{
+                      fontSize: "12px",
+                      marginTop: "8px",
+                      background: "#f5f5f5",
+                      padding: 8,
+                    }}
+                  >
                     {skippedNames}
                   </pre>
                 </div>
               </div>
             ),
-            width: 600,
+            width: 500,
           });
         } else {
           toast.success(`Đã phân công thành công ${total_assigned} sinh viên!`);
@@ -168,6 +178,14 @@ export const AssignStudents = () => {
   };
 
   const handleUnassign = async (registrationId, studentName) => {
+    // Lưu ý: Vì JSON mới không có registration_id trong list unavailable,
+    // bạn cần đảm bảo API trả về registration_id hoặc xử lý logic này ở backend.
+    // Ở đây giả định nếu cần unassign thì phải có ID.
+    if (!registrationId) {
+      toast.error("Không tìm thấy mã đăng ký để hủy");
+      return;
+    }
+
     try {
       await unassignStudentAPI(id, registrationId);
       toast.success(`Đã hủy phân công sinh viên "${studentName}" thành công`);
@@ -182,6 +200,7 @@ export const AssignStudents = () => {
     return role?.role_name || "";
   };
 
+  // --- CỘT CHO BẢNG AVAILABLE ---
   const availableColumns = [
     {
       title: (
@@ -219,12 +238,7 @@ export const AssignStudents = () => {
         />
       ),
     },
-    {
-      title: "MSSV",
-      dataIndex: "user_code",
-      key: "user_code",
-      width: 120,
-    },
+    { title: "MSSV", dataIndex: "user_code", key: "user_code", width: 120 },
     {
       title: "Họ và tên",
       dataIndex: "full_name",
@@ -237,12 +251,7 @@ export const AssignStudents = () => {
         </div>
       ),
     },
-    {
-      title: "Lớp",
-      dataIndex: "class_name",
-      key: "class_name",
-      width: 120,
-    },
+    { title: "Lớp", dataIndex: "class_name", key: "class_name", width: 120 },
     {
       title: "Điểm RL",
       dataIndex: "training_point",
@@ -269,13 +278,9 @@ export const AssignStudents = () => {
     },
   ];
 
-  const unavailableColumns = [
-    {
-      title: "MSSV",
-      dataIndex: "user_code",
-      key: "user_code",
-      width: 120,
-    },
+  // --- CỘT CHO BẢNG ĐÃ ĐĂNG KÝ ---
+  const registeredColumns = [
+    { title: "MSSV", dataIndex: "user_code", key: "user_code", width: 120 },
     {
       title: "Họ và tên",
       dataIndex: "full_name",
@@ -288,74 +293,51 @@ export const AssignStudents = () => {
         </div>
       ),
     },
-    {
-      title: "Lớp",
-      dataIndex: "class_name",
-      key: "class_name",
-      width: 120,
-    },
+    { title: "Lớp", dataIndex: "class_name", key: "class_name", width: 120 },
     {
       title: "Trạng thái",
       key: "status",
       width: 150,
-      render: (_, record) => {
-        if (record.current_registration) {
-          const { registration_status } = record.current_registration;
+      render: (_, record) => (
+        <Tag color="blue" icon={<CheckCircleOutlined />}>
+          Đã tham gia
+        </Tag>
+      ),
+    },
+    {
+      title: "Vai trò / Ghi chú",
+      dataIndex: "reason_cannot_assign",
+      key: "reason",
+      render: (text) => <span className="text-sm text-gray-600">{text}</span>,
+    },
+    // Bỏ cột thao tác nếu JSON không trả về registration_id để unassign
+  ];
 
-          if (registration_status === "registered") {
-            return (
-              <Tag color="blue" icon={<CheckCircleOutlined />}>
-                Đã đăng ký
-              </Tag>
-            );
-          } else if (registration_status === "cancelled") {
-            return <Tag color="red">Đã hủy đăng ký</Tag>;
-          }
-        }
-        return <Tag color="default">Không rõ</Tag>;
-      },
-    },
+  // --- CỘT CHO BẢNG BẬN / TRÙNG LỊCH (MỚI) ---
+  const busyColumns = [
+    { title: "MSSV", dataIndex: "user_code", key: "user_code", width: 120 },
     {
-      title: "Vai trò",
-      key: "role_name",
-      width: 150,
-      render: (_, record) => {
-        if (record.current_registration?.role_name) {
-          return (
-            <span className="text-sm font-medium text-gray-800">
-              {record.current_registration.role_name}
-            </span>
-          );
-        }
-        return <span className="text-sm text-gray-400">N/A</span>;
-      },
+      title: "Họ và tên",
+      dataIndex: "full_name",
+      key: "full_name",
+      width: 200,
+      render: (text, record) => (
+        <div>
+          <div className="font-medium">{text}</div>
+          <div className="text-xs text-gray-500">{record.email}</div>
+        </div>
+      ),
     },
+    { title: "Lớp", dataIndex: "class_name", key: "class_name", width: 120 },
     {
-      title: "Thao tác",
-      key: "action",
-      width: 120,
-      render: (_, record) => {
-        if (
-          record.current_registration &&
-          record.current_registration.registration_status === "registered"
-        ) {
-          return (
-            <Button
-              danger
-              size="small"
-              onClick={() =>
-                handleUnassign(
-                  record.current_registration.registration_id,
-                  record.full_name
-                )
-              }
-            >
-              Hủy phân công
-            </Button>
-          );
-        }
-        return null;
-      },
+      title: "Lý do bận",
+      dataIndex: "reason_cannot_assign",
+      key: "reason",
+      render: (text) => (
+        <Tag color="volcano" icon={<WarningOutlined />}>
+          {text}
+        </Tag>
+      ),
     },
   ];
 
@@ -404,15 +386,15 @@ export const AssignStudents = () => {
               </Col>
               <Col xs={24} sm={6}>
                 <Statistic
-                  title="Đã đăng ký"
-                  value={unavailableStudents.length}
+                  title="Đã tham gia"
+                  value={registeredStudents.length}
                   valueStyle={{ color: "#faad14" }}
                 />
               </Col>
               <Col xs={24} sm={6}>
                 <Statistic
-                  title="Đã hủy đăng ký"
-                  value={cancelledStudents.length}
+                  title="Bận / Trùng lịch"
+                  value={busyStudents.length}
                   valueStyle={{ color: "#ff4d4f" }}
                 />
               </Col>
@@ -434,17 +416,7 @@ export const AssignStudents = () => {
             <div className="space-y-5">
               {/* Header */}
               <div className="flex items-center gap-3 pb-3 border-b border-blue-200">
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    background: "linear-gradient(135deg, #1890ff, #096dd9)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
                   <UserAddOutlined style={{ fontSize: 20, color: "#fff" }} />
                 </div>
                 <div>
@@ -461,20 +433,7 @@ export const AssignStudents = () => {
               {/* Step 1: Select Role */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg, #1890ff, #096dd9)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: "bold",
-                      fontSize: 14,
-                    }}
-                  >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
                     1
                   </div>
                   <span className="font-semibold text-base text-gray-800">
@@ -486,10 +445,7 @@ export const AssignStudents = () => {
                   placeholder="-- Chọn vai trò cho sinh viên --"
                   style={{ width: "100%" }}
                   value={selectedRole}
-                  onChange={(value) => {
-                    console.log("Role changed to:", value);
-                    setSelectedRole(value);
-                  }}
+                  onChange={setSelectedRole}
                   options={activityRoles.map((role) => ({
                     label: `${role.role_name} (${
                       role.points_awarded
@@ -505,41 +461,26 @@ export const AssignStudents = () => {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      background: selectedRole
-                        ? "linear-gradient(135deg, #1890ff, #096dd9)"
-                        : "#d9d9d9",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: "bold",
-                      fontSize: 14,
-                    }}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                      selectedRole
+                        ? "bg-gradient-to-br from-blue-500 to-blue-600"
+                        : "bg-gray-300"
+                    }`}
                   >
                     2
                   </div>
                   <span
-                    className="font-semibold text-base"
-                    style={{ color: selectedRole ? "#262626" : "#8c8c8c" }}
+                    className={`font-semibold text-base ${
+                      selectedRole ? "text-gray-800" : "text-gray-400"
+                    }`}
                   >
                     Chọn sinh viên từ bảng bên dưới
                   </span>
                 </div>
-                <div
-                  style={{
-                    background: "#fff",
-                    padding: "16px 20px",
-                    borderRadius: 10,
-                    border: "2px dashed #d9d9d9",
-                  }}
-                >
+                <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
                   <div className="text-sm text-gray-600 mb-2">
                     💡 <strong>Hướng dẫn:</strong> Tick vào ô checkbox bên cạnh
-                    tên sinh viên ở tab "Có thể phân công" để chọn sinh viên
+                    tên sinh viên ở tab "Có thể phân công".
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -563,32 +504,20 @@ export const AssignStudents = () => {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      background:
-                        selectedRole && selectedStudents.length > 0
-                          ? "linear-gradient(135deg, #52c41a, #389e0d)"
-                          : "#d9d9d9",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: "bold",
-                      fontSize: 14,
-                    }}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                      selectedRole && selectedStudents.length > 0
+                        ? "bg-gradient-to-br from-green-500 to-green-600"
+                        : "bg-gray-300"
+                    }`}
                   >
                     3
                   </div>
                   <span
-                    className="font-semibold text-base"
-                    style={{
-                      color:
-                        selectedRole && selectedStudents.length > 0
-                          ? "#262626"
-                          : "#8c8c8c",
-                    }}
+                    className={`font-semibold text-base ${
+                      selectedRole && selectedStudents.length > 0
+                        ? "text-gray-800"
+                        : "text-gray-400"
+                    }`}
                   >
                     Xác nhận phân công
                   </span>
@@ -597,13 +526,7 @@ export const AssignStudents = () => {
                   type="primary"
                   size="large"
                   icon={<UserAddOutlined />}
-                  onClick={() => {
-                    console.log("Button clicked!");
-                    console.log("Selected role:", selectedRole);
-                    console.log("Selected students:", selectedStudents);
-                    console.log("Activity roles:", activityRoles);
-                    handleAssignStudents();
-                  }}
+                  onClick={handleAssignStudents}
                   loading={assigning}
                   disabled={!selectedRole || selectedStudents.length === 0}
                   style={{
@@ -629,7 +552,7 @@ export const AssignStudents = () => {
           </Card>
         )}
 
-        {/* Students Table */}
+        {/* Students Table Tabs */}
         <Card
           style={{
             marginTop: "20px",
@@ -655,12 +578,11 @@ export const AssignStudents = () => {
                     pagination={{
                       pageSize: 10,
                       showTotal: (total) => `Tổng ${total} sinh viên`,
-                      showSizeChanger: true,
                     }}
                     locale={{
                       emptyText: (
                         <Empty
-                          description="Không có sinh viên có thể phân công"
+                          description="Không có sinh viên nào"
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                         />
                       ),
@@ -669,24 +591,23 @@ export const AssignStudents = () => {
                 ),
               },
               {
-                key: "unavailable",
-                label: `Đã đăng ký (${unavailableStudents.length})`,
+                key: "registered",
+                label: `Đã tham gia (${registeredStudents.length})`,
                 children: (
                   <Table
-                    columns={unavailableColumns}
-                    dataSource={unavailableStudents}
+                    columns={registeredColumns}
+                    dataSource={registeredStudents}
                     rowKey="student_id"
                     loading={loading}
                     scroll={{ x: 900 }}
                     pagination={{
                       pageSize: 10,
                       showTotal: (total) => `Tổng ${total} sinh viên`,
-                      showSizeChanger: true,
                     }}
                     locale={{
                       emptyText: (
                         <Empty
-                          description="Không có sinh viên nào đã đăng ký"
+                          description="Chưa có sinh viên nào đăng ký"
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                         />
                       ),
@@ -695,24 +616,27 @@ export const AssignStudents = () => {
                 ),
               },
               {
-                key: "cancelled",
-                label: `Đã hủy đăng ký (${cancelledStudents.length})`,
+                key: "busy",
+                label: (
+                  <span className="text-red-500">
+                    <WarningOutlined /> Bận / Trùng lịch ({busyStudents.length})
+                  </span>
+                ),
                 children: (
                   <Table
-                    columns={unavailableColumns}
-                    dataSource={cancelledStudents}
+                    columns={busyColumns}
+                    dataSource={busyStudents}
                     rowKey="student_id"
                     loading={loading}
                     scroll={{ x: 900 }}
                     pagination={{
                       pageSize: 10,
                       showTotal: (total) => `Tổng ${total} sinh viên`,
-                      showSizeChanger: true,
                     }}
                     locale={{
                       emptyText: (
                         <Empty
-                          description="Không có sinh viên nào đã hủy đăng ký"
+                          description="Không có sinh viên bận"
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                         />
                       ),

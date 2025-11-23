@@ -17,6 +17,10 @@ import {
   Space,
   Divider,
   Tabs,
+  // --- THÊM CÁC COMPONENT NÀY ĐỂ HIỂN THỊ LỊCH ĐẸP HƠN ---
+  Avatar,
+  List,
+  Badge,
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -35,6 +39,11 @@ import {
   WarningOutlined,
   ReloadOutlined,
   AlertOutlined,
+  CalendarOutlined,
+  // --- THÊM ICON CHO LỊCH ---
+  ClockCircleOutlined,
+  EnvironmentOutlined,
+  TagsOutlined,
 } from "@ant-design/icons";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
@@ -49,9 +58,20 @@ import {
   batchUpdateSemesterReportsAPI,
   getAtRiskStudentsAPI,
   updateStudentPositionAPI,
+  getStudentScheduleApi,
 } from "../../../services/api.service";
 
 const { Option } = Select;
+
+const DAYS_OF_WEEK = [
+  { value: 2, label: "Thứ 2" },
+  { value: 3, label: "Thứ 3" },
+  { value: 4, label: "Thứ 4" },
+  { value: 5, label: "Thứ 5" },
+  { value: 6, label: "Thứ 6" },
+  { value: 7, label: "Thứ 7" },
+  { value: 8, label: "Chủ nhật" },
+];
 
 export const ClassDetail = () => {
   const navigate = useNavigate();
@@ -85,6 +105,12 @@ export const ClassDetail = () => {
     useState(false);
   const [selectedStudentPoints, setSelectedStudentPoints] = useState(null);
   const [loadingStudentPoints, setLoadingStudentPoints] = useState(false);
+
+  // Modal state for student schedule
+  const [studentScheduleModalVisible, setStudentScheduleModalVisible] =
+    useState(false);
+  const [selectedStudentSchedule, setSelectedStudentSchedule] = useState(null);
+  const [loadingStudentSchedule, setLoadingStudentSchedule] = useState(false);
 
   // Academic Monitoring state
   const [academicStatistics, setAcademicStatistics] = useState(null);
@@ -318,6 +344,32 @@ export const ClassDetail = () => {
     }
   };
 
+  // Handle view student schedule
+  const handleViewStudentSchedule = async (studentId) => {
+    if (!selectedSemester) {
+      toast.warning("Vui lòng chọn học kỳ trước");
+      return;
+    }
+
+    try {
+      setLoadingStudentSchedule(true);
+      setStudentScheduleModalVisible(true);
+
+      const response = await getStudentScheduleApi(studentId, selectedSemester);
+
+      if (response?.success && response.data) {
+        setSelectedStudentSchedule(response.data);
+      } else {
+        toast.error("Không có lịch học");
+      }
+    } catch (error) {
+      console.error("Error fetching student schedule:", error);
+      toast.error("Không thể tải lịch học sinh viên");
+    } finally {
+      setLoadingStudentSchedule(false);
+    }
+  };
+
   // Fetch at-risk students
   const fetchAtRiskStudents = async () => {
     if (!selectedSemester || !classData) return;
@@ -434,6 +486,220 @@ export const ClassDetail = () => {
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
+  // --- CẬP NHẬT HÀM RENDER ĐỂ HIỂN THỊ ĐẸP HƠN DỰA TRÊN JSON ---
+  const renderStudentScheduleContent = () => {
+    if (!selectedStudentSchedule) {
+      return <Empty description="Không có dữ liệu" />;
+    }
+
+    const { student, semester, schedule } = selectedStudentSchedule;
+
+    const getScheduleTypeColor = (type) => {
+      const t = type?.toUpperCase();
+      if (t === "LT" || t?.includes("LÝ THUYẾT")) return "blue";
+      if (t === "TH" || t?.includes("THỰC HÀNH")) return "orange";
+      return "cyan";
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* 1. Header Information */}
+        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex items-start gap-4">
+            <Avatar
+              size={64}
+              icon={<UserOutlined />}
+              style={{ backgroundColor: "#1890ff" }}
+            />
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-800 m-0">
+                {student.full_name}{" "}
+                <span className="text-gray-400 font-normal">
+                  ({student.user_code})
+                </span>
+              </h3>
+              <div className="text-blue-600 font-medium mb-1">
+                {student.class_name}
+              </div>
+
+              <Descriptions size="small" column={{ xs: 1, sm: 2 }}>
+                <Descriptions.Item label="Khoa">
+                  {student.faculty_name}
+                </Descriptions.Item>
+                <Descriptions.Item label="Email">
+                  {student.email}
+                </Descriptions.Item>
+                <Descriptions.Item label="Học kỳ">
+                  <Tag color="geekblue">
+                    {semester.semester_name} ({semester.academic_year})
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái">
+                  <Tag color="success">Đang học</Tag>
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Stats & Last Updated */}
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-700">Tổng quan:</span>
+            <Tag icon={<BookOutlined />} color="blue">
+              {schedule.total_courses || 0} Môn học
+            </Tag>
+            {schedule.total_credits && (
+              <Tag icon={<TagsOutlined />} color="purple">
+                {schedule.total_credits} Tín chỉ
+              </Tag>
+            )}
+          </div>
+          {schedule.updated_at && (
+            <div className="text-xs text-gray-500 italic flex items-center gap-1">
+              <ClockCircleOutlined /> Cập nhật:{" "}
+              {new Date(schedule.updated_at).toLocaleString("vi-VN")}
+            </div>
+          )}
+        </div>
+
+        {/* 3. Detailed Schedule List */}
+        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+          {schedule.registered_courses &&
+          schedule.registered_courses.length > 0 ? (
+            schedule.registered_courses.map((course, courseIdx) => (
+              <Card
+                key={courseIdx}
+                size="small"
+                className="shadow-sm border-gray-200 hover:border-blue-300 transition-colors"
+                headStyle={{
+                  backgroundColor: "#fafafa",
+                  borderBottom: "1px solid #f0f0f0",
+                }}
+                title={
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-blue-600 text-white font-bold px-2 py-1 rounded text-xs min-w-[50px] text-center">
+                        {course.course_code}
+                      </div>
+                      <span
+                        className="font-bold text-gray-800 text-base"
+                        title={course.course_name}
+                      >
+                        {course.course_name}
+                      </span>
+                    </div>
+                    {/* Hiển thị badge tín chỉ nếu có */}
+                    {course.credits && (
+                      <Badge
+                        count={`${course.credits} TC`}
+                        style={{ backgroundColor: "#52c41a" }}
+                      />
+                    )}
+                  </div>
+                }
+              >
+                {course.schedules && course.schedules.length > 0 ? (
+                  <List
+                    itemLayout="horizontal"
+                    dataSource={course.schedules}
+                    split={false}
+                    renderItem={(sch, idx) => (
+                      <div
+                        className={`mb-3 last:mb-0 rounded-lg p-3 border ${
+                          sch.type === "TH"
+                            ? "bg-orange-50 border-orange-100"
+                            : "bg-blue-50 border-blue-100"
+                        }`}
+                      >
+                        {/* Day and Type Header */}
+                        <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200 border-dashed">
+                          <div className="flex items-center gap-2">
+                            <Tag
+                              color={getScheduleTypeColor(sch.type)}
+                              className="mr-0 font-bold px-3"
+                            >
+                              {sch.type}
+                            </Tag>
+                            <span className="text-sm text-gray-500 font-medium">
+                              ({sch.phase})
+                            </span>
+                          </div>
+
+                          <span className="font-bold text-gray-800 text-base">
+                            {DAYS_OF_WEEK.find(
+                              (d) => d.value === sch.day_of_week
+                            )?.label || `Thứ ${sch.day_of_week}`}
+                          </span>
+                        </div>
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                          {/* Time */}
+                          <div className="flex items-start gap-2">
+                            <ClockCircleOutlined className="text-blue-500 mt-1" />
+                            <div>
+                              <div className="font-bold text-gray-800 text-lg leading-tight">
+                                {sch.start_time.slice(0, 5)} -{" "}
+                                {sch.end_time.slice(0, 5)}
+                              </div>
+                              <div className="text-gray-500 text-xs mt-1">
+                                Tiết {sch.start_period} - {sch.end_period}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Room */}
+                          <div className="flex items-start gap-2">
+                            <EnvironmentOutlined className="text-red-500 mt-1" />
+                            <div>
+                              <div className="font-bold text-gray-800 text-lg leading-tight">
+                                {sch.room}
+                              </div>
+                              {sch.note && (
+                                <div className="text-gray-500 text-xs italic mt-1">
+                                  {sch.note}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Date Range */}
+                          <div className="flex items-start gap-2">
+                            <CalendarOutlined className="text-green-600 mt-1" />
+                            <div className="text-gray-700">
+                              {new Date(sch.start_date).toLocaleDateString(
+                                "vi-VN",
+                                { day: "2-digit", month: "2-digit" }
+                              )}
+                              {" - "}
+                              {new Date(sch.end_date).toLocaleDateString(
+                                "vi-VN",
+                                { day: "2-digit", month: "2-digit" }
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  />
+                ) : (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="Chưa có lịch chi tiết"
+                  />
+                )}
+              </Card>
+            ))
+          ) : (
+            <Empty description="Sinh viên chưa đăng ký môn học nào trong học kỳ này" />
+          )}
+        </div>
+      </div>
+    );
+  };
+  // -----------------------------------------------------------------------
+
   // Student table columns
   const studentColumns = [
     {
@@ -509,42 +775,42 @@ export const ClassDetail = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 500,
+      width: 150,
       render: (_, record) => (
-        <div className="flex flex-nowrap gap-0 items-center text-xs">
+        <Space size="small">
           <Button
             type="link"
             size="small"
+            title="Chỉnh vị trí"
             onClick={() => handleOpenPositionModal(record)}
-            className="px-1 h-6 text-xs"
           >
-            Chỉnh vị trí
+            ⚙️
           </Button>
-          <span className="text-gray-300">|</span>
           <Button
             type="link"
+            size="small"
             icon={<EyeOutlined />}
+            title="Xem điểm"
             onClick={() => handleViewStudentGrades(record)}
-            size="small"
             disabled={!selectedSemester}
-            loading={loadingStudentGrades}
-            className="px-1 h-6 text-xs"
-          >
-            Xem điểm
-          </Button>
-          <span className="text-gray-300">|</span>
+          />
           <Button
             type="link"
-            icon={<TrophyOutlined />}
-            onClick={() => handleViewStudentPoints(record.student_id)}
             size="small"
+            icon={<TrophyOutlined />}
+            title="Điểm rèn luyện"
+            onClick={() => handleViewStudentPoints(record.student_id)}
             disabled={!selectedSemester}
-            loading={loadingStudentPoints}
-            className="px-1 h-6 text-xs"
-          >
-            Điểm RL
-          </Button>
-        </div>
+          />
+          <Button
+            type="link"
+            size="small"
+            icon={<CalendarOutlined />}
+            title="Xem lịch học"
+            onClick={() => handleViewStudentSchedule(record.student_id)}
+            disabled={!selectedSemester}
+          />
+        </Space>
       ),
     },
   ];
@@ -875,24 +1141,6 @@ export const ClassDetail = () => {
                                   />
                                   <div className="text-xs text-gray-500 mt-1">
                                     {academicStatistics.percentages?.excellent?.toFixed(
-                                      1
-                                    )}
-                                    %
-                                  </div>
-                                </Card>
-                              </Col>
-                              <Col xs={12} sm={8} md={6}>
-                                <Card size="small" className="text-center">
-                                  <Statistic
-                                    title="Giỏi"
-                                    value={
-                                      academicStatistics.statistics?.good || 0
-                                    }
-                                    valueStyle={{ color: "#52c41a" }}
-                                    suffix={`/ ${academicStatistics.total_students}`}
-                                  />
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {academicStatistics.percentages?.good?.toFixed(
                                       1
                                     )}
                                     %
@@ -1617,6 +1865,47 @@ export const ClassDetail = () => {
           ) : null}
         </Modal>
 
+        {/* --- CẬP NHẬT MODAL LỊCH HỌC VỚI GIAO DIỆN MỚI --- */}
+        <Modal
+          title={null}
+          open={studentScheduleModalVisible}
+          onCancel={() => {
+            setStudentScheduleModalVisible(false);
+            setSelectedStudentSchedule(null);
+          }}
+          footer={[
+            <Button
+              key="close"
+              type="primary"
+              onClick={() => {
+                setStudentScheduleModalVisible(false);
+                setSelectedStudentSchedule(null);
+              }}
+            >
+              Đóng
+            </Button>,
+          ]}
+          width={1000}
+          centered
+          bodyStyle={{ padding: "20px 24px" }}
+        >
+          {/* Custom Header */}
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b">
+            <CalendarOutlined className="text-blue-600 text-xl" />
+            <span className="text-xl font-bold text-gray-800">
+              Lịch học sinh viên
+            </span>
+          </div>
+
+          {loadingStudentSchedule ? (
+            <div className="text-center py-12">
+              <Spin size="large" tip="Đang tải dữ liệu lịch học..." />
+            </div>
+          ) : (
+            renderStudentScheduleContent()
+          )}
+        </Modal>
+
         {/* Update Position Modal */}
         <Modal
           title="Cập nhật vị trí"
@@ -1665,3 +1954,5 @@ export const ClassDetail = () => {
     </AdvisorLayout>
   );
 };
+
+export default ClassDetail;

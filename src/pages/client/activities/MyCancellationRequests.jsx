@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { getMyCancellationRequestsAPI } from "../../../services/api.service";
+import { MinusSquare } from "lucide-react";
 
 export const MyCancellationRequests = () => {
   const navigate = useNavigate();
@@ -26,7 +27,10 @@ export const MyCancellationRequests = () => {
       setLoading(true);
       const res = await getMyCancellationRequestsAPI();
       if (res && res.data) {
-        setRequests(res.data);
+        // Handle nested response structure: res.data.requests or res.data
+        const requestsList =
+          res.data.requests || (Array.isArray(res.data) ? res.data : []);
+        setRequests(requestsList);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách yêu cầu hủy");
@@ -46,6 +50,11 @@ export const MyCancellationRequests = () => {
       color: "green",
       text: "Đã duyệt",
       icon: <CheckCircleOutlined />,
+    },
+    absent: {
+      color: "red",
+      text: "Vắn mặt",
+      icon: <MinusSquare />,
     },
     rejected: {
       color: "orange",
@@ -95,8 +104,8 @@ export const MyCancellationRequests = () => {
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
+      dataIndex: "request_status",
+      key: "request_status",
       width: 130,
       align: "center",
       render: (status) => (
@@ -112,10 +121,16 @@ export const MyCancellationRequests = () => {
 
   // Stats
   const stats = {
-    total: requests.length,
-    pending: requests.filter((r) => r.status === "pending").length,
-    approved: requests.filter((r) => r.status === "approved").length,
-    rejected: requests.filter((r) => r.status === "rejected").length,
+    total: Array.isArray(requests) ? requests.length : 0,
+    pending: Array.isArray(requests)
+      ? requests.filter((r) => r.request_status === "pending").length
+      : 0,
+    approved: Array.isArray(requests)
+      ? requests.filter((r) => r.request_status === "approved").length
+      : 0,
+    rejected: Array.isArray(requests)
+      ? requests.filter((r) => r.request_status === "rejected").length
+      : 0,
   };
 
   return (

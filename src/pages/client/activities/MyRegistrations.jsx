@@ -11,6 +11,7 @@ import {
   Empty,
   Tooltip,
   Alert,
+  Select, // 1. Import thêm Select
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -21,6 +22,7 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   TrophyOutlined,
+  FilterOutlined, // Import icon filter
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -30,11 +32,16 @@ import {
 } from "../../../services/api.service";
 
 const { TextArea } = Input;
+const { Option } = Select; // Khai báo Option
 
 export const MyRegistrations = () => {
   const navigate = useNavigate();
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // --- STATE MỚI CHO FILTER ---
+  const [filterStatus, setFilterStatus] = useState("all");
+
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -49,11 +56,25 @@ export const MyRegistrations = () => {
       setLoading(true);
       const res = await getMyRegistrationsAPI();
       if (res && res.data) {
-        setRegistrations(res.data);
+        let registrationsData = [];
+        if (Array.isArray(res.data)) {
+          registrationsData = res.data;
+        } else if (
+          res.data.registrations &&
+          Array.isArray(res.data.registrations)
+        ) {
+          registrationsData = res.data.registrations;
+        } else if (res.data.data && Array.isArray(res.data.data)) {
+          registrationsData = res.data.data;
+        }
+        setRegistrations(registrationsData);
+      } else {
+        setRegistrations([]);
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách đăng ký");
       console.error(error);
+      setRegistrations([]);
     } finally {
       setLoading(false);
     }
@@ -91,6 +112,12 @@ export const MyRegistrations = () => {
       setSubmitting(false);
     }
   };
+
+  // --- LOGIC LỌC DỮ LIỆU ---
+  const filteredRegistrations = registrations.filter((item) => {
+    if (filterStatus === "all") return true;
+    return item.registration_status === filterStatus;
+  });
 
   const statusConfig = {
     registered: {
@@ -165,7 +192,6 @@ export const MyRegistrations = () => {
         </Space>
       ),
     },
-
     {
       title: "Ngày đăng ký",
       dataIndex: "registration_time",
@@ -175,8 +201,8 @@ export const MyRegistrations = () => {
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
+      dataIndex: "registration_status",
+      key: "registration_status",
       width: 130,
       render: (status) => (
         <Tag
@@ -194,7 +220,7 @@ export const MyRegistrations = () => {
       align: "center",
       render: (_, record) => (
         <Space size="small">
-          {record.status === "registered" && (
+          {record.registration_status === "registered" && record.can_cancel && (
             <Tooltip title="Yêu cầu hủy đăng ký">
               <Button
                 type="text"
@@ -215,9 +241,16 @@ export const MyRegistrations = () => {
   // Stats
   const stats = {
     total: registrations.length,
-    registered: registrations.filter((r) => r.status === "registered").length,
-    attended: registrations.filter((r) => r.status === "attended").length,
-    cancelled: registrations.filter((r) => r.status === "cancelled").length,
+    registered: registrations.filter(
+      (r) => r.registration_status === "registered"
+    ).length,
+    attended: registrations.filter((r) => r.registration_status === "attended")
+      .length,
+    absent: registrations.filter((r) => r.registration_status === "absent")
+      .length,
+    cancelled: registrations.filter(
+      (r) => r.registration_status === "cancelled"
+    ).length,
   };
 
   return (
@@ -245,32 +278,115 @@ export const MyRegistrations = () => {
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card size="small" className="text-center">
+        {/* Stats - Giữ nguyên */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card
+            size="small"
+            className="text-center cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setFilterStatus("all")} // Click vào thẻ để lọc nhanh
+            style={{
+              borderColor: filterStatus === "all" ? "#1890ff" : undefined,
+            }}
+          >
             <div className="text-2xl font-bold text-blue-600">
               {stats.total}
             </div>
             <div className="text-sm text-gray-600">Tổng đăng ký</div>
           </Card>
-          <Card size="small" className="text-center">
+
+          <Card
+            size="small"
+            className="text-center cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setFilterStatus("registered")}
+            style={{
+              borderColor:
+                filterStatus === "registered" ? "#fa8c16" : undefined,
+            }}
+          >
             <div className="text-2xl font-bold text-orange-600">
               {stats.registered}
             </div>
             <div className="text-sm text-gray-600">Chờ tham gia</div>
           </Card>
-          <Card size="small" className="text-center">
+
+          <Card
+            size="small"
+            className="text-center cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setFilterStatus("attended")}
+            style={{
+              borderColor: filterStatus === "attended" ? "#52c41a" : undefined,
+            }}
+          >
             <div className="text-2xl font-bold text-green-600">
               {stats.attended}
             </div>
             <div className="text-sm text-gray-600">Đã tham gia</div>
           </Card>
-          <Card size="small" className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
+
+          <Card
+            size="small"
+            className="text-center cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setFilterStatus("absent")}
+            style={{
+              borderColor: filterStatus === "absent" ? "#f5222d" : undefined,
+            }}
+          >
+            <div className="text-2xl font-bold text-red-600">
+              {stats.absent}
+            </div>
+            <div className="text-sm text-gray-600">Vắng mặt</div>
+          </Card>
+
+          <Card
+            size="small"
+            className="text-center cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setFilterStatus("cancelled")}
+            style={{
+              borderColor: filterStatus === "cancelled" ? "#d9d9d9" : undefined,
+            }}
+          >
+            <div className="text-2xl font-bold text-gray-500">
               {stats.cancelled}
             </div>
             <div className="text-sm text-gray-600">Đã hủy</div>
           </Card>
+        </div>
+
+        {/* --- THANH CÔNG CỤ FILTER --- */}
+        <div className="flex justify-end items-center">
+          <Space>
+            <span className="text-gray-600 font-medium">
+              Lọc theo trạng thái:
+            </span>
+            <Select
+              value={filterStatus}
+              onChange={(value) => setFilterStatus(value)}
+              style={{ width: 180 }}
+              suffixIcon={<FilterOutlined />}
+            >
+              <Option value="all">Tất cả</Option>
+              <Option value="registered">
+                <Space>
+                  <ClockCircleOutlined className="text-blue-500" /> Đã đăng ký
+                </Space>
+              </Option>
+              <Option value="attended">
+                <Space>
+                  <CheckCircleOutlined className="text-green-500" /> Đã tham gia
+                </Space>
+              </Option>
+              <Option value="absent">
+                <Space>
+                  <CloseCircleOutlined className="text-red-500" /> Vắng mặt
+                </Space>
+              </Option>
+              <Option value="cancelled">
+                <Space>
+                  <CloseCircleOutlined className="text-gray-400" /> Đã hủy
+                </Space>
+              </Option>
+            </Select>
+          </Space>
         </div>
 
         {/* Table */}
@@ -283,34 +399,42 @@ export const MyRegistrations = () => {
         >
           <Table
             columns={columns}
-            dataSource={registrations}
+            // --- SỬ DỤNG BIẾN filteredRegistrations THAY VÌ registrations GỐC ---
+            dataSource={filteredRegistrations}
             rowKey="registration_id"
             loading={loading}
             scroll={{ x: 1200 }}
             pagination={{
               pageSize: 10,
-              showTotal: (total) => `Tổng ${total} đăng ký`,
+              showTotal: (total) => `Tổng ${total} kết quả`, // Sửa text cho phù hợp
               showSizeChanger: true,
               showQuickJumper: true,
             }}
             locale={{
               emptyText: (
                 <Empty
-                  description="Bạn chưa đăng ký hoạt động nào"
+                  description={
+                    filterStatus === "all"
+                      ? "Bạn chưa đăng ký hoạt động nào"
+                      : "Không tìm thấy kết quả phù hợp"
+                  }
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 >
-                  <Button
-                    type="primary"
-                    onClick={() => navigate("/student/activities")}
-                  >
-                    Xem hoạt động
-                  </Button>
+                  {filterStatus === "all" && (
+                    <Button
+                      type="primary"
+                      onClick={() => navigate("/student/activities")}
+                    >
+                      Xem hoạt động
+                    </Button>
+                  )}
                 </Empty>
               ),
             }}
           />
         </Card>
 
+        {/* ... (Phần Help và Modal giữ nguyên không đổi) ... */}
         {/* Help */}
         <Card
           size="small"

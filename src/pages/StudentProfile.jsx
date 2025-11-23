@@ -648,7 +648,7 @@ export const StudentProfile = () => {
                   </Card>
                 )}
                 {/* Stats */}
-                <div>
+                {/* <div>
                   <h3
                     style={{
                       fontSize: 18,
@@ -811,7 +811,7 @@ export const StudentProfile = () => {
                       </Card>
                     </Col>
                   </Row>
-                </div>
+                </div> */}
               </div>
             )}
           </Spin>
