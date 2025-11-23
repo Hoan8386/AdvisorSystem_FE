@@ -121,10 +121,10 @@ export const AdminLayout = () => {
         <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Desktop Sidebar Toggle Button */}
+              {/* Desktop Sidebar Toggle Button - THAY ĐỔI MÀU NÚT */}
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden lg:flex p-2.5 rounded-xl bg-gradient-to-br from-[#dc3545] to-[#c82333] hover:from-[#c82333] hover:to-[#b81c2f] text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                className="hidden lg:flex p-2.5 rounded-xl bg-gradient-to-br from-[#0056b3] to-[#004494] hover:from-[#004494] hover:to-[#003375] text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
                 title={sidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
               >
                 {sidebarCollapsed ? (
@@ -163,7 +163,8 @@ export const AdminLayout = () => {
                 onBlur={() => setTimeout(() => setUserMenuOpen(false), 200)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-9 h-9 bg-gradient-to-r from-[#dc3545] to-[#c82333] rounded-full flex items-center justify-center">
+                {/* Avatar Placeholder - THAY ĐỔI MÀU NỀN */}
+                <div className="w-9 h-9 bg-gradient-to-r from-[#0056b3] to-[#004494] rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="hidden sm:block text-left">
@@ -190,7 +191,8 @@ export const AdminLayout = () => {
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <User className="w-4 h-4 text-[#dc3545]" />
+                    {/* Icon Hồ sơ - THAY ĐỔI MÀU */}
+                    <User className="w-4 h-4 text-[#0056b3]" />
                     <span className="text-sm font-medium">Hồ sơ của tôi</span>
                   </button>
                   <div className="border-t border-gray-200 my-1"></div>
@@ -200,7 +202,8 @@ export const AdminLayout = () => {
                       handleLogoutClick();
                       setUserMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-[#dc3545] hover:bg-red-50 transition-colors"
+                    // Icon & Text Đăng xuất - THAY ĐỔI MÀU CHỮ VÀ MÀU NỀN HOVER
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[#0056b3] hover:bg-blue-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="text-sm font-medium">Đăng xuất</span>

@@ -25,7 +25,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     try {
       await logoutApi();
       handleLogout();
-      toast.success("Da dang xuat");
+      toast.success("Đã đăng xuất");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -40,6 +40,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       path: "/admin",
       label: "Bảng điều khiển",
       icon: BarChart3,
+      // Giữ nguyên màu định danh của item (để phân biệt loại)
       color: "text-[#dc3545]",
       bgColor: "bg-red-50",
       hoverColor: "hover:bg-red-100",
@@ -131,7 +132,8 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
     <div
       className={`${
         isCollapsed ? "w-20" : "w-72"
-      } h-screen bg-gradient-to-b from-[#dc3545] via-[#c82333] to-[#b81c2f] shadow-2xl flex flex-col relative overflow-hidden rounded-r-3xl transition-all duration-300`}
+        // --- THAY ĐỔI Ở ĐÂY: Gradient Xanh Đậm ---
+      } h-screen bg-gradient-to-b from-[#0056b3] via-[#004494] to-[#003375] shadow-2xl flex flex-col relative overflow-hidden rounded-r-3xl transition-all duration-300`}
     >
       {/* Decorative Elements */}
       <div
@@ -170,7 +172,6 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       >
         {menuItems.map((item) => {
           const Icon = item.icon;
-          // Sửa lỗi active: /admin không nên match với /admin/advisors
           const isActive =
             item.path === "/admin"
               ? location.pathname === "/admin"
@@ -196,16 +197,16 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
               }}
               title={isCollapsed ? item.label : ""}
             >
-              {/* Active indicator bar */}
+              {/* Active indicator bar - THAY ĐỔI SANG XANH */}
               {isActive && !isCollapsed && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-[#dc3545] to-[#b81c2f] rounded-r-full" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-[#0056b3] to-[#003375] rounded-r-full" />
               )}
 
-              {/* Icon with background */}
+              {/* Icon with background - THAY ĐỔI SANG XANH KHI ACTIVE */}
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   isActive
-                    ? "bg-gradient-to-br from-[#dc3545] to-[#b81c2f] shadow-lg"
+                    ? "bg-gradient-to-br from-[#0056b3] to-[#003375] shadow-lg"
                     : "bg-white/10 group-hover:bg-white/20"
                 }`}
               >
@@ -230,9 +231,9 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
                     </span>
                   </div>
 
-                  {/* Arrow indicator */}
+                  {/* Arrow indicator - THAY ĐỔI SANG XANH */}
                   {isActive && (
-                    <div className="w-2 h-2 rounded-full bg-[#dc3545] animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-[#0056b3] animate-pulse" />
                   )}
                 </>
               )}

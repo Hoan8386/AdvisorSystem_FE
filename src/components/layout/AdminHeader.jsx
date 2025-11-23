@@ -40,16 +40,22 @@ export const AdminHeader = () => {
 
   return (
     <Header
+      // Thay đổi: Thêm class gradient xanh đậm giống Sidebar
+      className="bg-gradient-to-r from-[#0056b3] via-[#004494] to-[#003375]"
       style={{
         padding: "0 24px",
-        background: "#fff",
+        // background: "#fff", // Đã xóa màu nền trắng cũ
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)", // Tăng bóng đổ nhẹ để đẹp hơn
+        borderBottom: "1px solid rgba(255,255,255,0.1)", // Thêm viền mờ phía dưới
       }}
     >
-      <div className="text-xl font-semibold">Hệ thống Quản lý Cố vấn</div>
+      {/* Thay đổi: Chữ màu trắng */}
+      <div className="text-xl font-bold text-white tracking-wide shadow-sm">
+        Hệ thống Quản lý Cố vấn
+      </div>
 
       <Dropdown menu={{ items }} placement="bottomRight" arrow>
         <Space style={{ cursor: "pointer" }}>
@@ -57,13 +63,21 @@ export const AdminHeader = () => {
             icon={<UserOutlined />}
             src={getAvatarUrl(user?.avatar_url)}
             size="large"
+            // Thay đổi: Viền trắng cho avatar để nổi trên nền xanh
+            className="border-2 border-white/30 bg-white/10"
           />
-          <div>
-            <div className="font-semibold">{user?.full_name || "Admin"}</div>
-            <div className="text-xs text-gray-500">Quản trị viên</div>
+          <div className="flex flex-col items-end leading-tight">
+            {/* Thay đổi: Tên màu trắng */}
+            <div className="font-semibold text-white text-sm">
+              {user?.full_name || "Admin"}
+            </div>
+            {/* Thay đổi: Role màu xanh nhạt (text-blue-100) cho dễ đọc */}
+            <div className="text-xs text-blue-100/80">Quản trị viên</div>
           </div>
         </Space>
       </Dropdown>
     </Header>
   );
 };
+
+export default AdminHeader;
