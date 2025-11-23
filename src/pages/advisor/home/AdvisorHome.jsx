@@ -1,18 +1,15 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../../components/context/auth.context";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
+import { getAdvisorStatisticsApi } from "../../../services/api.service";
+import { Card, Row, Col, Statistic, Spin, Button, Alert } from "antd";
 import {
-  getNotificationsAPI,
-  getNotificationStatisticsAPI,
-} from "../../../services/api.service";
-import { Card, Row, Col, Statistic, Empty, Spin, Button, Table } from "antd";
-import { toast } from "react-toastify";
-import {
-  PlusOutlined,
-  FileTextOutlined,
   TeamOutlined,
-  StarOutlined,
-  MessageOutlined,
+  BellOutlined,
+  CalendarOutlined,
+  FileTextOutlined,
+  ReloadOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -23,293 +20,169 @@ dayjs.locale("vi");
 export const AdvisorHome = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [loading, setLoading] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [statistics, setStatistics] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        if (user?.id) {
+          const res = await getAdvisorStatisticsApi(user.id);
+          if (res && res.success) {
+            setStats(res.data);
+          }
+        }
+      } catch (err) {
+        setError("Lỗi khi tải dữ liệu thống kê");
+        console.error("Error fetching advisor stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchData = async () => {
+    fetchData();
+  }, [user?.id]);
+
+  const handleRefresh = async () => {
     try {
       setLoading(true);
-      // Lấy cả notifications và statistics
-      const [notificationsRes, statisticsRes] = await Promise.all([
-        getNotificationsAPI(),
-        getNotificationStatisticsAPI(),
-      ]);
-
-      if (notificationsRes && notificationsRes.success) {
-        setNotifications(notificationsRes.data || []);
+      setError(null);
+      if (user?.id) {
+        const res = await getAdvisorStatisticsApi(user.id);
+        if (res && res.success) {
+          setStats(res.data);
+        }
       }
-
-      if (statisticsRes && statisticsRes.success) {
-        setStatistics(statisticsRes.data || null);
-      }
-    } catch (error) {
-      toast.error("Lỗi khi tải dữ liệu");
-      console.error(error);
+    } catch (err) {
+      setError("Lỗi khi tải dữ liệu thống kê");
+      console.error("Error fetching advisor stats:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const columns = [
-    {
-      title: "Tiêu đề",
-      dataIndex: "title",
-      key: "title",
-      render: (text) => (
-        <span style={{ fontWeight: 500, color: "#333" }}>{text}</span>
-      ),
-    },
-    {
-      title: "Loại",
-      dataIndex: "type",
-      key: "type",
-      render: (type) => {
-        const typeMap = {
-          general: { text: "Thông báo chung", color: "#1890ff" },
-          academic: { text: "Học tập", color: "#ff4d4f" },
-          event: { text: "Sự kiện", color: "#52c41a" },
-          urgent: { text: "Khẩn", color: "#fa8c16" },
-        };
-        const typeInfo = typeMap[type] || { text: type, color: "#999" };
-        return (
-          <span
-            style={{
-              background: typeInfo.color + "20",
-              color: typeInfo.color,
-              padding: "4px 12px",
-              borderRadius: "4px",
-              fontSize: 12,
-              fontWeight: 500,
-            }}
-          >
-            {typeInfo.text}
-          </span>
-        );
-      },
-    },
-    {
-      title: "Ngày tạo",
-      dataIndex: "created_at",
-      key: "created_at",
-      render: (date) => dayjs(date).format("DD/MM/YYYY"),
-      width: 120,
-    },
-    {
-      title: "Phản hồi",
-      dataIndex: "responses_count",
-      key: "responses_count",
-      align: "center",
-      width: 80,
-    },
-  ];
+  if (loading) {
+    return (
+      <AdvisorLayout>
+        <div className="flex justify-center items-center h-96">
+          <Spin size="large" />
+        </div>
+      </AdvisorLayout>
+    );
+  }
 
   return (
     <AdvisorLayout>
-      <Spin spinning={loading}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-            padding: "0 16px",
-          }}
-        >
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: "clamp(20px, 5vw, 32px)",
-                  fontWeight: 700,
-                  color: "#c8102e",
-                }}
-              >
-                👋 Xin chào, {user?.full_name}!
-              </h1>
-              <p
-                style={{
-                  margin: "8px 0 0 0",
-                  color: "#999",
-                  fontSize: "clamp(12px, 3vw, 14px)",
-                }}
-              >
-                {dayjs().format("dddd, DD MMMM YYYY")}
-              </p>
-            </div>
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold">
+              Xin chào, {user?.full_name}! 👋
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              {dayjs().format("dddd, DD MMMM YYYY")}
+            </p>
           </div>
-
-          {/* Statistics Cards */}
-          {statistics && (
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} lg={6}>
-                <Card
-                  hoverable
-                  style={{
-                    borderRadius: 12,
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    background:
-                      "linear-gradient(135deg, #fff 0%, #fef5f6 100%)",
-                  }}
-                >
-                  <Statistic
-                    title="Tổng thông báo"
-                    value={statistics.total_notifications}
-                    prefix={<FileTextOutlined />}
-                    valueStyle={{ color: "#c8102e", fontWeight: 700 }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Card
-                  hoverable
-                  style={{
-                    borderRadius: 12,
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    background:
-                      "linear-gradient(135deg, #fff 0%, #f0f5ff 100%)",
-                  }}
-                >
-                  <Statistic
-                    title="Tổng phản hồi"
-                    value={statistics.total_responses}
-                    prefix={<MessageOutlined />}
-                    valueStyle={{ color: "#1890ff", fontWeight: 700 }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Card
-                  hoverable
-                  style={{
-                    borderRadius: 12,
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    background:
-                      "linear-gradient(135deg, #fff 0%, #f6ffed 100%)",
-                  }}
-                >
-                  <Statistic
-                    title="Đã đọc"
-                    value={statistics.total_read}
-                    suffix={`/${statistics.total_recipients}`}
-                    valueStyle={{ color: "#52c41a", fontWeight: 700 }}
-                    prefix={<StarOutlined />}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Card
-                  hoverable
-                  style={{
-                    borderRadius: 12,
-                    border: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    background:
-                      "linear-gradient(135deg, #fff 0%, #fff1f0 100%)",
-                  }}
-                >
-                  <Statistic
-                    title="Tỉ lệ đọc"
-                    value={statistics.read_percentage}
-                    suffix="%"
-                    precision={1}
-                    prefix={<TeamOutlined />}
-                    valueStyle={{ color: "#fa8c16", fontWeight: 700 }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-          )}
-
-          {/* Quick Actions */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Button
-              type="primary"
-              size="large"
-              icon={<PlusOutlined />}
-              onClick={() => navigate("/advisor/notifications/create")}
-              style={{
-                background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
-                border: "none",
-                borderRadius: 8,
-                fontWeight: 600,
-                height: 40,
-                flex: "1 1 auto",
-                minWidth: "200px",
-              }}
-            >
-              Tạo thông báo mới
-            </Button>
-          </div>
-
-          {/* Recent Notifications */}
-          <Card
-            title={
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
-                📬 Thông báo gần đây
-              </h2>
-            }
-            style={{
-              borderRadius: 12,
-              border: "none",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            }}
-            bodyStyle={{ padding: "20px" }}
+          <Button
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={loading}
           >
-            {notifications.length > 0 ? (
-              <Table
-                columns={columns}
-                dataSource={notifications}
-                rowKey="notification_id"
-                pagination={false}
-                style={{ fontSize: 14 }}
-                scroll={{ x: 800 }}
-              />
-            ) : (
-              <Empty
-                description="Chưa có thông báo nào"
-                style={{ marginTop: 20, marginBottom: 20 }}
-              />
-            )}
-          </Card>
-
-          {/* Quick Stats Section */}
-          <Row gutter={[16, 16]}>
-            <Col xs={24} lg={12}>
-              <Card
-                title="Hoạt động hôm nay"
-                style={{
-                  borderRadius: 12,
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                <Empty description="Không có hoạt động nào hôm nay" />
-              </Card>
-            </Col>
-            <Col xs={24} lg={12}>
-              <Card
-                title="Tác vụ cần hoàn thành"
-                style={{
-                  borderRadius: 12,
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                <Empty description="Không có tác vụ nào" />
-              </Card>
-            </Col>
-          </Row>
+            Làm mới
+          </Button>
         </div>
-      </Spin>
+
+        {/* Error Alert */}
+        {error && <Alert message={error} type="error" closable />}
+
+        {/* Statistics Cards - SỬ DỤNG GRID ĐỂ FULL WIDTH 100% */}
+        {stats && (
+          // Thay đổi: Sử dụng grid của Tailwind thay vì Row/Col của Antd để chia 5 cột đều nhau
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
+            {/* 1. Tổng lớp */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow h-full w-full">
+              <Statistic
+                title="Tổng lớp"
+                value={stats.total_classes}
+                prefix={<FileTextOutlined className="text-blue-500" />}
+                valueStyle={{ color: "#1890ff", fontSize: "24px" }}
+              />
+            </Card>
+
+            {/* 2. Tổng sinh viên */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow h-full w-full">
+              <Statistic
+                title="Tổng sinh viên"
+                value={stats.total_students}
+                prefix={<TeamOutlined className="text-green-500" />}
+                valueStyle={{ color: "#52c41a", fontSize: "24px" }}
+              />
+            </Card>
+
+            {/* 3. Tổng hoạt động */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow h-full w-full">
+              <Statistic
+                title="Tổng hoạt động"
+                value={stats.total_activities}
+                prefix={<HeartOutlined className="text-red-500" />}
+                valueStyle={{ color: "#ff4d4f", fontSize: "24px" }}
+              />
+            </Card>
+
+            {/* 4. Tổng thông báo */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow h-full w-full">
+              <Statistic
+                title="Tổng thông báo"
+                value={stats.total_notifications}
+                prefix={<BellOutlined className="text-orange-500" />}
+                valueStyle={{ color: "#faad14", fontSize: "24px" }}
+              />
+            </Card>
+
+            {/* 5. Tổng cuộc họp */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow h-full w-full">
+              <Statistic
+                title="Tổng cuộc họp"
+                value={stats.total_meetings}
+                prefix={<CalendarOutlined className="text-purple-500" />}
+                valueStyle={{ color: "#722ed1", fontSize: "24px" }}
+              />
+            </Card>
+          </div>
+        )}
+
+        {/* Classes Detail Section */}
+        {stats?.classes_detail && stats.classes_detail.length > 0 && (
+          <Card title="Chi tiết lớp quản lý" className="shadow-lg w-full">
+            <Row gutter={[16, 16]}>
+              {stats.classes_detail.map((classDetail, index) => (
+                <Col xs={24} sm={12} lg={8} key={index}>
+                  <Card
+                    hoverable
+                    className="text-center shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-gray-100"
+                    onClick={() => navigate("/advisor/classes")}
+                  >
+                    <h3 className="text-xl font-bold mb-4 text-blue-600">
+                      {classDetail.class_name}
+                    </h3>
+                    <Statistic
+                      title="Sinh viên"
+                      value={classDetail.student_count}
+                      prefix={<TeamOutlined />}
+                      valueStyle={{ color: "#1890ff" }}
+                    />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Card>
+        )}
+      </div>
     </AdvisorLayout>
   );
 };

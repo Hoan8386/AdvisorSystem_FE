@@ -853,6 +853,11 @@ const getAdvisorDetailApi = (advisorId) => {
   return axios.get(URL_BACKEND);
 };
 
+const getAdvisorStatisticsApi = (advisorId) => {
+  const URL_BACKEND = `/api/advisors/${advisorId}/statistics`;
+  return axios.get(URL_BACKEND);
+};
+
 const uploadAdvisorAvatarApi = (advisorId, file) => {
   const URL_BACKEND = `/api/advisors/${advisorId}/avatar`;
   const formData = new FormData();
@@ -1267,6 +1272,7 @@ export {
   deleteAdvisorApi,
   createAdvisorApi,
   getAdvisorDetailApi,
+  getAdvisorStatisticsApi,
   uploadAdvisorAvatarApi,
   uploadStudentAvatarApi,
   // Dashboard APIs
