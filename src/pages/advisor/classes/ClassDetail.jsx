@@ -13,11 +13,7 @@ import {
   Statistic,
   Modal,
   Select,
-  Collapse,
   Space,
-  Divider,
-  Tabs,
-  // --- THÊM CÁC COMPONENT NÀY ĐỂ HIỂN THỊ LỊCH ĐẸP HƠN ---
   Avatar,
   List,
   Badge,
@@ -26,10 +22,6 @@ import { toast } from "react-toastify";
 import {
   ArrowLeftOutlined,
   UserOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  BankOutlined,
   TeamOutlined,
   BookOutlined,
   TrophyOutlined,
@@ -40,7 +32,6 @@ import {
   ReloadOutlined,
   AlertOutlined,
   CalendarOutlined,
-  // --- THÊM ICON CHO LỊCH ---
   ClockCircleOutlined,
   EnvironmentOutlined,
   TagsOutlined,
@@ -54,12 +45,12 @@ import {
   getStudentGradesAPI,
   getCourseStudentsAPI,
   getStudentPointsAPI,
-  getStudentSemesterReportAPI,
   batchUpdateSemesterReportsAPI,
   getAtRiskStudentsAPI,
   updateStudentPositionAPI,
   getStudentScheduleApi,
 } from "../../../services/api.service";
+import { Tabs } from "antd";
 
 const { Option } = Select;
 
@@ -139,8 +130,7 @@ export const ClassDetail = () => {
 
   useEffect(() => {
     if (selectedSemester) {
-      fetchSemesterReports(); // Đã bao gồm statistics
-      // fetchAcademicStatistics(); // Không cần nữa, đã lấy từ fetchSemesterReports
+      fetchSemesterReports();
       fetchAtRiskStudents();
     }
   }, [selectedSemester]);
@@ -164,11 +154,8 @@ export const ClassDetail = () => {
   const fetchClassStudents = async () => {
     try {
       const response = await getClassStudentsAPI(classId);
-      console.log("Class students response:", response);
-
       if (response?.success) {
         const studentsData = response.data?.students || response.data || [];
-        console.log("Students data:", studentsData);
         setStudents(studentsData);
       }
     } catch (error) {
@@ -184,7 +171,6 @@ export const ClassDetail = () => {
         const semestersData = response.data || [];
         setSemesters(semestersData);
         if (semestersData.length > 0) {
-          // Auto-select latest semester
           setSelectedSemester(semestersData[0].semester_id);
         }
       }
@@ -197,23 +183,18 @@ export const ClassDetail = () => {
     try {
       setLoadingReports(true);
       const response = await getSemesterReportsAPI(selectedSemester);
-      console.log("Semester reports response:", response);
 
       if (response?.success) {
-        // API trả về class_statistics là mảng các lớp
         const classStatistics = response.data?.class_statistics || [];
 
-        // Tìm thống kê của lớp hiện tại (so sánh với type conversion)
         const currentClassStats = classStatistics.find(
           (stat) =>
             stat.class_id == classId || stat.class_id === parseInt(classId)
         );
 
-        // Lấy danh sách reports của lớp hiện tại
         const reportsData = currentClassStats?.reports || [];
         setSemesterReports(reportsData);
 
-        // Lấy luôn thống kê học vụ từ gpa_statistics
         if (currentClassStats) {
           const statsData = {
             total_students: currentClassStats.total_students,
@@ -250,10 +231,6 @@ export const ClassDetail = () => {
           };
           setAcademicStatistics(statsData);
         }
-
-        console.log("Class ID:", classId, "Type:", typeof classId);
-        console.log("Found class stats:", currentClassStats);
-        console.log("Current class reports:", reportsData);
       }
     } catch (error) {
       console.error("Error fetching semester reports:", error);
@@ -274,17 +251,10 @@ export const ClassDetail = () => {
       setStudentGradeModalVisible(true);
       setSelectedStudentGrades(null);
 
-      console.log("Fetching grades for:", {
-        student_id: student.student_id,
-        semester_id: selectedSemester,
-      });
-
       const response = await getStudentGradesAPI(
         student.student_id,
         selectedSemester
       );
-
-      console.log("Student grades response:", response);
 
       if (response?.success) {
         setSelectedStudentGrades(response.data);
@@ -319,7 +289,6 @@ export const ClassDetail = () => {
     }
   };
 
-  // Handle view student points (training and social activities)
   const handleViewStudentPoints = async (studentId) => {
     if (!selectedSemester) {
       toast.warning("Vui lòng chọn học kỳ trước");
@@ -331,7 +300,6 @@ export const ClassDetail = () => {
       setStudentPointsModalVisible(true);
 
       const response = await getStudentPointsAPI(studentId, selectedSemester);
-      console.log("Student points response:", response);
 
       if (response?.success) {
         setSelectedStudentPoints(response.data);
@@ -344,7 +312,6 @@ export const ClassDetail = () => {
     }
   };
 
-  // Handle view student schedule
   const handleViewStudentSchedule = async (studentId) => {
     if (!selectedSemester) {
       toast.warning("Vui lòng chọn học kỳ trước");
@@ -370,23 +337,18 @@ export const ClassDetail = () => {
     }
   };
 
-  // Fetch at-risk students
   const fetchAtRiskStudents = async () => {
     if (!selectedSemester || !classData) return;
 
     try {
       setLoadingAtRisk(true);
       const response = await getAtRiskStudentsAPI(selectedSemester);
-      console.log("At-risk students response:", response);
 
       if (response?.success) {
         const allStudents = response.data?.at_risk_students || [];
-        // Filter by class_name (API không trả về class_id)
         const classStudents = allStudents.filter(
           (student) => student.class_name === classData.class_name
         );
-        console.log("Class name:", classData.class_name);
-        console.log("Filtered at-risk students:", classStudents);
         setAtRiskStudents(classStudents);
       }
     } catch (error) {
@@ -397,7 +359,6 @@ export const ClassDetail = () => {
     }
   };
 
-  // Handle update position
   const handleOpenPositionModal = (student) => {
     setSelectedStudent(student);
     setSelectedPosition(student.position);
@@ -424,7 +385,6 @@ export const ClassDetail = () => {
       );
       toast.success("Cập nhật vị trí thành công");
       handleClosePositionModal();
-      // Refresh students list
       fetchClassStudents();
     } catch (error) {
       console.error("Error updating position:", error);
@@ -436,7 +396,6 @@ export const ClassDetail = () => {
     }
   };
 
-  // Batch update semester reports
   const handleBatchUpdate = async () => {
     if (!selectedSemester) {
       toast.warning("Vui lòng chọn học kỳ");
@@ -458,7 +417,7 @@ export const ClassDetail = () => {
         if (summary.error_count > 0) {
           toast.warning(`Có ${summary.error_count} sinh viên bị lỗi`);
         }
-        fetchSemesterReports(); // Refresh reports
+        fetchSemesterReports();
       }
     } catch (error) {
       console.error("Error batch updating:", error);
@@ -476,17 +435,75 @@ export const ClassDetail = () => {
     return "text-red-600";
   };
 
+  // --- UPDATE 1: Cập nhật status tag với "reserved" ---
   const getStatusTag = (status) => {
-    const statusMap = {
-      passed: { color: "success", text: "Đạt" },
-      failed: { color: "error", text: "Không đạt" },
-      studying: { color: "processing", text: "Đang học" },
-    };
-    const config = statusMap[status] || { color: "default", text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    let color = "default";
+    let text = "Khác";
+
+    switch (status) {
+      case "studying":
+        color = "green";
+        text = "Đang học";
+        break;
+      case "graduated":
+        color = "blue";
+        text = "Đã tốt nghiệp";
+        break;
+      case "suspended":
+        color = "orange";
+        text = "Tạm hoãn";
+        break;
+      case "dropped":
+        color = "red";
+        text = "Thôi học";
+        break;
+      // Case mới cho bảo lưu
+      case "reserved":
+        color = "purple";
+        text = "Bảo lưu";
+        break;
+      case "passed": // Dành cho môn học
+        color = "success";
+        text = "Đạt";
+        break;
+      case "failed": // Dành cho môn học
+        color = "error";
+        text = "Không đạt";
+        break;
+      default:
+        text = status;
+        break;
+    }
+    return <Tag color={color}>{text}</Tag>;
   };
 
-  // --- CẬP NHẬT HÀM RENDER ĐỂ HIỂN THỊ ĐẸP HƠN DỰA TRÊN JSON ---
+  // --- UPDATE 2: Hàm mới xử lý màu sắc cho cột Kết quả (Outcome) ---
+  const getOutcomeTag = (outcome) => {
+    if (!outcome) return <Tag color="default">Chưa đánh giá</Tag>;
+
+    const text = outcome.toLowerCase();
+    let color = "default";
+
+    if (text.includes("buộc thôi học") || text.includes("thôi học")) {
+      color = "error"; // Màu đỏ
+    } else if (text.includes("cảnh cáo")) {
+      color = "warning"; // Màu cam
+    } else if (text.includes("khen thưởng") || text.includes("xuất sắc")) {
+      color = "purple"; // Màu tím cho sinh viên giỏi/xuất sắc
+    } else if (text.includes("học tiếp")) {
+      color = "success"; // Màu xanh lá
+    } else if (text.includes("chưa có điểm")) {
+      color = "default"; // Màu xám
+    }
+
+    return (
+      <Tag color={color} style={{ whiteSpace: "normal" }}>
+        {outcome}
+      </Tag>
+    );
+  };
+  // -----------------------------------------------------------
+
   const renderStudentScheduleContent = () => {
     if (!selectedStudentSchedule) {
       return <Empty description="Không có dữ liệu" />;
@@ -589,7 +606,6 @@ export const ClassDetail = () => {
                         {course.course_name}
                       </span>
                     </div>
-                    {/* Hiển thị badge tín chỉ nếu có */}
                     {course.credits && (
                       <Badge
                         count={`${course.credits} TC`}
@@ -698,7 +714,6 @@ export const ClassDetail = () => {
       </div>
     );
   };
-  // -----------------------------------------------------------------------
 
   // Student table columns
   const studentColumns = [
@@ -740,20 +755,7 @@ export const ClassDetail = () => {
       key: "status",
       width: 150,
       align: "center",
-      render: (status) => {
-        const statusConfig = {
-          studying: { color: "success", text: "Đang học" },
-          active: { color: "success", text: "Đang học" },
-          inactive: { color: "default", text: "Không hoạt động" },
-          graduated: { color: "blue", text: "Đã tốt nghiệp" },
-          suspended: { color: "error", text: "Đình chỉ" },
-        };
-        const config = statusConfig[status] || {
-          color: "default",
-          text: status,
-        };
-        return <Tag color={config.color}>{config.text}</Tag>;
-      },
+      render: (status) => getStatusTag(status),
     },
     {
       title: "Số lần cảnh báo",
@@ -762,14 +764,14 @@ export const ClassDetail = () => {
       width: 200,
       align: "center",
       render: (count) => {
-        if (!count || count === 0) {
-          return <Tag color="success">0</Tag>;
+        if (count > 0) {
+          return (
+            <Tag color="error" icon={<WarningOutlined />}>
+              {count} lần
+            </Tag>
+          );
         }
-        return (
-          <Tag color={count >= 3 ? "red" : count >= 2 ? "orange" : "gold"}>
-            {count} lần
-          </Tag>
-        );
+        return <span className="text-gray-400">0</span>;
       },
     },
     {
@@ -1035,7 +1037,10 @@ export const ClassDetail = () => {
                 {classData.description && (
                   <Col xs={24} sm={12} lg={18}>
                     <Card
-                      style={{ borderRadius: 12, border: "1px solid #e5e7eb" }}
+                      style={{
+                        borderRadius: 12,
+                        border: "1px solid #e5e7eb",
+                      }}
                     >
                       <div className="text-sm text-gray-600">
                         <strong>Mô tả:</strong> {classData.description}
@@ -1274,33 +1279,10 @@ export const ClassDetail = () => {
                                 title: "Kết quả",
                                 dataIndex: "outcome",
                                 key: "outcome",
-                                width: 160,
-                                render: (outcome) => {
-                                  if (!outcome) {
-                                    return (
-                                      <Tag color="default">Chưa đánh giá</Tag>
-                                    );
-                                  }
-
-                                  // Check for specific outcomes
-                                  if (outcome === "Học tiếp") {
-                                    return <Tag color="success">Học tiếp</Tag>;
-                                  }
-                                  if (outcome === "Chưa có điểm") {
-                                    return (
-                                      <Tag color="default">Chưa có điểm</Tag>
-                                    );
-                                  }
-                                  if (outcome.includes("Cảnh cáo")) {
-                                    return <Tag color="warning">{outcome}</Tag>;
-                                  }
-                                  if (outcome.includes("thôi học")) {
-                                    return <Tag color="error">{outcome}</Tag>;
-                                  }
-
-                                  // Default
-                                  return <Tag color="default">{outcome}</Tag>;
-                                },
+                                width: 200, // Tăng width
+                                // --- UPDATE 3: Sử dụng hàm getOutcomeTag ---
+                                render: (outcome) => getOutcomeTag(outcome),
+                                // -------------------------------------------
                               },
                               {
                                 title: "Thao tác",
@@ -1865,7 +1847,7 @@ export const ClassDetail = () => {
           ) : null}
         </Modal>
 
-        {/* --- CẬP NHẬT MODAL LỊCH HỌC VỚI GIAO DIỆN MỚI --- */}
+        {/* Modal Lịch học */}
         <Modal
           title={null}
           open={studentScheduleModalVisible}

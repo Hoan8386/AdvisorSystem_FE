@@ -1115,6 +1115,18 @@ const resetStudentPasswordApi = (studentId) => {
   return axios.post(URL_BACKEND);
 };
 
+// Get student detail
+const getStudentDetailApi = (studentId) => {
+  const URL_BACKEND = `/api/students/${studentId}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Update student information (Admin)
+const updateStudentApi = (studentId, studentData) => {
+  const URL_BACKEND = `/api/students/${studentId}`;
+  return axios.put(URL_BACKEND, studentData);
+};
+
 export {
     
     createUserApi,
@@ -1293,4 +1305,7 @@ export {
     // Password Reset APIs
     resetAdvisorPasswordApi,
     resetStudentPasswordApi,
+    // Student Detail & Update APIs
+    getStudentDetailApi,
+    updateStudentApi,
 };

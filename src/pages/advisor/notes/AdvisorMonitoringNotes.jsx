@@ -7,10 +7,10 @@ import {
   Space,
   Drawer,
   Tag,
-  Modal,
   Select,
   Row,
   Col,
+  Popconfirm, // <--- 1. Import Popconfirm
 } from "antd";
 import {
   DeleteOutlined,
@@ -90,23 +90,21 @@ function AdvisorMonitoringNotes() {
     }
   };
 
-  const handleDelete = (record) => {
-    Modal.confirm({
-      title: "Xóa ghi chú",
-      content: "Chắc chắn xóa?",
-      okText: "Xóa",
-      cancelText: "Hủy",
-      okType: "danger",
-      onOk: async () => {
-        try {
-          await deleteMonitoringNoteAPI(record.note_id);
-          toast.success("Xóa thành công");
-          fetchNotes();
-        } catch (error) {
-          toast.error(error.response?.data?.message || "Lỗi");
-        }
-      },
-    });
+  // 2. Logic xóa (Không còn Modal.confirm ở đây nữa, chỉ gọi API)
+  const confirmDelete = async (noteId) => {
+    try {
+      await deleteMonitoringNoteAPI(noteId);
+      toast.success("Xóa thành công");
+      fetchNotes();
+
+      // Nếu đang mở drawer của note vừa xóa thì đóng lại
+      if (drawerOpen && selectedNote?.note_id === noteId) {
+        setDrawerOpen(false);
+        setSelectedNote(null);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi xóa");
+    }
   };
 
   const getCategoryColor = (category) => {
@@ -171,12 +169,17 @@ function AdvisorMonitoringNotes() {
               })
             }
           />
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-            onClick={() => handleDelete(r)}
-          />
+          {/* 3. Áp dụng Popconfirm trong bảng */}
+          <Popconfirm
+            title="Xóa ghi chú"
+            description="Bạn chắc chắn muốn xóa ghi chú này?"
+            onConfirm={() => confirmDelete(r.note_id)}
+            okText="Xóa"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger icon={<DeleteOutlined />} size="small" />
+          </Popconfirm>
         </Space>
       ),
     },
@@ -208,7 +211,7 @@ function AdvisorMonitoringNotes() {
             <Col xs="auto">
               <div className="mb-2 text-sm font-medium">Danh mục</div>
               <Select
-                className="w-36" // width vừa phải
+                className="w-36"
                 placeholder="Tất cả"
                 allowClear
                 value={categoryFilter}
@@ -320,15 +323,18 @@ function AdvisorMonitoringNotes() {
                 >
                   Sửa
                 </Button>
-                <Button
-                  danger
-                  onClick={() => {
-                    handleDelete(selectedNote);
-                    setDrawerOpen(false);
-                  }}
+
+                {/* 4. Áp dụng Popconfirm trong Drawer */}
+                <Popconfirm
+                  title="Xóa ghi chú"
+                  description="Bạn chắc chắn muốn xóa ghi chú này?"
+                  onConfirm={() => confirmDelete(selectedNote.note_id)}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
                 >
-                  Xóa
-                </Button>
+                  <Button danger>Xóa</Button>
+                </Popconfirm>
               </Space>
             </div>
           )}

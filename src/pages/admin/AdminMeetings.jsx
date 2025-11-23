@@ -13,13 +13,11 @@ import {
   Tooltip,
   Spin,
   Empty,
-  Drawer,
-  Descriptions,
-  Avatar,
 } from "antd";
 import { Eye, Trash2, Download, RotateCw } from "lucide-react";
 import { toast } from "react-toastify";
 import { getMeetingsApi, deleteMeetingApi } from "../../services/api.service";
+import { downloadMeetingMinutesApi } from "../../services/meeting.service";
 import MeetingDetailModal from "../../components/admin/MeetingDetailModal";
 import dayjs from "dayjs";
 
@@ -154,11 +152,31 @@ const AdminMeetings = () => {
       return;
     }
 
-    // Download file
-    const link = document.createElement("a");
-    link.href = `/storage/${meeting.minutes_file_path}`;
-    link.download = meeting.minutes_file_path.split("/").pop();
-    link.click();
+    try {
+      const response = await downloadMeetingMinutesApi(meeting.meeting_id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Lấy tên file từ đường dẫn hoặc đặt tên mặc định
+      const fileName =
+        meeting.minutes_file_path.split("/").pop() || "bien_ban_cuoc_hop.docx";
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Tải biên bản thành công");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error(
+        "Lỗi khi tải biên bản: File có thể không tồn tại hoặc bị hỏng."
+      );
+    }
   };
 
   // Filter meetings by search text
@@ -289,6 +307,15 @@ const AdminMeetings = () => {
               onClick={() => handleViewDetail(record)}
             >
               <Eye size={16} />
+            </Button>
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Button
+              danger
+              size="small"
+              onClick={() => handleDeleteMeeting(record.meeting_id)}
+            >
+              <Trash2 size={16} />
             </Button>
           </Tooltip>
         </Space>

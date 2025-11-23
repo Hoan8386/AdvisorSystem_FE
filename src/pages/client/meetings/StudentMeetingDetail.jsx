@@ -72,13 +72,13 @@ export const StudentMeetingDetail = () => {
   const handleDownloadMinutes = async () => {
     if (!meeting) return;
     try {
-      const blob = await downloadMeetingMinutesApi(id);
-      const url = window.URL.createObjectURL(blob);
+      const response = await downloadMeetingMinutesApi(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
       link.download = `Bien_ban_${meeting.title}_${dayjs().format(
         "YYYYMMDD"
-      )}.pdf`;
+      )}.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -314,7 +314,6 @@ export const StudentMeetingDetail = () => {
                           <span className="font-semibold">
                             {fb.student?.full_name}
                           </span>
-                       
                         </div>
                         <span className="text-gray-500 text-sm">
                           {dayjs(fb.created_at).format("DD/MM/YYYY HH:mm")}
@@ -389,7 +388,10 @@ export const StudentMeetingDetail = () => {
                 label="Nội dung phản hồi"
                 rules={[{ required: true, message: "Vui lòng nhập phản hồi" }]}
               >
-                <TextArea rows={6} placeholder="Nhập phản hồi của bạn về cuộc họp..." />
+                <TextArea
+                  rows={6}
+                  placeholder="Nhập phản hồi của bạn về cuộc họp..."
+                />
               </Form.Item>
               <Form.Item className="mb-0">
                 <Button type="primary" htmlType="submit" size="large" block>

@@ -248,7 +248,7 @@ export const MeetingAttendance = () => {
           </div>
 
           {/* Statistics Cards */}
-          <Row gutter={[16, 16]} className="mb-5">
+          {/* <Row gutter={[16, 16]} className="mb-5">
             <Col xs={24} sm={12} lg={6}>
               <Card className="hover:shadow-xl transition-shadow duration-300 border-0 bg-gradient-to-br from-blue-500 to-blue-600">
                 <Statistic
@@ -315,7 +315,7 @@ export const MeetingAttendance = () => {
                 </div>
               </Card>
             </Col>
-          </Row>
+          </Row> */}
 
           {/* Attendance Table */}
           <div className="mb-5">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Table, Button, Card, Descriptions, message, Tag, Space } from "antd";
+import { Table, Button, Card, Descriptions, message, Tag } from "antd";
 import { ArrowLeftOutlined, ReloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
@@ -43,8 +43,10 @@ export const AdminSemesterReports = () => {
       }
     };
 
-    fetchSemesterInfo();
-    fetchReports();
+    if (semesterId) {
+      fetchSemesterInfo();
+      fetchReports();
+    }
   }, [semesterId]);
 
   const refreshReports = async () => {
@@ -53,6 +55,7 @@ export const AdminSemesterReports = () => {
       const response = await getSemesterReportsApi(semesterId);
       if (response?.success && response?.data) {
         setReports(response.data.reports || []);
+        message.success("Đã cập nhật dữ liệu");
       }
     } catch (error) {
       console.error("Error fetching reports:", error);
@@ -62,70 +65,99 @@ export const AdminSemesterReports = () => {
     }
   };
 
+  // --- LOGIC CẬP NHẬT MÀU SẮC KẾT QUẢ ---
   const getOutcomeColor = (outcome) => {
-    const colors = {
-      "Học tiếp": "green",
-      "Cảnh báo học vụ": "orange",
-      "Buộc thôi học": "red",
-    };
-    return colors[outcome] || "default";
+    if (!outcome) return "default";
+
+    // Chuyển về chữ thường để so sánh tương đối (contains)
+    const text = outcome.toLowerCase();
+
+    // Ưu tiên các trạng thái nghiêm trọng hoặc đặc biệt
+    if (text.includes("buộc thôi học") || text.includes("thôi học")) {
+      return "error"; // Màu đỏ
+    }
+    if (text.includes("cảnh cáo")) {
+      return "warning"; // Màu cam
+    }
+    if (text.includes("khen thưởng") || text.includes("xuất sắc")) {
+      return "purple"; // Màu tím (cho sinh viên giỏi)
+    }
+    if (text.includes("học tiếp")) {
+      return "success"; // Màu xanh lá
+    }
+    if (text.includes("chưa có điểm")) {
+      return "default"; // Màu xám
+    }
+
+    return "default";
   };
+  // ---------------------------------------
 
   const columns = [
     {
       title: "Mã SV",
       key: "user_code",
       render: (_, record) => record.student?.user_code,
-      width: 120,
+      width: 100,
     },
     {
       title: "Họ và tên",
       key: "full_name",
       render: (_, record) => record.student?.full_name,
+      width: 180,
     },
     {
       title: "Lớp",
       key: "class",
       render: (_, record) => record.student?.class?.class_name,
+      width: 100,
     },
     {
       title: "GPA",
       dataIndex: "gpa",
       key: "gpa",
       width: 80,
-      render: (gpa) => parseFloat(gpa).toFixed(2),
+      align: "center",
+      render: (gpa) => (gpa ? parseFloat(gpa).toFixed(2) : "-"),
     },
     {
       title: "CPA",
       dataIndex: "cpa_10_scale",
       key: "cpa_10_scale",
       width: 80,
-      render: (cpa) => parseFloat(cpa).toFixed(2),
+      align: "center",
+      render: (cpa) => (cpa ? parseFloat(cpa).toFixed(2) : "-"),
     },
     {
       title: "TC ĐK",
       dataIndex: "credits_registered",
       key: "credits_registered",
       width: 80,
+      align: "center",
     },
     {
       title: "TC Đạt",
       dataIndex: "credits_passed",
       key: "credits_passed",
       width: 80,
+      align: "center",
     },
     {
       title: "Điểm RL",
       dataIndex: "training_point_summary",
       key: "training_point_summary",
       width: 90,
+      align: "center",
     },
     {
       title: "Kết quả",
       dataIndex: "outcome",
       key: "outcome",
+      width: 250,
       render: (outcome) => (
-        <Tag color={getOutcomeColor(outcome)}>{outcome}</Tag>
+        <Tag color={getOutcomeColor(outcome)} style={{ whiteSpace: "normal" }}>
+          {outcome || "Chưa xét"}
+        </Tag>
       ),
     },
   ];
@@ -143,11 +175,11 @@ export const AdminSemesterReports = () => {
           </Button>
 
           <h1 className="text-2xl font-bold mb-4">
-            Báo cáo học kỳ - {semesterInfo?.semester_name}
+            Báo cáo học kỳ - {semesterInfo?.semester_name || "..."}
           </h1>
 
           {semesterInfo && (
-            <Descriptions bordered column={2}>
+            <Descriptions bordered column={{ xs: 1, sm: 2, md: 4 }}>
               <Descriptions.Item label="Tên học kỳ">
                 {semesterInfo.semester_name}
               </Descriptions.Item>
@@ -155,13 +187,17 @@ export const AdminSemesterReports = () => {
                 {semesterInfo.academic_year}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày bắt đầu">
-                {dayjs(semesterInfo.start_date).format("DD/MM/YYYY")}
+                {semesterInfo.start_date
+                  ? dayjs(semesterInfo.start_date).format("DD/MM/YYYY")
+                  : "-"}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày kết thúc">
-                {dayjs(semesterInfo.end_date).format("DD/MM/YYYY")}
+                {semesterInfo.end_date
+                  ? dayjs(semesterInfo.end_date).format("DD/MM/YYYY")
+                  : "-"}
               </Descriptions.Item>
-              <Descriptions.Item label="Số báo cáo" span={2}>
-                {reports.length} sinh viên
+              <Descriptions.Item label="Số báo cáo" span={4}>
+                <b>{reports.length}</b> sinh viên
               </Descriptions.Item>
             </Descriptions>
           )}
@@ -188,7 +224,10 @@ export const AdminSemesterReports = () => {
             showSizeChanger: true,
             showTotal: (total) => `Tổng số ${total} báo cáo`,
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1000 }}
+          locale={{
+            emptyText: "Chưa có dữ liệu báo cáo cho học kỳ này",
+          }}
         />
       </Card>
     </div>

@@ -1,8 +1,9 @@
 ﻿import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
-import { Card, Form, Input, Button, Select, Space, Spin } from "antd";
+import { Card, Form, Input, Button, Select, Space } from "antd";
 import { toast } from "react-toastify";
+import { ArrowLeftOutlined } from "@ant-design/icons"; // 1. Import Icon
 import {
   createMonitoringNoteAPI,
   updateMonitoringNoteAPI,
@@ -126,9 +127,19 @@ function CreateEditMonitoringNote() {
     <AdvisorLayout>
       <div className="max-w-7xl mx-auto p-6">
         <Card>
-          <h1 className="text-2xl font-bold mb-5">
-            {isEdit ? "Chỉnh sửa ghi chú" : "Tạo ghi chú mới"}
-          </h1>
+          {/* 2. Thêm phần Header chứa nút Back */}
+          <div className="flex items-center gap-4 mb-5">
+            <Button
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate("/advisor/monitoring-notes")}
+              size="large"
+            />
+            <h1 className="text-2xl font-bold m-0">
+              {isEdit ? "Chỉnh sửa ghi chú" : "Tạo ghi chú mới"}
+            </h1>
+          </div>
+
           <Form
             form={form}
             layout="vertical"

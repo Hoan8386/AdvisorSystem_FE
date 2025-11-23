@@ -297,6 +297,7 @@ export const AdminAdvisors = () => {
     }
   };
 
+  // --- CẤU HÌNH CỘT VỚI NÚT THAO TÁC TRÊN 1 DÒNG ---
   const columns = [
     {
       title: "Avatar",
@@ -329,23 +330,26 @@ export const AdminAdvisors = () => {
       title: "Họ và tên",
       dataIndex: "full_name",
       key: "full_name",
+      width: 250,
       render: (text) => <span className="font-semibold">{text}</span>,
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
+      width: 200,
     },
     {
       title: "Số điện thoại",
       dataIndex: "phone_number",
       key: "phone_number",
+      width: 150,
     },
     {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
-      width: 100,
+      width: 120,
       render: (role) => (
         <Tag color={role === "admin" ? "red" : "blue"}>
           {role === "admin" ? "Quản trị viên" : "Cố vấn"}
@@ -355,9 +359,10 @@ export const AdminAdvisors = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 300,
+      width: 400, // Tăng độ rộng để đủ chỗ cho 4 nút
       render: (_, record) => (
-        <Space wrap>
+        // Bỏ thuộc tính wrap để các nút nằm trên 1 dòng
+        <Space size="small">
           <Button
             type="primary"
             icon={<EyeOutlined />}
@@ -376,7 +381,7 @@ export const AdminAdvisors = () => {
           </Button>
           <Popconfirm
             title="Reset mật khẩu"
-            description={`Bạn có chắc muốn reset mật khẩu cho "${record.full_name}" (${record.user_code})?`}
+            description={`Bạn có chắc muốn reset mật khẩu cho "${record.full_name}"?`}
             onConfirm={() => handleResetPassword(record)}
             okText="Có"
             cancelText="Không"
@@ -388,7 +393,7 @@ export const AdminAdvisors = () => {
           </Popconfirm>
           <Popconfirm
             title="Xóa giảng viên"
-            description={`Bạn có chắc muốn xóa "${record.full_name}" (${record.user_code})?`}
+            description={`Bạn có chắc muốn xóa "${record.full_name}"?`}
             onConfirm={() => handleDeleteAdvisor(record)}
             okText="Có"
             cancelText="Không"
@@ -460,6 +465,7 @@ export const AdminAdvisors = () => {
           dataSource={advisors}
           rowKey="advisor_id"
           loading={loading}
+          scroll={{ x: 1500 }} // Tăng scroll x để hiển thị đủ cột thao tác
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -561,14 +567,12 @@ export const AdminAdvisors = () => {
               name="password"
               rules={[
                 {
-                  pattern:
-                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                  message:
-                    "Mật khẩu tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt",
+                  min: 6,
+                  message: "Mật khẩu phải có tối thiểu 6 ký tự",
                 },
               ]}
             >
-              <Input.Password placeholder="VD: Password@123 (để trống sẽ dùng mặc định)" />
+              {/* <Input.Password placeholder="VD: 123456 (để trống sẽ dùng mặc định)" /> */}
             </Form.Item>
           )}
         </Form>

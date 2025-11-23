@@ -253,11 +253,11 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
           className={`w-full flex items-center justify-center gap-3 ${
             isCollapsed ? "px-2 py-2.5" : "px-5 py-3.5"
           } bg-white/10 backdrop-blur-sm text-white rounded-2xl transition-all duration-300 hover:bg-white/20 hover:shadow-lg hover:transform hover:scale-105 border border-white/20`}
-          title={isCollapsed ? "Dang xuat" : ""}
+          title={isCollapsed ? "Đăng xuất" : ""}
         >
           <LogOut className="w-5 h-5" />
           {!isCollapsed && (
-            <span className="font-semibold text-sm">Dang xuat</span>
+            <span className="font-semibold text-sm">Đăng xuất </span>
           )}
         </button>
       </div>

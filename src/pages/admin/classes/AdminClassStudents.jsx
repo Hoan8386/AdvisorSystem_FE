@@ -10,6 +10,12 @@ import {
   Tag,
   Upload,
   Popconfirm,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Spin,
+  Badge,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -18,6 +24,9 @@ import {
   UploadOutlined,
   ExportOutlined,
   LockOutlined,
+  EyeOutlined,
+  EditOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import {
   getClassDetailApi,
@@ -26,17 +35,25 @@ import {
   importStudentsApi,
   exportStudentsByClassApi,
   resetStudentPasswordApi,
+  getStudentDetailApi,
+  updateStudentApi,
 } from "../../../services/api.service";
 
 export const AdminClassStudents = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
+  const [form] = Form.useForm();
   const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     const fetchClassInfo = async () => {
@@ -94,6 +111,70 @@ export const AdminClassStudents = () => {
     } catch (error) {
       console.error("Error resetting password:", error);
       toast.error(error?.message || "Không thể reset mật khẩu");
+    }
+  };
+
+  // View student details
+  const handleViewStudent = async (student) => {
+    try {
+      setDetailLoading(true);
+      const response = await getStudentDetailApi(student.student_id);
+      if (response?.success && response?.data) {
+        setSelectedStudent(response.data);
+        setViewModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching student detail:", error);
+      toast.error(error?.message || "Không thể tải thông tin sinh viên");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // Open edit modal
+  const handleEditStudent = async (student) => {
+    try {
+      setDetailLoading(true);
+      const response = await getStudentDetailApi(student.student_id);
+      if (response?.success && response?.data) {
+        setSelectedStudent(response.data);
+        form.setFieldsValue({
+          user_code: response.data.user_code,
+          full_name: response.data.full_name,
+          email: response.data.email,
+          phone_number: response.data.phone_number,
+          class_id: response.data.class?.class_id,
+          status: response.data.status,
+          position: response.data.position,
+        });
+        setEditModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching student detail:", error);
+      toast.error(error?.message || "Không thể tải thông tin sinh viên");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // Save student updates
+  const handleSaveStudent = async (values) => {
+    try {
+      setEditLoading(true);
+      const response = await updateStudentApi(
+        selectedStudent.student_id,
+        values
+      );
+      if (response?.success) {
+        toast.success(response?.message || "Cập nhật sinh viên thành công");
+        setEditModalOpen(false);
+        refreshStudents();
+      }
+    } catch (error) {
+      console.error("Error updating student:", error);
+      toast.error(error?.message || "Không thể cập nhật sinh viên");
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -215,33 +296,97 @@ export const AdminClassStudents = () => {
       dataIndex: "email",
       key: "email",
     },
-
+    {
+      title: "Cảnh cáo",
+      dataIndex: "warnings_count",
+      key: "warnings_count",
+      align: "center",
+      width: 100,
+      render: (count) => {
+        if (count > 0) {
+          return (
+            <Tag color="error" icon={<WarningOutlined />}>
+              {count} lần
+            </Tag>
+          );
+        }
+        return <span className="text-gray-400">0</span>;
+      },
+    },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status) => (
-        <Tag color={status === "studying" ? "green" : "red"}>
-          {status === "studying" ? "Đang học" : "Đã nghỉ"}
-        </Tag>
-      ),
+      width: 140,
+      render: (status) => {
+        let color = "default";
+        let text = "Khác";
+
+        switch (status) {
+          case "studying":
+            color = "green";
+            text = "Đang học";
+            break;
+          case "graduated":
+            color = "blue";
+            text = "Đã tốt nghiệp";
+            break;
+          case "suspended":
+            color = "orange";
+            text = "Tạm hoãn";
+            break;
+          case "reserved":
+            color = "purple";
+            text = "Bảo lưu";
+            break;
+          case "dropped":
+            color = "red";
+            text = "Thôi học";
+            break;
+          default:
+            break;
+        }
+
+        return <Tag color={color}>{text}</Tag>;
+      },
     },
     {
       title: "Thao tác",
       key: "action",
+      width: 220,
       render: (_, record) => (
-        <Popconfirm
-          title="Reset mật khẩu"
-          description={`Bạn có chắc muốn reset mật khẩu cho "${record.full_name}" (${record.user_code})?`}
-          onConfirm={() => handleResetPassword(record)}
-          okText="Có"
-          cancelText="Không"
-          okButtonProps={{ danger: true }}
-        >
-          <Button icon={<LockOutlined />} danger size="small">
-            Reset MK
+        <Space>
+          <Button
+            icon={<EyeOutlined />}
+            type="primary"
+            size="small"
+            onClick={() => handleViewStudent(record)}
+            loading={detailLoading}
+          >
+            Xem
           </Button>
-        </Popconfirm>
+          <Button
+            icon={<EditOutlined />}
+            type="default"
+            size="small"
+            onClick={() => handleEditStudent(record)}
+            loading={detailLoading}
+          >
+            Sửa
+          </Button>
+          <Popconfirm
+            title="Reset mật khẩu"
+            description={`Bạn có chắc muốn reset mật khẩu cho "${record.full_name}" (${record.user_code})?`}
+            onConfirm={() => handleResetPassword(record)}
+            okText="Có"
+            cancelText="Không"
+            okButtonProps={{ danger: true }}
+          >
+            <Button icon={<LockOutlined />} danger size="small">
+              Reset MK
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -339,6 +484,175 @@ export const AdminClassStudents = () => {
           }}
         />
       </Card>
+
+      {/* View Student Modal */}
+      <Modal
+        title="Xem chi tiết sinh viên"
+        open={viewModalOpen}
+        onCancel={() => setViewModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setViewModalOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+        width={600}
+      >
+        <Spin spinning={detailLoading}>
+          {selectedStudent && (
+            <Descriptions bordered column={1} style={{ marginTop: "16px" }}>
+              <Descriptions.Item label="Mã sinh viên">
+                {selectedStudent.user_code}
+              </Descriptions.Item>
+              <Descriptions.Item label="Họ và tên">
+                {selectedStudent.full_name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                {selectedStudent.email}
+              </Descriptions.Item>
+              <Descriptions.Item label="Số điện thoại">
+                {selectedStudent.phone_number || "Chưa cập nhật"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Lớp">
+                {selectedStudent.class?.class_name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Chức vụ">
+                {selectedStudent.position === "leader" && "Lớp trưởng"}
+                {selectedStudent.position === "vice_leader" && "Lớp phó"}
+                {selectedStudent.position === "secretary" && "Thư ký"}
+                {selectedStudent.position === "member" && "Thành viên"}
+              </Descriptions.Item>
+
+              {/* Update Warning count in View Detail */}
+              <Descriptions.Item label="Cảnh cáo học vụ">
+                {selectedStudent.warnings_count > 0 ? (
+                  <Tag color="error">{selectedStudent.warnings_count} lần</Tag>
+                ) : (
+                  "Không có"
+                )}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Trạng thái">
+                <Tag
+                  color={
+                    selectedStudent.status === "studying"
+                      ? "green"
+                      : selectedStudent.status === "graduated"
+                      ? "blue"
+                      : selectedStudent.status === "suspended"
+                      ? "orange"
+                      : selectedStudent.status === "reserved"
+                      ? "purple"
+                      : "red"
+                  }
+                >
+                  {selectedStudent.status === "studying" && "Đang học"}
+                  {selectedStudent.status === "graduated" && "Đã tốt nghiệp"}
+                  {selectedStudent.status === "dropped" && "Thôi học"}
+                  {selectedStudent.status === "suspended" && "Tạm hoãn"}
+                  {selectedStudent.status === "reserved" && "Bảo lưu"}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày tạo">
+                {new Date(selectedStudent.created_at).toLocaleDateString(
+                  "vi-VN"
+                )}
+              </Descriptions.Item>
+            </Descriptions>
+          )}
+        </Spin>
+      </Modal>
+
+      {/* Edit Student Modal */}
+      <Modal
+        title="Cập nhật thông tin sinh viên"
+        open={editModalOpen}
+        onCancel={() => setEditModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setEditModalOpen(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={editLoading}
+            onClick={() => form.submit()}
+          >
+            Cập nhật
+          </Button>,
+        ]}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSaveStudent}
+          style={{ marginTop: "16px" }}
+        >
+          <Form.Item
+            label="Mã sinh viên"
+            name="user_code"
+            rules={[{ required: true, message: "Vui lòng nhập mã sinh viên" }]}
+          >
+            <Input placeholder="VD: 210001" />
+          </Form.Item>
+
+          <Form.Item
+            label="Họ và tên"
+            name="full_name"
+            rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
+          >
+            <Input placeholder="VD: Nguyễn Văn A" />
+          </Form.Item>
+
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: "Vui lòng nhập email" },
+              { type: "email", message: "Email không hợp lệ" },
+            ]}
+          >
+            <Input placeholder="VD: sv.a@school.edu.vn" />
+          </Form.Item>
+
+          <Form.Item label="Số điện thoại" name="phone_number">
+            <Input placeholder="VD: 0901234567" />
+          </Form.Item>
+
+          <Form.Item
+            label="Trạng thái"
+            name="status"
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+          >
+            <Select
+              options={[
+                { label: "Đang học", value: "studying" },
+                { label: "Đã tốt nghiệp", value: "graduated" },
+                { label: "Thôi học", value: "dropped" },
+                { label: "Tạm hoãn", value: "suspended" },
+                { label: "Bảo lưu", value: "reserved" },
+              ]}
+              placeholder="Chọn trạng thái"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Chức vụ"
+            name="position"
+            rules={[{ required: true, message: "Vui lòng chọn chức vụ" }]}
+          >
+            <Select
+              options={[
+                { label: "Lớp trưởng", value: "leader" },
+                { label: "Lớp phó", value: "vice_leader" },
+                { label: "Thư ký", value: "secretary" },
+                { label: "Thành viên", value: "member" },
+              ]}
+              placeholder="Chọn chức vụ"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
