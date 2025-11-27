@@ -17,8 +17,14 @@ import {
   Space,
   Avatar,
   Divider,
+  Typography,
 } from "antd";
-import { ArrowLeftOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  UserOutlined,
+  EyeOutlined,
+  MessageOutlined,
+} from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
@@ -28,6 +34,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
+const { Text } = Typography;
+
 export const NotificationResponses = () => {
   const navigate = useNavigate();
   const { notificationId } = useParams();
@@ -35,10 +43,16 @@ export const NotificationResponses = () => {
 
   const [loading, setLoading] = useState(false);
   const [responses, setResponses] = useState([]);
+
+  // State cho Modal Trả lời
   const [replyModalOpen, setReplyModalOpen] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState(null);
   const [replyContent, setReplyContent] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
+
+  // State cho Modal Xem chi tiết
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewData, setViewData] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== "advisor") {
@@ -65,24 +79,67 @@ export const NotificationResponses = () => {
     }
   };
 
-  // Remove unused function - handleLogoutClick not needed in this component
+  const handleReply = (response) => {
+    setSelectedResponse(response);
+    setReplyContent("");
+    setReplyModalOpen(true);
+  };
+
+  const handleViewDetail = (record) => {
+    setViewData(record);
+    setViewModalOpen(true);
+  };
+
+  const handleSubmitReply = async () => {
+    if (!replyContent.trim()) {
+      toast.warning("Vui lòng nhập nội dung trả lời");
+      return;
+    }
+
+    try {
+      setReplyLoading(true);
+      const res = await updateNotificationResponseAPI(
+        selectedResponse.response_id,
+        {
+          advisor_response: replyContent,
+          status: "resolved", // Cập nhật status theo JSON mẫu
+        }
+      );
+
+      if (res?.success) {
+        toast.success("✓ Trả lời thành công!");
+        setReplyModalOpen(false);
+        setReplyContent("");
+        setSelectedResponse(null);
+        fetchResponses();
+      }
+    } catch (error) {
+      toast.error(error?.message || "Lỗi khi trả lời phản hồi");
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
   const columns = [
     {
       title: "Học sinh",
-      dataIndex: ["student", "user"],
+      dataIndex: "student",
       key: "student_name",
-      width: 200,
-      render: (userInfo) => (
-        <Space>
-          <Avatar icon={<UserOutlined />} />
-          <div>
-            <div style={{ fontWeight: 600 }}>{userInfo?.full_name}</div>
-            <div style={{ fontSize: 12, color: "#999" }}>
-              {userInfo?.user_code}
+      width: 220,
+      render: (student) => {
+        const userInfo = student?.user || student; // Fallback nếu cấu trúc JSON thay đổi
+        return (
+          <Space>
+            <Avatar icon={<UserOutlined />} src={userInfo?.avatar_url} />
+            <div>
+              <div style={{ fontWeight: 600 }}>{userInfo?.full_name}</div>
+              <div style={{ fontSize: 12, color: "#999" }}>
+                {userInfo?.user_code} - {student?.class?.class_name}
+              </div>
             </div>
-          </div>
-        </Space>
-      ),
+          </Space>
+        );
+      },
     },
     {
       title: "Nội dung phản hồi",
@@ -90,7 +147,10 @@ export const NotificationResponses = () => {
       key: "content",
       width: 300,
       render: (text) => (
-        <div style={{ color: "#666", fontSize: 13, lineHeight: 1.5 }}>
+        <div
+          style={{ color: "#666", fontSize: 13, lineHeight: 1.5 }}
+          className="line-clamp-2"
+        >
           {text}
         </div>
       ),
@@ -99,12 +159,12 @@ export const NotificationResponses = () => {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 100,
+      width: 120,
       render: (status) => {
         const statusMap = {
           pending: { text: "Chờ phản hồi", color: "orange" },
-          replied: { text: "Đã trả lời", color: "green" },
-          rejected: { text: "Từ chối", color: "volcano" },
+          resolved: { text: "Đã phản hồi", color: "green" }, // Map đúng với JSON response
+          rejected: { text: "Từ chối", color: "red" },
         };
         const statusInfo = statusMap[status] || {
           text: status,
@@ -127,62 +187,35 @@ export const NotificationResponses = () => {
     {
       title: "Hành động",
       key: "action",
-      width: 150,
+      width: 180,
       render: (_, record) => (
         <Space>
+          {/* Nút Xem chi tiết - Luôn hiện */}
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetail(record)}
+            title="Xem chi tiết"
+          >
+            Xem
+          </Button>
+
+          {/* Nút Trả lời - Chỉ hiện khi chưa trả lời */}
           {record.status === "pending" && (
             <Button
               type="primary"
               size="small"
+              icon={<MessageOutlined />}
               onClick={() => handleReply(record)}
               style={{ background: "#faad14", border: "none" }}
             >
               Trả lời
             </Button>
           )}
-          {record.status === "replied" && (
-            <span style={{ color: "green", fontSize: 12 }}>✓ Đã trả lời</span>
-          )}
         </Space>
       ),
     },
   ];
-
-  const handleReply = (response) => {
-    setSelectedResponse(response);
-    setReplyContent("");
-    setReplyModalOpen(true);
-  };
-
-  const handleSubmitReply = async () => {
-    if (!replyContent.trim()) {
-      toast.warning("Vui lòng nhập nội dung trả lời");
-      return;
-    }
-
-    try {
-      setReplyLoading(true);
-      const res = await updateNotificationResponseAPI(
-        selectedResponse.response_id,
-        {
-          advisor_response: replyContent,
-          status: "resolved",
-        }
-      );
-
-      if (res?.success) {
-        toast.success("✓ Trả lời thành công!");
-        setReplyModalOpen(false);
-        setReplyContent("");
-        setSelectedResponse(null);
-        fetchResponses();
-      }
-    } catch (error) {
-      toast.error(error?.message || "Lỗi khi trả lời phản hồi");
-    } finally {
-      setReplyLoading(false);
-    }
-  };
 
   return (
     <AdvisorLayout>
@@ -220,23 +253,12 @@ export const NotificationResponses = () => {
                 color: "#c8102e",
               }}
             >
-              📋 Phản hồi từ sinh viên
+              Phản hồi từ sinh viên
             </h1>
           </div>
 
           {/* Responses Table */}
           <Card
-            title={
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "clamp(16px, 4vw, 18px)",
-                  fontWeight: 600,
-                }}
-              >
-                📌 Danh sách phản hồi ({responses.length})
-              </h3>
-            }
             style={{
               borderRadius: 12,
               border: "none",
@@ -253,10 +275,8 @@ export const NotificationResponses = () => {
                   pageSize: 10,
                   showSizeChanger: true,
                   showTotal: (total) => `Tổng ${total} phản hồi`,
-                  responsive: true,
                 }}
                 scroll={{ x: 1000 }}
-                style={{ fontSize: 14 }}
               />
             ) : (
               <div style={{ padding: "40px 20px" }}>
@@ -267,15 +287,9 @@ export const NotificationResponses = () => {
         </div>
       </Spin>
 
-      {/* Reply Modal */}
+      {/* Reply Modal (Form trả lời) */}
       <Modal
-        title={
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
-              💬 Trả lời phản hồi
-            </h2>
-          </div>
-        }
+        title="💬 Trả lời phản hồi"
         open={replyModalOpen}
         onCancel={() => setReplyModalOpen(false)}
         footer={[
@@ -292,78 +306,156 @@ export const NotificationResponses = () => {
             Gửi trả lời
           </Button>,
         ]}
-        width={600}
-        style={{ top: 20 }}
       >
         {selectedResponse && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Student Info */}
-            <Card
-              style={{
-                background: "linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%)",
-                border: "1px solid #e8e8e8",
-              }}
-              bodyStyle={{ padding: "12px 16px" }}
-            >
-              <Space>
-                <Avatar icon={<UserOutlined />} />
-                <div style={{ fontSize: 13 }}>
-                  <div style={{ fontWeight: 600 }}>
-                    {selectedResponse.student?.user?.full_name}
-                  </div>
-                  <div style={{ color: "#999", fontSize: 12 }}>
-                    {selectedResponse.student?.user?.user_code}
-                  </div>
-                </div>
-              </Space>
-            </Card>
-
-            <Divider style={{ margin: "8px 0" }} />
-
-            {/* Student Response */}
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>
-                Phản hồi của sinh viên:
-              </span>
-              <Card
-                style={{
-                  marginTop: 8,
-                  background: "#f9f9f9",
-                  border: "1px solid #e8e8e8",
-                }}
-                bodyStyle={{ padding: "12px" }}
-              >
-                <p style={{ margin: 0, color: "#666", lineHeight: 1.5 }}>
-                  {selectedResponse.content}
-                </p>
-              </Card>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <Text strong>Sinh viên hỏi:</Text>
+              <div style={{ marginTop: 4, color: "#555" }}>
+                {selectedResponse.content}
+              </div>
             </div>
-
-            <Divider style={{ margin: "8px 0" }} />
-
-            {/* Reply Form */}
             <div>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#333",
-                  display: "block",
-                  marginBottom: 8,
-                }}
-              >
-                Trả lời của giáo viên:
-              </span>
+              <Text strong>Trả lời của giáo viên:</Text>
               <Input.TextArea
                 rows={4}
                 placeholder="Nhập nội dung trả lời..."
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                maxLength={5000}
-                showCount
-                style={{ fontSize: 13 }}
+                style={{ marginTop: 8 }}
               />
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* View Detail Modal (Xem chi tiết câu hỏi & câu trả lời) */}
+      <Modal
+        title="📄 Chi tiết hội thoại"
+        open={viewModalOpen}
+        onCancel={() => setViewModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setViewModalOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+        width={600}
+      >
+        {viewData && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Thông tin sinh viên */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                paddingBottom: 12,
+                borderBottom: "1px solid #f0f0f0",
+              }}
+            >
+              <Avatar
+                size="large"
+                src={viewData.student?.avatar_url}
+                icon={<UserOutlined />}
+              />
+              <div>
+                <div style={{ fontWeight: "bold", fontSize: 16 }}>
+                  {viewData.student?.full_name ||
+                    viewData.student?.user?.full_name}
+                </div>
+                <div style={{ color: "#888" }}>
+                  {viewData.student?.user_code ||
+                    viewData.student?.user?.user_code}
+                  {viewData.student?.class &&
+                    ` - ${viewData.student.class.class_name}`}
+                </div>
+              </div>
+            </div>
+
+            {/* Câu hỏi của sinh viên */}
+            <Card
+              size="small"
+              title={
+                <span style={{ color: "#1890ff" }}>
+                  ❓ Câu hỏi của sinh viên
+                </span>
+              }
+              style={{ background: "#e6f7ff", borderColor: "#91d5ff" }}
+              headStyle={{
+                borderBottom: "1px solid #91d5ff",
+                minHeight: "auto",
+                padding: "0 12px",
+              }}
+            >
+              <div style={{ fontSize: 14, color: "#0050b3" }}>
+                {viewData.content}
+              </div>
+              <div
+                style={{
+                  textAlign: "right",
+                  fontSize: 11,
+                  color: "#0050b3",
+                  marginTop: 8,
+                  fontStyle: "italic",
+                }}
+              >
+                Gửi lúc: {dayjs(viewData.created_at).format("HH:mm DD/MM/YYYY")}
+              </div>
+            </Card>
+
+            {/* Câu trả lời của giảng viên (nếu có) */}
+            {viewData.advisor_response ? (
+              <Card
+                size="small"
+                title={
+                  <span style={{ color: "#52c41a" }}>
+                    ✅ Trả lời của giảng viên
+                  </span>
+                }
+                style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}
+                headStyle={{
+                  borderBottom: "1px solid #b7eb8f",
+                  minHeight: "auto",
+                  padding: "0 12px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    color: "#389e0d",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {viewData.advisor_response}
+                </div>
+                {viewData.response_at && (
+                  <div
+                    style={{
+                      textAlign: "right",
+                      fontSize: 11,
+                      color: "#389e0d",
+                      marginTop: 8,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Trả lời lúc:{" "}
+                    {dayjs(viewData.response_at).format("HH:mm DD/MM/YYYY")}
+                  </div>
+                )}
+              </Card>
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#999",
+                  padding: "20px",
+                  border: "1px dashed #d9d9d9",
+                  borderRadius: 8,
+                }}
+              >
+                Giảng viên chưa phản hồi nội dung này.
+              </div>
+            )}
           </div>
         )}
       </Modal>

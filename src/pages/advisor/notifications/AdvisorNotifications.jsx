@@ -3,6 +3,7 @@ import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
   getNotificationsAPI,
   deleteNotificationAPI,
+  getNotificationReadStatisticsAPI,
 } from "../../../services/api.service";
 import {
   Button,
@@ -17,16 +18,15 @@ import {
   Col,
   Select,
   Popconfirm,
-  Skeleton,
   Spin,
+  Tabs,
+  Statistic,
+  Progress,
 } from "antd";
 import { toast } from "react-toastify";
 import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  SearchOutlined,
+  PlusOutlined, // Giữ lại icon cho nút Tạo mới (nằm ngoài table)
+  SearchOutlined, // Giữ lại icon cho nút Search (nằm ngoài input)
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -43,6 +43,11 @@ export const AdvisorNotifications = () => {
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
+  });
+  const [statisticsModal, setStatisticsModal] = useState({
+    visible: false,
+    data: null,
+    loading: false,
   });
 
   useEffect(() => {
@@ -98,6 +103,41 @@ export const AdvisorNotifications = () => {
     navigate("/advisor/notifications/create");
   };
 
+  const handleViewStatistics = async (record) => {
+    try {
+      setStatisticsModal((prev) => ({ ...prev, loading: true, visible: true }));
+      const res = await getNotificationReadStatisticsAPI(
+        record.notification_id
+      );
+      if (res && res.success) {
+        setStatisticsModal((prev) => ({
+          ...prev,
+          data: { ...res.data, notification_title: record.title },
+          loading: false,
+        }));
+      } else {
+        toast.error("Không thể tải thống kê");
+        setStatisticsModal((prev) => ({
+          ...prev,
+          visible: false,
+          loading: false,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+      toast.error("Lỗi khi tải thống kê");
+      setStatisticsModal((prev) => ({
+        ...prev,
+        visible: false,
+        loading: false,
+      }));
+    }
+  };
+
+  const handleCloseStatisticsModal = () => {
+    setStatisticsModal((prev) => ({ ...prev, visible: false, data: null }));
+  };
+
   // Filter notifications
   const filteredNotifications = notifications.filter((item) => {
     const matchSearch =
@@ -109,7 +149,7 @@ export const AdvisorNotifications = () => {
 
   const columns = [
     {
-      title: <span className="font-semibold text-gray-700">📝 Tiêu đề</span>,
+      title: <span className="font-semibold text-gray-700">Tiêu đề</span>,
       dataIndex: "title",
       key: "title",
       width: 300,
@@ -125,7 +165,7 @@ export const AdvisorNotifications = () => {
       ),
     },
     {
-      title: <span className="font-semibold text-gray-700">🏷️ Loại</span>,
+      title: <span className="font-semibold text-gray-700">Loại</span>,
       dataIndex: "type",
       key: "type",
       width: 140,
@@ -136,33 +176,29 @@ export const AdvisorNotifications = () => {
             text: "Thông báo chung",
             color: "#1890ff",
             bgColor: "#e6f7ff",
-            icon: "📢",
           },
           academic: {
             text: "Học tập",
             color: "#ff4d4f",
             bgColor: "#fff1f0",
-            icon: "📚",
           },
           event: {
             text: "Sự kiện",
             color: "#52c41a",
             bgColor: "#f6ffed",
-            icon: "🎉",
           },
           urgent: {
             text: "Khẩn",
             color: "#fa8c16",
             bgColor: "#fff7e6",
-            icon: "⚠️",
           },
         };
         const typeInfo = typeMap[type] || {
           text: type,
           color: "#999",
           bgColor: "#f5f5f5",
-          icon: "📌",
         };
+        // Đã bỏ icon trong render
         return (
           <div
             style={{
@@ -178,14 +214,13 @@ export const AdvisorNotifications = () => {
               border: `1px solid ${typeInfo.color}30`,
             }}
           >
-            <span>{typeInfo.icon}</span>
             <span>{typeInfo.text}</span>
           </div>
         );
       },
     },
     {
-      title: <span className="font-semibold text-gray-700">👥 Lớp</span>,
+      title: <span className="font-semibold text-gray-700">Lớp</span>,
       dataIndex: "classes",
       key: "classes",
       align: "center",
@@ -210,7 +245,7 @@ export const AdvisorNotifications = () => {
       ),
     },
     {
-      title: <span className="font-semibold text-gray-700">💬 Phản hồi</span>,
+      title: <span className="font-semibold text-gray-700">Phản hồi</span>,
       dataIndex: "responses_count",
       key: "responses_count",
       align: "center",
@@ -235,7 +270,7 @@ export const AdvisorNotifications = () => {
       ),
     },
     {
-      title: <span className="font-semibold text-gray-700">📅 Ngày tạo</span>,
+      title: <span className="font-semibold text-gray-700">Ngày tạo</span>,
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
@@ -249,16 +284,15 @@ export const AdvisorNotifications = () => {
       ),
     },
     {
-      title: <span className="font-semibold text-gray-700">⚙️ Thao tác</span>,
+      title: <span className="font-semibold text-gray-700">Thao tác</span>,
       key: "action",
-      width: 200,
-
+      width: 250, // Tăng width một chút vì text dài hơn icon
       render: (_, record) => (
         <div className="flex items-center gap-1.5 justify-start">
+          {/* Đã bỏ prop icon trong các Button */}
           <Button
             type="primary"
             size="small"
-            icon={<EyeOutlined />}
             onClick={() => handleViewResponses(record)}
             className="flex-shrink-0"
             style={{
@@ -268,15 +302,29 @@ export const AdvisorNotifications = () => {
               fontWeight: 500,
               boxShadow: "0 2px 4px rgba(24, 144, 255, 0.2)",
               padding: "0 8px",
-              minWidth: "32px",
             }}
+            title="Xem phản hồi"
           >
-            <span className="hidden lg:inline ml-1">Xem</span>
+            <span>Xem</span>
+          </Button>
+          <Button
+            size="small"
+            onClick={() => handleViewStatistics(record)}
+            className="flex-shrink-0"
+            style={{
+              borderRadius: "6px",
+              fontWeight: 500,
+              borderColor: "#faad14",
+              color: "#faad14",
+              padding: "0 8px",
+            }}
+            title="Xem thống kê"
+          >
+            <span>Thống kê</span>
           </Button>
           <Button
             type="default"
             size="small"
-            icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             className="flex-shrink-0"
             style={{
@@ -284,10 +332,9 @@ export const AdvisorNotifications = () => {
               fontWeight: 500,
               borderColor: "#d9d9d9",
               padding: "0 8px",
-              minWidth: "32px",
             }}
           >
-            <span className="hidden lg:inline ml-1">Sửa</span>
+            <span>Sửa</span>
           </Button>
           <Popconfirm
             title={<span className="font-semibold">Xoá thông báo</span>}
@@ -306,16 +353,14 @@ export const AdvisorNotifications = () => {
             <Button
               danger
               size="small"
-              icon={<DeleteOutlined />}
               className="flex-shrink-0"
               style={{
                 borderRadius: "6px",
                 fontWeight: 500,
                 padding: "0 8px",
-                minWidth: "32px",
               }}
             >
-              <span className="hidden lg:inline ml-1">Xoá</span>
+              <span>Xoá</span>
             </Button>
           </Popconfirm>
         </div>
@@ -353,7 +398,7 @@ export const AdvisorNotifications = () => {
                   color: "#c8102e",
                 }}
               >
-                📬 Quản lý thông báo
+                Quản lý thông báo
               </h1>
               <p
                 style={{
@@ -397,14 +442,23 @@ export const AdvisorNotifications = () => {
           >
             <Row gutter={[12, 12]}>
               <Col xs={24} sm={12} lg={8}>
-                <Input
-                  placeholder="Tìm kiếm thông báo..."
-                  prefix={<SearchOutlined />}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  disabled={loading}
-                  style={{ borderRadius: 6 }}
-                />
+                {/* Thay đổi layout input search tại đây */}
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <Input
+                    placeholder="Tìm kiếm thông báo..."
+                    // Đã bỏ prefix icon
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    disabled={loading}
+                    style={{ borderRadius: 6 }}
+                  />
+                  <Button
+                    icon={<SearchOutlined />}
+                    disabled={loading}
+                    style={{ borderRadius: 6 }}
+                    // Nút search nằm rời bên cạnh
+                  />
+                </div>
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <Select
@@ -480,6 +534,212 @@ export const AdvisorNotifications = () => {
           </Card>
         </div>
       </Spin>
+
+      {/* Statistics Modal */}
+      <Modal
+        title={
+          <span style={{ fontSize: "16px", fontWeight: 600 }}>
+            Thống kê thông báo
+          </span>
+        }
+        open={statisticsModal.visible}
+        onCancel={handleCloseStatisticsModal}
+        width={900}
+        footer={[
+          <Button key="close" onClick={handleCloseStatisticsModal}>
+            Đóng
+          </Button>,
+        ]}
+        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+      >
+        <Spin spinning={statisticsModal.loading}>
+          {statisticsModal.data && (
+            <>
+              <Card
+                style={{
+                  marginBottom: 16,
+                  background:
+                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  borderRadius: 8,
+                }}
+              >
+                <div className="text-center">
+                  <h3 style={{ color: "white", marginBottom: 16 }}>
+                    {statisticsModal.data.notification_title}
+                  </h3>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={8}>
+                      <Statistic
+                        title={
+                          <span style={{ color: "rgba(255,255,255,0.7)" }}>
+                            Tổng cộng
+                          </span>
+                        }
+                        value={statisticsModal.data.total_recipients}
+                        valueStyle={{ color: "white", fontSize: "28px" }}
+                      />
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Statistic
+                        title={
+                          <span style={{ color: "rgba(255,255,255,0.7)" }}>
+                            Đã đọc
+                          </span>
+                        }
+                        value={statisticsModal.data.total_read}
+                        suffix={
+                          <span style={{ color: "rgba(255,255,255,0.7)" }}>
+                            ({statisticsModal.data.read_percentage}%)
+                          </span>
+                        }
+                        valueStyle={{ color: "#52c41a", fontSize: "28px" }}
+                      />
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Statistic
+                        title={
+                          <span style={{ color: "rgba(255,255,255,0.7)" }}>
+                            Chưa đọc
+                          </span>
+                        }
+                        value={statisticsModal.data.total_unread}
+                        valueStyle={{ color: "#ff4d4f", fontSize: "28px" }}
+                      />
+                    </Col>
+                  </Row>
+                  <div style={{ marginTop: 16 }}>
+                    <Progress
+                      type="circle"
+                      percent={Math.round(statisticsModal.data.read_percentage)}
+                      width={120}
+                      strokeColor={{
+                        "0%": "#108ee9",
+                        "100%": "#87d068",
+                      }}
+                    />
+                  </div>
+                </div>
+              </Card>
+
+              <Tabs
+                items={[
+                  {
+                    key: "read",
+                    label: (
+                      <span>
+                        Đã đọc ({statisticsModal.data.read_students.length})
+                      </span>
+                    ),
+                    children: (
+                      <div>
+                        {statisticsModal.data.read_students.length > 0 ? (
+                          <Table
+                            dataSource={statisticsModal.data.read_students}
+                            rowKey="student_id"
+                            size="small"
+                            pagination={false}
+                            columns={[
+                              {
+                                title: "Mã SV",
+                                dataIndex: "student_id",
+                                key: "student_id",
+                                width: 80,
+                                render: (id) => (
+                                  <span style={{ fontWeight: 600 }}>#{id}</span>
+                                ),
+                              },
+                              {
+                                title: "Tên sinh viên",
+                                dataIndex: "full_name",
+                                key: "full_name",
+                                render: (text) => (
+                                  <span style={{ fontWeight: 500 }}>
+                                    {text}
+                                  </span>
+                                ),
+                              },
+                              {
+                                title: "Email",
+                                dataIndex: "email",
+                                key: "email",
+                              },
+                              {
+                                title: "Lớp",
+                                dataIndex: ["class", "class_name"],
+                                key: "class",
+                                render: (text) => (
+                                  <Tag color="blue">{text}</Tag>
+                                ),
+                              },
+                            ]}
+                          />
+                        ) : (
+                          <Empty description="Chưa có sinh viên nào đọc" />
+                        )}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "unread",
+                    label: (
+                      <span>
+                        Chưa đọc ({statisticsModal.data.unread_students.length})
+                      </span>
+                    ),
+                    children: (
+                      <div>
+                        {statisticsModal.data.unread_students.length > 0 ? (
+                          <Table
+                            dataSource={statisticsModal.data.unread_students}
+                            rowKey="student_id"
+                            size="small"
+                            pagination={false}
+                            columns={[
+                              {
+                                title: "Mã SV",
+                                dataIndex: "student_id",
+                                key: "student_id",
+                                width: 80,
+                                render: (id) => (
+                                  <span style={{ fontWeight: 600 }}>#{id}</span>
+                                ),
+                              },
+                              {
+                                title: "Tên sinh viên",
+                                dataIndex: "full_name",
+                                key: "full_name",
+                                render: (text) => (
+                                  <span style={{ fontWeight: 500 }}>
+                                    {text}
+                                  </span>
+                                ),
+                              },
+                              {
+                                title: "Email",
+                                dataIndex: "email",
+                                key: "email",
+                              },
+                              {
+                                title: "Lớp",
+                                dataIndex: ["class", "class_name"],
+                                key: "class",
+                                render: (text) => <Tag color="red">{text}</Tag>,
+                              },
+                            ]}
+                          />
+                        ) : (
+                          <Empty description="Tất cả sinh viên đều đã đọc" />
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </>
+          )}
+        </Spin>
+      </Modal>
     </AdvisorLayout>
   );
 };

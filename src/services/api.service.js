@@ -143,6 +143,12 @@ const getNotificationResponsesAPI = (notificationId) => {
   return axios.get(URL_BACKEND);
 };
 
+// Get read statistics for a notification (Advisor only)
+const getNotificationReadStatisticsAPI = (notificationId) => {
+  const URL_BACKEND = `/api/notifications/${notificationId}/read-statistics`;
+  return axios.get(URL_BACKEND);
+};
+
 // Submit response to notification (Student only)
 const submitNotificationResponseAPI = (notificationId, responseData) => {
   const URL_BACKEND = `/api/notifications/${notificationId}/responses`;
@@ -1206,6 +1212,7 @@ export {
     deleteNotificationAPI,
     getNotificationStatisticsAPI,
     getNotificationResponsesAPI,
+    getNotificationReadStatisticsAPI,
     submitNotificationResponseAPI,
     updateNotificationResponseAPI,
     getUnreadNotificationsAPI,
