@@ -22,6 +22,12 @@ instance.interceptors.request.use(function (config) {
     if (typeof window !== "undefined" && window && window.localStorage && window.localStorage.getItem('access_token')) {
         config.headers.Authorization = 'Bearer ' + window.localStorage.getItem('access_token');
     }
+    
+    // Disable caching for all requests
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+    
     // Do something before request is sent
     return config;
 }, function (error) {

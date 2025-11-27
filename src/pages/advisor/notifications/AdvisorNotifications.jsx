@@ -252,7 +252,7 @@ export const AdvisorNotifications = () => {
       title: <span className="font-semibold text-gray-700">⚙️ Thao tác</span>,
       key: "action",
       width: 200,
-      fixed: "right",
+
       render: (_, record) => (
         <div className="flex items-center gap-1.5 justify-start">
           <Button

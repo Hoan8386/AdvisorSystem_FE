@@ -384,10 +384,42 @@ export const AdminGrades = () => {
       setDownloadLoading(true);
       const response = await downloadGradeTemplateApi();
 
-      // Create blob and download
-      const blob = new Blob([response], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      // Lấy blob từ response
+      let blob;
+
+      // Check if response itself is Blob (từ axios interceptor)
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        // Nếu response.data là Blob
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        // Nếu là string, convert thành blob
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        // Mặc định convert object thành blob
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      // Kiểm tra blob có dữ liệu
+      if (!blob || blob.size === 0) {
+        toast.error("File template trống hoặc không hợp lệ");
+        return;
+      }
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -488,10 +520,42 @@ export const AdminGrades = () => {
         selectedSemester
       );
 
-      // Create blob and download
-      const blob = new Blob([response], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      // Lấy blob từ response
+      let blob;
+
+      // Check if response itself is Blob (từ axios interceptor)
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        // Nếu response.data là Blob
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        // Nếu là string, convert thành blob
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        // Mặc định convert object thành blob
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      // Kiểm tra blob có dữ liệu
+      if (!blob || blob.size === 0) {
+        toast.error("File xuất trống hoặc không hợp lệ");
+        return;
+      }
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

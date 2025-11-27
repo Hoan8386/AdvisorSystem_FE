@@ -1132,6 +1132,60 @@ const updateStudentApi = (studentId, studentData) => {
   return axios.put(URL_BACKEND, studentData);
 };
 
+// ========== EXPORT TRAINING & SOCIAL POINTS APIs ==========
+
+// Export training points by class
+const exportTrainingPointsByClassApi = (classId, semesterId) => {
+  const URL_BACKEND = `/api/admin/export/training-points/class?class_id=${classId}&semester_id=${semesterId}`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
+
+// Export training points by faculty
+const exportTrainingPointsByFacultyApi = (semesterId) => {
+  const URL_BACKEND = `/api/admin/export/training-points/faculty?semester_id=${semesterId}`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
+
+// Export social points by class
+const exportSocialPointsByClassApi = (classId) => {
+  const URL_BACKEND = `/api/admin/export/social-points/class?class_id=${classId}`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
+
+// Export social points by faculty
+const exportSocialPointsByFacultyApi = () => {
+  const URL_BACKEND = `/api/admin/export/social-points/faculty`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
+
 export {
     
     createUserApi,
@@ -1314,4 +1368,9 @@ export {
     // Student Detail & Update APIs
     getStudentDetailApi,
     updateStudentApi,
+    // Export Training & Social Points APIs
+    exportTrainingPointsByClassApi,
+    exportTrainingPointsByFacultyApi,
+    exportSocialPointsByClassApi,
+    exportSocialPointsByFacultyApi,
 };

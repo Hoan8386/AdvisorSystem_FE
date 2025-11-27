@@ -78,25 +78,60 @@ export const AdminAdvisors = () => {
     }
   };
 
-  // Download template for advisors
+  // Download template
   const handleDownloadTemplate = async () => {
     try {
       setDownloadLoading(true);
       const response = await downloadTemplateApi("advisors");
 
-      const blob = new Blob([response], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      // Lấy blob từ response
+      let blob;
+
+      // Nếu response.data là Blob hoặc ArrayBuffer
+      if (response.data instanceof Blob) {
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        // Nếu là string, convert thành blob
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        // Mặc định convert object thành blob
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      // Kiểm tra blob có dữ liệu
+      if (!blob || blob.size === 0) {
+        toast.error("File template trống hoặc không hợp lệ");
+        return;
+      }
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
+
+      // Tạo tên file kèm timestamp
       const timestamp = new Date()
         .toISOString()
         .replace(/[:.]/g, "-")
         .slice(0, -5);
       link.download = `Template_Advisors_${timestamp}.xlsx`;
+
       document.body.appendChild(link);
       link.click();
+
+      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -359,9 +394,8 @@ export const AdminAdvisors = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 400, // Tăng độ rộng để đủ chỗ cho 4 nút
+      width: 400,
       render: (_, record) => (
-        // Bỏ thuộc tính wrap để các nút nằm trên 1 dòng
         <Space size="small">
           <Button
             type="primary"
@@ -465,7 +499,7 @@ export const AdminAdvisors = () => {
           dataSource={advisors}
           rowKey="advisor_id"
           loading={loading}
-          scroll={{ x: 1500 }} // Tăng scroll x để hiển thị đủ cột thao tác
+          scroll={{ x: 1500 }}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

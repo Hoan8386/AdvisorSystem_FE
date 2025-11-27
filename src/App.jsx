@@ -56,6 +56,7 @@ import { AdminAdvisorClasses } from "./pages/admin/advisors/AdminAdvisorClasses"
 import { AdminCourses } from "./pages/admin/courses/AdminCourses";
 import { AdminGrades } from "./pages/admin/grades/AdminGrades";
 import { AdminSchedules } from "./pages/admin/schedules/AdminSchedules";
+import { AdminActivityPoints } from "./pages/admin/points/AdminActivityPoints";
 import AdvisorMeetings from "./pages/advisor/meetings/AdvisorMeetings";
 import CreateEditMeeting from "./pages/advisor/meetings/CreateEditMeeting";
 import MeetingDetail from "./pages/advisor/meetings/MeetingDetail";
@@ -274,6 +275,7 @@ function App() {
         { path: "grades", element: <AdminGrades /> },
         { path: "schedules", element: <AdminSchedules /> },
         { path: "meetings", element: <AdminMeetings /> },
+        { path: "points", element: <AdminActivityPoints /> },
         { path: "rag", element: <RAGMain /> },
         { path: "rag/documents", element: <RAGDocumentManagement /> },
         { path: "rag/chat", element: <RAGChatAssistant /> },

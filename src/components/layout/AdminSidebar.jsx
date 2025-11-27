@@ -11,6 +11,7 @@ import {
   Clock,
   MessageSquare,
   Bot,
+  Activity,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
@@ -115,6 +116,16 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       bgColor: "bg-cyan-50",
       hoverColor: "hover:bg-cyan-100",
       dotColor: "bg-cyan-600",
+    },
+    {
+      id: "activity-points",
+      path: "/admin/points",
+      label: "Rèn Luyện & CTXH",
+      icon: Activity,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      hoverColor: "hover:bg-indigo-100",
+      dotColor: "bg-indigo-600",
     },
     {
       id: "rag-assistant",
@@ -248,7 +259,7 @@ export const AdminSidebar = ({ onClose, isCollapsed = false, onToggle }) => {
       )}
 
       {/* User Info & Logout */}
-      <div className={`${isCollapsed ? "p-2" : "p-6"} relative z-10`}>
+      <div className={`${isCollapsed ? "p-2" : "p-2"} relative z-10`}>
         <button
           onClick={handleLogoutClick}
           className={`w-full flex items-center justify-center gap-3 ${
