@@ -30,7 +30,6 @@ import {
   EyeOutlined,
   WarningOutlined,
   ReloadOutlined,
-  AlertOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
@@ -46,7 +45,6 @@ import {
   getCourseStudentsAPI,
   getStudentPointsAPI,
   batchUpdateSemesterReportsAPI,
-  getAtRiskStudentsAPI,
   updateStudentPositionAPI,
   getStudentScheduleApi,
 } from "../../../services/api.service";
@@ -107,10 +105,6 @@ export const ClassDetail = () => {
   const [academicStatistics, setAcademicStatistics] = useState(null);
   const [loadingBatchUpdate, setLoadingBatchUpdate] = useState(false);
 
-  // At-risk students state
-  const [atRiskStudents, setAtRiskStudents] = useState([]);
-  const [loadingAtRisk, setLoadingAtRisk] = useState(false);
-
   // Tab state
   const [activeTab, setActiveTab] = useState("students");
 
@@ -131,7 +125,6 @@ export const ClassDetail = () => {
   useEffect(() => {
     if (selectedSemester) {
       fetchSemesterReports();
-      fetchAtRiskStudents();
     }
   }, [selectedSemester]);
 
@@ -337,28 +330,6 @@ export const ClassDetail = () => {
     }
   };
 
-  const fetchAtRiskStudents = async () => {
-    if (!selectedSemester || !classData) return;
-
-    try {
-      setLoadingAtRisk(true);
-      const response = await getAtRiskStudentsAPI(selectedSemester);
-
-      if (response?.success) {
-        const allStudents = response.data?.at_risk_students || [];
-        const classStudents = allStudents.filter(
-          (student) => student.class_name === classData.class_name
-        );
-        setAtRiskStudents(classStudents);
-      }
-    } catch (error) {
-      console.error("Error fetching at-risk students:", error);
-      toast.error("Không thể tải danh sách sinh viên có nguy cơ");
-    } finally {
-      setLoadingAtRisk(false);
-    }
-  };
-
   const handleOpenPositionModal = (student) => {
     setSelectedStudent(student);
     setSelectedPosition(student.position);
@@ -435,7 +406,6 @@ export const ClassDetail = () => {
     return "text-red-600";
   };
 
-  // --- UPDATE 1: Cập nhật status tag với "reserved" ---
   const getStatusTag = (status) => {
     let color = "default";
     let text = "Khác";
@@ -457,7 +427,6 @@ export const ClassDetail = () => {
         color = "red";
         text = "Thôi học";
         break;
-      // Case mới cho bảo lưu
       case "reserved":
         color = "purple";
         text = "Bảo lưu";
@@ -477,7 +446,6 @@ export const ClassDetail = () => {
     return <Tag color={color}>{text}</Tag>;
   };
 
-  // --- UPDATE 2: Hàm mới xử lý màu sắc cho cột Kết quả (Outcome) ---
   const getOutcomeTag = (outcome) => {
     if (!outcome) return <Tag color="default">Chưa đánh giá</Tag>;
 
@@ -502,8 +470,8 @@ export const ClassDetail = () => {
       </Tag>
     );
   };
-  // -----------------------------------------------------------
 
+  // --- HÀM RENDER THỜI KHÓA BIỂU ĐƯỢC VIẾT LẠI ---
   const renderStudentScheduleContent = () => {
     if (!selectedStudentSchedule) {
       return <Empty description="Không có dữ liệu" />;
@@ -511,12 +479,33 @@ export const ClassDetail = () => {
 
     const { student, semester, schedule } = selectedStudentSchedule;
 
+    // Helper: Gom nhóm các buổi học từ flat_schedule theo mã môn/lớp
+    const groupCourses = (flatSchedule) => {
+      if (!flatSchedule) return [];
+      const groups = {};
+
+      flatSchedule.forEach((item) => {
+        // Gom nhóm theo course_class_code
+        if (!groups[item.course_class_code]) {
+          groups[item.course_class_code] = {
+            course_code: item.course_class_code, // Sử dụng mã lớp học phần làm mã hiển thị
+            course_name: item.course_name,
+            schedules: [],
+          };
+        }
+        groups[item.course_class_code].schedules.push(item);
+      });
+      return Object.values(groups);
+    };
+
     const getScheduleTypeColor = (type) => {
       const t = type?.toUpperCase();
       if (t === "LT" || t?.includes("LÝ THUYẾT")) return "blue";
       if (t === "TH" || t?.includes("THỰC HÀNH")) return "orange";
       return "cyan";
     };
+
+    const groupedCourses = groupCourses(schedule.flat_schedule);
 
     return (
       <div className="space-y-6">
@@ -552,7 +541,7 @@ export const ClassDetail = () => {
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
-                  <Tag color="success">Đang học</Tag>
+                  {getStatusTag(student.status)}
                 </Descriptions.Item>
               </Descriptions>
             </div>
@@ -563,14 +552,13 @@ export const ClassDetail = () => {
         <div className="flex justify-between items-center flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-gray-700">Tổng quan:</span>
+            {/* Đếm số môn học duy nhất dựa trên danh sách đã gom nhóm */}
             <Tag icon={<BookOutlined />} color="blue">
-              {schedule.total_courses || 0} Môn học
+              {groupedCourses.length} Môn học
             </Tag>
-            {schedule.total_credits && (
-              <Tag icon={<TagsOutlined />} color="purple">
-                {schedule.total_credits} Tín chỉ
-              </Tag>
-            )}
+            <Tag icon={<ClockCircleOutlined />} color="cyan">
+              {schedule.total_schedules} Buổi học
+            </Tag>
           </div>
           {schedule.updated_at && (
             <div className="text-xs text-gray-500 italic flex items-center gap-1">
@@ -582,9 +570,8 @@ export const ClassDetail = () => {
 
         {/* 3. Detailed Schedule List */}
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
-          {schedule.registered_courses &&
-          schedule.registered_courses.length > 0 ? (
-            schedule.registered_courses.map((course, courseIdx) => (
+          {groupedCourses.length > 0 ? (
+            groupedCourses.map((course, courseIdx) => (
               <Card
                 key={courseIdx}
                 size="small"
@@ -606,105 +593,111 @@ export const ClassDetail = () => {
                         {course.course_name}
                       </span>
                     </div>
-                    {course.credits && (
-                      <Badge
-                        count={`${course.credits} TC`}
-                        style={{ backgroundColor: "#52c41a" }}
-                      />
-                    )}
                   </div>
                 }
               >
-                {course.schedules && course.schedules.length > 0 ? (
-                  <List
-                    itemLayout="horizontal"
-                    dataSource={course.schedules}
-                    split={false}
-                    renderItem={(sch, idx) => (
-                      <div
-                        className={`mb-3 last:mb-0 rounded-lg p-3 border ${
-                          sch.type === "TH"
-                            ? "bg-orange-50 border-orange-100"
-                            : "bg-blue-50 border-blue-100"
-                        }`}
-                      >
-                        {/* Day and Type Header */}
-                        <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200 border-dashed">
-                          <div className="flex items-center gap-2">
-                            <Tag
-                              color={getScheduleTypeColor(sch.type)}
-                              className="mr-0 font-bold px-3"
-                            >
-                              {sch.type}
-                            </Tag>
-                            <span className="text-sm text-gray-500 font-medium">
-                              ({sch.phase})
-                            </span>
-                          </div>
-
-                          <span className="font-bold text-gray-800 text-base">
-                            {DAYS_OF_WEEK.find(
-                              (d) => d.value === sch.day_of_week
-                            )?.label || `Thứ ${sch.day_of_week}`}
+                {/* Render danh sách buổi học của môn này */}
+                <List
+                  itemLayout="horizontal"
+                  dataSource={course.schedules}
+                  split={false}
+                  renderItem={(sch) => (
+                    <div
+                      className={`mb-3 last:mb-0 rounded-lg p-3 border ${
+                        sch.type === "TH"
+                          ? "bg-orange-50 border-orange-100"
+                          : "bg-blue-50 border-blue-100"
+                      }`}
+                    >
+                      {/* Day and Type Header */}
+                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200 border-dashed">
+                        <div className="flex items-center gap-2">
+                          <Tag
+                            color={getScheduleTypeColor(sch.type)}
+                            className="mr-0 font-bold px-3"
+                          >
+                            {sch.type}
+                          </Tag>
+                          <span className="text-sm text-gray-500 font-medium">
+                            {/* Hiển thị loại lịch: Lịch học / Lịch bù */}
+                            {sch.schedule_type && `(${sch.schedule_type})`}
                           </span>
                         </div>
 
-                        {/* Details Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                          {/* Time */}
-                          <div className="flex items-start gap-2">
-                            <ClockCircleOutlined className="text-blue-500 mt-1" />
-                            <div>
-                              <div className="font-bold text-gray-800 text-lg leading-tight">
-                                {sch.start_time.slice(0, 5)} -{" "}
-                                {sch.end_time.slice(0, 5)}
-                              </div>
-                              <div className="text-gray-500 text-xs mt-1">
-                                Tiết {sch.start_period} - {sch.end_period}
-                              </div>
-                            </div>
-                          </div>
+                        <span className="font-bold text-gray-800 text-base">
+                          {DAYS_OF_WEEK.find((d) => d.value === sch.day_of_week)
+                            ?.label || `Thứ ${sch.day_of_week}`}
+                        </span>
+                      </div>
 
-                          {/* Room */}
-                          <div className="flex items-start gap-2">
-                            <EnvironmentOutlined className="text-red-500 mt-1" />
-                            <div>
-                              <div className="font-bold text-gray-800 text-lg leading-tight">
-                                {sch.room}
-                              </div>
-                              {sch.note && (
-                                <div className="text-gray-500 text-xs italic mt-1">
-                                  {sch.note}
-                                </div>
-                              )}
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        {/* Time */}
+                        <div className="flex items-start gap-2">
+                          <ClockCircleOutlined className="text-blue-500 mt-1" />
+                          <div>
+                            <div className="font-bold text-gray-800 text-lg leading-tight">
+                              {sch.time_range}
                             </div>
-                          </div>
-
-                          {/* Date Range */}
-                          <div className="flex items-start gap-2">
-                            <CalendarOutlined className="text-green-600 mt-1" />
-                            <div className="text-gray-700">
-                              {new Date(sch.start_date).toLocaleDateString(
-                                "vi-VN",
-                                { day: "2-digit", month: "2-digit" }
-                              )}
-                              {" - "}
-                              {new Date(sch.end_date).toLocaleDateString(
-                                "vi-VN",
-                                { day: "2-digit", month: "2-digit" }
-                              )}
+                            <div className="text-gray-500 text-xs mt-1">
+                              Tiết {sch.start_period} - {sch.end_period}
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              ({sch.start_time_str} - {sch.end_time_str})
                             </div>
                           </div>
                         </div>
+
+                        {/* Room & Instructor */}
+                        <div className="flex items-start gap-2">
+                          <EnvironmentOutlined className="text-red-500 mt-1" />
+                          <div>
+                            <div className="font-bold text-gray-800 text-md leading-tight">
+                              {sch.room}
+                            </div>
+                            <div className="text-gray-600 text-xs mt-1">
+                              <UserOutlined className="mr-1" />
+                              {sch.instructor}
+                            </div>
+                            {sch.note && (
+                              <div className="text-gray-500 text-xs italic mt-1">
+                                {sch.note}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Date Range */}
+                        <div className="flex items-start gap-2">
+                          <CalendarOutlined className="text-green-600 mt-1" />
+                          <div className="text-gray-700">
+                            {new Date(sch.start_date).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              }
+                            )}
+                            {sch.start_date !== sch.end_date && (
+                              <>
+                                {" - "}
+                                {new Date(sch.end_date).toLocaleDateString(
+                                  "vi-VN",
+                                  {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  }
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  />
-                ) : (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Chưa có lịch chi tiết"
-                  />
-                )}
+                    </div>
+                  )}
+                />
               </Card>
             ))
           ) : (
@@ -714,6 +707,7 @@ export const ClassDetail = () => {
       </div>
     );
   };
+  // ----------------------------------------------------
 
   // Student table columns
   const studentColumns = [
@@ -756,6 +750,38 @@ export const ClassDetail = () => {
       width: 150,
       align: "center",
       render: (status) => getStatusTag(status),
+    },
+    {
+      title: "Điểm rèn luyện",
+      dataIndex: "training_points",
+      key: "training_points",
+      width: 150,
+      align: "center",
+      render: (points) => {
+        const numPoints = points ? Number(points) : 0;
+        return (
+          <Tag
+            color={
+              numPoints >= 60 ? "green" : numPoints >= 40 ? "orange" : "red"
+            }
+          >
+            {numPoints}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Điểm công tác",
+      dataIndex: "social_points",
+      key: "social_points",
+      width: 120,
+      align: "center",
+      render: (points) => {
+        const numPoints = points ? Number(points) : 0;
+        return (
+          <Tag color={numPoints > 0 ? "blue" : "default"}>{numPoints}</Tag>
+        );
+      },
     },
     {
       title: "Số lần cảnh báo",
@@ -1324,133 +1350,6 @@ export const ClassDetail = () => {
                       </div>
                     ) : (
                       <Empty description="Vui lòng chọn học kỳ để xem báo cáo" />
-                    ),
-                  },
-                  {
-                    key: "at-risk",
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <AlertOutlined />
-                        Sinh viên có nguy cơ ({atRiskStudents.length})
-                      </span>
-                    ),
-                    children: selectedSemester ? (
-                      <Spin spinning={loadingAtRisk}>
-                        <Table
-                          columns={[
-                            {
-                              title: "MSSV",
-                              dataIndex: "user_code",
-                              key: "user_code",
-                              width: 100,
-                            },
-                            {
-                              title: "Họ tên",
-                              dataIndex: "full_name",
-                              key: "full_name",
-                              width: 180,
-                            },
-                            {
-                              title: "Lớp",
-                              dataIndex: "class_name",
-                              key: "class_name",
-                              width: 120,
-                            },
-                            {
-                              title: "CPA (4.0)",
-                              dataIndex: "cpa_4_scale",
-                              key: "cpa_4_scale",
-                              width: 100,
-                              align: "center",
-                              render: (cpa) => {
-                                const numCpa = cpa ? Number(cpa) : 0;
-                                const color =
-                                  numCpa >= 3.6
-                                    ? "green"
-                                    : numCpa >= 3.0
-                                    ? "blue"
-                                    : numCpa >= 2.0
-                                    ? "orange"
-                                    : "red";
-                                return (
-                                  <Tag color={color}>{numCpa.toFixed(2)}</Tag>
-                                );
-                              },
-                            },
-                            {
-                              title: "Ngưỡng",
-                              dataIndex: "warning_threshold",
-                              key: "warning_threshold",
-                              width: 90,
-                              align: "center",
-                              render: (threshold) => {
-                                const numThreshold = threshold
-                                  ? Number(threshold)
-                                  : 0;
-                                return numThreshold.toFixed(2);
-                              },
-                            },
-                            {
-                              title: "Mức độ",
-                              dataIndex: "risk_level",
-                              key: "risk_level",
-                              width: 110,
-                              render: (level) => {
-                                const config = {
-                                  critical: { color: "red", text: "Rất cao" },
-                                  high: { color: "orange", text: "Cao" },
-                                  medium: { color: "gold", text: "Trung bình" },
-                                  low: { color: "blue", text: "Thấp" },
-                                };
-                                const c = config[level] || {
-                                  color: "default",
-                                  text: level,
-                                };
-                                return <Tag color={c.color}>{c.text}</Tag>;
-                              },
-                            },
-                            {
-                              title: "Môn rớt",
-                              dataIndex: "failed_courses_count",
-                              key: "failed_courses_count",
-                              width: 90,
-                              align: "center",
-                              render: (count) => (
-                                <Tag color={count > 0 ? "red" : "default"}>
-                                  {count}
-                                </Tag>
-                              ),
-                            },
-                            {
-                              title: "Lý do nguy cơ",
-                              dataIndex: "risk_reasons",
-                              key: "risk_reasons",
-                              render: (reasons) => (
-                                <ul className="list-disc list-inside text-xs">
-                                  {reasons?.slice(0, 2).map((reason, idx) => (
-                                    <li key={idx} className="text-red-600">
-                                      {reason}
-                                    </li>
-                                  ))}
-                                </ul>
-                              ),
-                            },
-                          ]}
-                          dataSource={atRiskStudents}
-                          rowKey="student_id"
-                          pagination={{
-                            pageSize: 10,
-                            showTotal: (total) => `Tổng ${total} sinh viên`,
-                          }}
-                          locale={{
-                            emptyText: (
-                              <Empty description="Không có sinh viên nguy cơ trong lớp này" />
-                            ),
-                          }}
-                        />
-                      </Spin>
-                    ) : (
-                      <Empty description="Vui lòng chọn học kỳ để xem danh sách sinh viên có nguy cơ" />
                     ),
                   },
                 ]}

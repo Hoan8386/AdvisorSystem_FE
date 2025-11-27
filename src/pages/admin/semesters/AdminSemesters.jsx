@@ -9,6 +9,12 @@ import {
   DatePicker,
   Popconfirm,
   Card,
+  Tabs,
+  Upload,
+  Spin,
+  Result,
+  Collapse,
+  Tag,
 } from "antd";
 import {
   PlusOutlined,
@@ -16,6 +22,9 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   FileTextOutlined,
+  DownloadOutlined,
+  UploadOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -25,6 +34,8 @@ import {
   createSemesterApi,
   updateSemesterApi,
   deleteSemesterApi,
+  downloadWarningsTemplateApi,
+  importWarningsApi,
 } from "../../../services/api.service";
 
 export const AdminSemesters = () => {
@@ -36,6 +47,12 @@ export const AdminSemesters = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSemester, setEditingSemester] = useState(null);
   const [form] = Form.useForm();
+
+  // Warnings state
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+  const [importingFile, setImportingFile] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [showImportResult, setShowImportResult] = useState(false);
 
   useEffect(() => {
     fetchSemesters();
@@ -132,6 +149,81 @@ export const AdminSemesters = () => {
     navigate(`/admin/semesters/${semesterId}/reports`);
   };
 
+  // Warnings handlers
+  const handleDownloadTemplate = async () => {
+    try {
+      setDownloadingTemplate(true);
+      const response = await downloadWarningsTemplateApi();
+      if (response) {
+        // Create blob from response data
+        const blob = new Blob([response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const timestamp = dayjs().format("YYYYMMDD_HHmmss");
+        link.href = url;
+        link.setAttribute(
+          "download",
+          `Template_Import_Canh_Cao_Hoc_Vu_${timestamp}.xlsx`
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        toast.success("Tải template thành công");
+      }
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      toast.error(
+        error?.message || "Không thể tải template. Vui lòng thử lại."
+      );
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
+
+  const handleImportWarnings = async (file) => {
+    try {
+      setImportingFile(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await importWarningsApi(formData);
+
+      if (response?.success) {
+        setImportResult(response.data);
+        setShowImportResult(true);
+        toast.success("Import cảnh cáo hoàn tất");
+      }
+    } catch (error) {
+      console.error("Error importing warnings:", error);
+      toast.error(error?.message || "Không thể import file. Vui lòng thử lại.");
+    } finally {
+      setImportingFile(false);
+    }
+  };
+
+  const beforeUpload = (file) => {
+    const isXlsx =
+      file.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.type === "application/vnd.ms-excel";
+    const isLt10m = file.size / 1024 / 1024 < 10;
+
+    if (!isXlsx) {
+      toast.error("File phải có định dạng xlsx hoặc xls");
+      return false;
+    }
+    if (!isLt10m) {
+      toast.error("Kích thước file không được vượt quá 10MB");
+      return false;
+    }
+
+    handleImportWarnings(file);
+    return false; // Prevent automatic upload
+  };
+
   const columns = [
     {
       title: "Mã HK",
@@ -207,38 +299,277 @@ export const AdminSemesters = () => {
   return (
     <div className="p-6">
       <Card>
-        <div className="flex justify-between items-center mb-5">
-          <h1 className="text-2xl font-bold">Quản lý Học kỳ</h1>
-          <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchSemesters}
-              loading={loading}
-              disabled={submitLoading || deleteLoadingId !== null}
-            >
-              Làm mới
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-              disabled={loading || submitLoading || deleteLoadingId !== null}
-            >
-              Thêm học kỳ mới
-            </Button>
-          </Space>
-        </div>
+        <h1 className="text-2xl font-bold mb-5">Quản lý Học kỳ</h1>
 
-        <Table
-          columns={columns}
-          dataSource={semesters}
-          rowKey="semester_id"
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng số ${total} học kỳ`,
-          }}
+        <Tabs
+          type="card"
+          items={[
+            {
+              key: "semesters",
+              label: "Danh sách học kỳ",
+              children: (
+                <div>
+                  <div className="flex justify-between items-center mb-5">
+                    <Space>
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={fetchSemesters}
+                        loading={loading}
+                        disabled={submitLoading || deleteLoadingId !== null}
+                      >
+                        Làm mới
+                      </Button>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={handleCreate}
+                        disabled={
+                          loading || submitLoading || deleteLoadingId !== null
+                        }
+                      >
+                        Thêm học kỳ mới
+                      </Button>
+                    </Space>
+                  </div>
+
+                  <Table
+                    columns={columns}
+                    dataSource={semesters}
+                    rowKey="semester_id"
+                    loading={loading}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Tổng số ${total} học kỳ`,
+                    }}
+                  />
+                </div>
+              ),
+            },
+            {
+              key: "warnings",
+              label: "Cảnh cáo học vụ",
+              children: (
+                <div className="space-y-6">
+                  {/* Download Template Section */}
+                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                    <h3 className="text-lg font-semibold mb-4 text-blue-900">
+                      Tải Template Import
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Tải file Excel template để chuẩn bị dữ liệu import cảnh
+                      cáo học vụ.
+                    </p>
+                    <Button
+                      type="primary"
+                      icon={<DownloadOutlined />}
+                      loading={downloadingTemplate}
+                      onClick={handleDownloadTemplate}
+                      size="large"
+                    >
+                      Tải Template
+                    </Button>
+                  </div>
+
+                  {/* Import Section */}
+                  <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                    <h3 className="text-lg font-semibold mb-4 text-green-900">
+                      Import Cảnh cáo Học vụ
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Chọn file Excel (.xlsx hoặc .xls) để import cảnh cáo học
+                      vụ hàng loạt. Kích thước tối đa 10MB.
+                    </p>
+                    <Upload
+                      accept=".xlsx,.xls"
+                      maxCount={1}
+                      beforeUpload={beforeUpload}
+                      disabled={importingFile}
+                      listType="text"
+                    >
+                      <Button
+                        icon={<UploadOutlined />}
+                        loading={importingFile}
+                        disabled={importingFile}
+                        size="large"
+                      >
+                        Chọn file để import
+                      </Button>
+                    </Upload>
+                  </div>
+
+                  {/* Import Result Section */}
+                  {showImportResult && importResult && (
+                    <div className="bg-white p-6 rounded-lg border">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">
+                          Kết quả Import
+                        </h3>
+                        <Button
+                          type="text"
+                          onClick={() => setShowImportResult(false)}
+                        >
+                          Đóng
+                        </Button>
+                      </div>
+
+                      {/* Summary Section */}
+                      <div className="grid grid-cols-4 gap-4 mb-6">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-600">
+                            Tổng dòng xử lý
+                          </p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {importResult.summary?.total_rows_processed || 0}
+                          </p>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-600">Thành công</p>
+                          <p className="text-2xl font-bold text-green-600">
+                            {importResult.summary?.success_count || 0}
+                          </p>
+                        </div>
+                        <div className="bg-yellow-50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-600">Cảnh báo</p>
+                          <p className="text-2xl font-bold text-yellow-600">
+                            {importResult.summary?.warning_count || 0}
+                          </p>
+                        </div>
+                        <div className="bg-red-50 p-4 rounded-lg">
+                          <p className="text-sm text-gray-600">Lỗi</p>
+                          <p className="text-2xl font-bold text-red-600">
+                            {importResult.summary?.error_count || 0}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Success Details */}
+                      {importResult.details?.success &&
+                        importResult.details.success.length > 0 && (
+                          <div className="mb-6">
+                            <h4 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
+                              <span className="text-lg">✓</span>Cảnh cáo thành
+                              công ({importResult.details.success.length})
+                            </h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm border-collapse">
+                                <thead>
+                                  <tr className="bg-green-100">
+                                    <th className="border p-2 text-left">
+                                      Dòng
+                                    </th>
+                                    <th className="border p-2 text-left">
+                                      Mã SV
+                                    </th>
+                                    <th className="border p-2 text-left">
+                                      Tên SV
+                                    </th>
+                                    <th className="border p-2 text-left">
+                                      Lớp
+                                    </th>
+                                    <th className="border p-2 text-left">
+                                      Cố vấn
+                                    </th>
+                                    <th className="border p-2 text-left">
+                                      Học kỳ
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {importResult.details.success.map(
+                                    (item, index) => (
+                                      <tr
+                                        key={index}
+                                        className="border-b hover:bg-green-50"
+                                      >
+                                        <td className="border p-2">
+                                          {item.row}
+                                        </td>
+                                        <td className="border p-2">
+                                          {item.user_code}
+                                        </td>
+                                        <td className="border p-2">
+                                          {item.student_name}
+                                        </td>
+                                        <td className="border p-2">
+                                          {item.class_name}
+                                        </td>
+                                        <td className="border p-2">
+                                          {item.advisor_name}
+                                        </td>
+                                        <td className="border p-2">
+                                          {item.semester}
+                                        </td>
+                                      </tr>
+                                    )
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Warnings Details */}
+                      {importResult.details?.warnings &&
+                        importResult.details.warnings.length > 0 && (
+                          <div className="mb-6">
+                            <h4 className="font-semibold mb-3 text-yellow-700 flex items-center gap-2">
+                              <ExclamationCircleOutlined /> Cảnh báo (
+                              {importResult.details.warnings.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {importResult.details.warnings.map(
+                                (item, index) => (
+                                  <div
+                                    key={index}
+                                    className="bg-yellow-50 border border-yellow-200 p-3 rounded"
+                                  >
+                                    <p className="font-medium text-yellow-900">
+                                      Dòng {item.row} - Mã SV: {item.user_code}
+                                    </p>
+                                    <p className="text-yellow-800 text-sm">
+                                      {item.warning}
+                                    </p>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Error Details */}
+                      {importResult.details?.errors &&
+                        importResult.details.errors.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold mb-3 text-red-700 flex items-center gap-2">
+                              <span className="text-lg">✕</span>Lỗi (
+                              {importResult.details.errors.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {importResult.details.errors.map(
+                                (item, index) => (
+                                  <div
+                                    key={index}
+                                    className="bg-red-50 border border-red-200 p-3 rounded"
+                                  >
+                                    <p className="font-medium text-red-900">
+                                      Dòng {item.row} - Mã SV: {item.user_code}
+                                    </p>
+                                    <p className="text-red-800 text-sm">
+                                      {item.error}
+                                    </p>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+              ),
+            },
+          ]}
         />
       </Card>
 

@@ -545,6 +545,26 @@ const getCurrentSemesterApi = () => {
   return axios.get(URL_BACKEND);
 };
 
+// ========== ADMIN APIs - Academic Warnings Management ==========
+
+// Download template for importing warnings
+const downloadWarningsTemplateApi = () => {
+  const URL_BACKEND = "/api/academic/download-warnings-template";
+  return axios.get(URL_BACKEND, {
+    responseType: "arraybuffer",
+  });
+};
+
+// Import warnings from Excel file
+const importWarningsApi = (formData) => {
+  const URL_BACKEND = "/api/academic/import-warnings";
+  return axios.post(URL_BACKEND, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
 // ========== ADMIN APIs - Course Management ==========
 
 // Get courses of my unit (Admin)
@@ -1284,6 +1304,9 @@ export {
     getSemesterReportsApi,
     getStudentSemesterReportApi,
     getCurrentSemesterApi,
+    // Admin APIs - Academic Warnings Management
+    downloadWarningsTemplateApi,
+    importWarningsApi,
     // Admin APIs - Course Management
     getMyUnitCoursesApi,
     getAllCoursesApi,

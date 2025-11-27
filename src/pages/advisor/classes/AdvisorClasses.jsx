@@ -6,53 +6,51 @@ import {
   Col,
   Empty,
   Spin,
-  Tag,
-  Descriptions,
   Tabs,
   Table,
-  Select,
   Button,
-  Space,
   Modal,
+  Form,
+  Input,
+  Select,
 } from "antd";
 import {
   TeamOutlined,
   UserOutlined,
   BankOutlined,
   IdcardOutlined,
-  AlertOutlined,
   FileTextOutlined,
-  WarningOutlined,
-  EyeOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
   getClassesAPI,
-  getSemestersAPI,
-  getAtRiskStudentsAPI,
-  createAcademicWarningsAPI,
   getWarningsCreatedAPI,
+  createMonitoringNoteAPI,
+  getSemestersAPI,
 } from "../../../services/api.service";
 import { toast } from "react-toastify";
 
-const { Option } = Select;
-
 export const AdvisorClasses = () => {
   const navigate = useNavigate();
+
+  // --- State cho Danh sách lớp ---
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // --- State chung ---
   const [activeTab, setActiveTab] = useState("classes");
 
-  // At-risk students state
-  const [semesters, setSemesters] = useState([]);
-  const [selectedSemester, setSelectedSemester] = useState(null);
-  const [loadingSemesters, setLoadingSemesters] = useState(false);
-  const [atRiskStudents, setAtRiskStudents] = useState([]);
-  const [loadingAtRisk, setLoadingAtRisk] = useState(false);
-  const [selectedWarningStudents, setSelectedWarningStudents] = useState([]);
-  const [loadingCreateWarnings, setLoadingCreateWarnings] = useState(false);
+  // --- State cho Danh sách cảnh cáo đã tạo ---
   const [warningsList, setWarningsList] = useState([]);
   const [loadingWarnings, setLoadingWarnings] = useState(false);
+
+  // --- State cho Modal tạo ghi chú ---
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [selectedWarning, setSelectedWarning] = useState(null);
+  const [noteForm] = Form.useForm();
+  const [loadingNote, setLoadingNote] = useState(false);
+  const [semesters, setSemesters] = useState([]);
 
   useEffect(() => {
     fetchClasses();
@@ -60,24 +58,19 @@ export const AdvisorClasses = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === "at-risk" && selectedSemester) {
-      fetchAtRiskStudents();
-    }
     if (activeTab === "warnings") {
       fetchWarnings();
     }
-  }, [selectedSemester, activeTab]);
+  }, [activeTab]);
 
   const fetchClasses = async () => {
     try {
       setLoading(true);
       const response = await getClassesAPI();
 
-      // Response structure: response.data = { success: true, data: [...], message: "..." }
       if (response?.data?.success) {
         setClasses(response.data.data || []);
       } else if (response?.data) {
-        // Fallback: nếu data trả về trực tiếp là array
         setClasses(Array.isArray(response.data) ? response.data : []);
       } else {
         setClasses([]);
@@ -93,100 +86,12 @@ export const AdvisorClasses = () => {
 
   const fetchSemesters = async () => {
     try {
-      setLoadingSemesters(true);
-      console.log("Fetching semesters...");
       const response = await getSemestersAPI();
-      console.log("Semesters response:", response);
-
       if (response?.success) {
-        const semesterData = response.data || [];
-        console.log("Semester data:", semesterData);
-        setSemesters(semesterData);
-        if (semesterData.length > 0) {
-          console.log("Setting default semester:", semesterData[0].semester_id);
-          setSelectedSemester(semesterData[0].semester_id);
-        }
+        setSemesters(response.data || []);
       }
     } catch (error) {
       console.error("Error fetching semesters:", error);
-      toast.error("Không thể tải danh sách học kỳ");
-    } finally {
-      setLoadingSemesters(false);
-    }
-  };
-
-  const fetchAtRiskStudents = async () => {
-    if (!selectedSemester) return;
-
-    try {
-      setLoadingAtRisk(true);
-      console.log("Fetching at-risk students for semester:", selectedSemester);
-      const response = await getAtRiskStudentsAPI(selectedSemester);
-      console.log("At-risk students response:", response);
-
-      if (response?.success) {
-        const students = response.data?.at_risk_students || [];
-        console.log("Setting at-risk students:", students);
-        setAtRiskStudents(students);
-
-        // Auto-select students with academic warnings
-        const studentsWithWarnings = students
-          .filter((student) => student.has_academic_warning === true)
-          .map((student) => student.student_id);
-        setSelectedWarningStudents(studentsWithWarnings);
-        console.log(
-          "Auto-selected students with warnings:",
-          studentsWithWarnings
-        );
-      } else {
-        console.log("API response not successful:", response);
-      }
-    } catch (error) {
-      console.error("Error fetching at-risk students:", error);
-      toast.error("Không thể tải danh sách sinh viên có nguy cơ");
-    } finally {
-      setLoadingAtRisk(false);
-    }
-  };
-
-  const handleCreateWarnings = async () => {
-    if (selectedWarningStudents.length === 0) {
-      toast.warning("Vui lòng chọn sinh viên để tạo cảnh cáo");
-      return;
-    }
-
-    try {
-      setLoadingCreateWarnings(true);
-      const response = await createAcademicWarningsAPI({
-        semester_id: selectedSemester,
-        student_ids: selectedWarningStudents,
-      });
-
-      if (response?.data?.success) {
-        const totalCreated = response.data.data?.total_created || 0;
-        const errors = response.data.data?.errors || [];
-
-        console.log("Response data:", { totalCreated, errors });
-
-        if (totalCreated > 0) {
-          toast.success(`Đã tạo ${totalCreated} cảnh cáo học vụ`);
-        }
-
-        if (errors.length > 0) {
-          // Show each error as separate toast
-          errors.forEach((error) => {
-            toast.error(error, { autoClose: 4000 });
-          });
-        }
-
-        setSelectedWarningStudents([]);
-        fetchAtRiskStudents();
-      }
-    } catch (error) {
-      console.error("Error creating warnings:", error);
-      toast.error("Không thể tạo cảnh cáo học vụ");
-    } finally {
-      setLoadingCreateWarnings(false);
     }
   };
 
@@ -209,6 +114,58 @@ export const AdvisorClasses = () => {
     }
   };
 
+  // --- ĐÃ SỬA: Fill user_code vào form ---
+  const handleAddNote = (warning) => {
+    setSelectedWarning(warning);
+
+    // Tìm semester_id tương ứng với cảnh cáo (nếu có logic matching tên)
+    const semesterMatch = warning.semester.match(/(\d+)/);
+    const semesterObj = semesters.find((s) =>
+      s.semester_name.includes(semesterMatch?.[1] || "")
+    );
+
+    noteForm.setFieldsValue({
+      user_code: warning.user_code, // <--- Cập nhật dòng này để fill MSSV
+      semester_id: semesterObj?.semester_id,
+      category: "academic",
+      title: "",
+      content: "",
+    });
+    setNoteModalVisible(true);
+  };
+
+  const handleSubmitNote = async (values) => {
+    if (!selectedWarning) return;
+
+    setLoadingNote(true);
+    try {
+      const noteData = {
+        user_code: values.user_code, // Lấy từ form values (vì field đã disabled nhưng vẫn submit value)
+        semester_id: values.semester_id,
+        category: values.category,
+        title: values.title,
+        content: values.content,
+      };
+
+      await createMonitoringNoteAPI(noteData);
+      toast.success("Tạo ghi chú thành công");
+      setNoteModalVisible(false);
+      noteForm.resetFields();
+      setSelectedWarning(null);
+    } catch (error) {
+      console.error("Error creating note:", error);
+      toast.error(error.response?.data?.message || "Lỗi khi tạo ghi chú");
+    } finally {
+      setLoadingNote(false);
+    }
+  };
+
+  const handleCloseNoteModal = () => {
+    setNoteModalVisible(false);
+    noteForm.resetFields();
+    setSelectedWarning(null);
+  };
+
   const handleClassClick = (classId) => {
     navigate(`/advisor/classes/${classId}`);
   };
@@ -223,7 +180,7 @@ export const AdvisorClasses = () => {
               <TeamOutlined /> Quản lý lớp học
             </h1>
             <p className="text-gray-500 text-sm mt-1 mb-0">
-              Danh sách các lớp bạn đang quản lý và sinh viên có nguy cơ
+              Danh sách các lớp bạn đang quản lý và lịch sử cảnh cáo
             </p>
           </div>
         </div>
@@ -394,7 +351,6 @@ export const AdvisorClasses = () => {
                                   </div>
                                 )}
 
-                                {/* Student Count - Hidden for now, will be shown in detail page */}
                                 <div
                                   style={{
                                     display: "flex",
@@ -420,183 +376,6 @@ export const AdvisorClasses = () => {
                       </Row>
                     )}
                   </>
-                ),
-              },
-              {
-                key: "at-risk",
-                label: (
-                  <span className="flex items-center gap-2">
-                    <AlertOutlined />
-                    Sinh viên có nguy cơ ({atRiskStudents.length})
-                  </span>
-                ),
-                children: (
-                  <div className="space-y-4">
-                    {/* Semester Selector */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">
-                          Học kỳ:
-                        </span>
-                        <Select
-                          value={selectedSemester}
-                          onChange={setSelectedSemester}
-                          style={{ width: 220 }}
-                          placeholder="Chọn học kỳ"
-                          loading={loadingSemesters}
-                          disabled={loadingSemesters || semesters.length === 0}
-                        >
-                          {semesters.map((sem) => (
-                            <Option
-                              key={sem.semester_id}
-                              value={sem.semester_id}
-                            >
-                              {sem.semester_name} - {sem.academic_year}
-                            </Option>
-                          ))}
-                        </Select>
-                        {semesters.length === 0 && !loadingSemesters && (
-                          <span className="text-sm text-red-500">
-                            Không có học kỳ nào
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        type="primary"
-                        danger
-                        icon={<WarningOutlined />}
-                        disabled={selectedWarningStudents.length === 0}
-                        onClick={handleCreateWarnings}
-                        loading={loadingCreateWarnings}
-                      >
-                        Tạo cảnh cáo ({selectedWarningStudents.length})
-                      </Button>
-                    </div>
-
-                    {/* At-Risk Students Table */}
-                    <Spin spinning={loadingAtRisk}>
-                      <Table
-                        rowSelection={{
-                          selectedRowKeys: selectedWarningStudents,
-                          onChange: (selectedKeys) => {
-                            setSelectedWarningStudents(selectedKeys);
-                          },
-                        }}
-                        columns={[
-                          {
-                            title: "MSSV",
-                            dataIndex: "user_code",
-                            key: "user_code",
-                            width: 100,
-                          },
-                          {
-                            title: "Họ tên",
-                            dataIndex: "full_name",
-                            key: "full_name",
-                            width: 180,
-                          },
-                          {
-                            title: "Lớp",
-                            dataIndex: "class_name",
-                            key: "class_name",
-                            width: 120,
-                          },
-                          {
-                            title: "CPA (4.0)",
-                            dataIndex: "cpa_4_scale",
-                            key: "cpa_4_scale",
-                            width: 100,
-                            align: "center",
-                            render: (cpa) => {
-                              const numCpa = cpa ? Number(cpa) : 0;
-                              const color =
-                                numCpa >= 3.6
-                                  ? "green"
-                                  : numCpa >= 3.0
-                                  ? "blue"
-                                  : numCpa >= 2.0
-                                  ? "orange"
-                                  : "red";
-                              return (
-                                <Tag color={color}>{numCpa.toFixed(2)}</Tag>
-                              );
-                            },
-                          },
-                          {
-                            title: "Ngưỡng",
-                            dataIndex: "warning_threshold",
-                            key: "warning_threshold",
-                            width: 90,
-                            align: "center",
-                            render: (threshold) => {
-                              const numThreshold = threshold
-                                ? Number(threshold)
-                                : 0;
-                              return numThreshold.toFixed(2);
-                            },
-                          },
-                          {
-                            title: "Mức độ",
-                            dataIndex: "risk_level",
-                            key: "risk_level",
-                            width: 110,
-                            render: (level) => {
-                              const config = {
-                                critical: { color: "red", text: "Rất cao" },
-                                high: { color: "orange", text: "Cao" },
-                                medium: { color: "gold", text: "Trung bình" },
-                                low: { color: "blue", text: "Thấp" },
-                              };
-                              const c = config[level] || {
-                                color: "default",
-                                text: level,
-                              };
-                              return <Tag color={c.color}>{c.text}</Tag>;
-                            },
-                          },
-                          {
-                            title: "Môn rớt",
-                            dataIndex: "failed_courses_count",
-                            key: "failed_courses_count",
-                            width: 90,
-                            align: "center",
-                            render: (count) => (
-                              <Tag color={count > 0 ? "red" : "default"}>
-                                {count}
-                              </Tag>
-                            ),
-                          },
-                          {
-                            title: "Lý do nguy cơ",
-                            dataIndex: "risk_reasons",
-                            key: "risk_reasons",
-                            render: (reasons) => (
-                              <ul className="list-disc list-inside text-xs">
-                                {reasons?.slice(0, 2).map((reason, idx) => (
-                                  <li key={idx} className="text-red-600">
-                                    {reason}
-                                  </li>
-                                ))}
-                              </ul>
-                            ),
-                          },
-                        ]}
-                        dataSource={atRiskStudents}
-                        rowKey="student_id"
-                        pagination={{
-                          pageSize: 10,
-                          showTotal: (total) => `Tổng ${total} sinh viên`,
-                        }}
-                        locale={{
-                          emptyText: selectedSemester ? (
-                            <Empty description="Không có sinh viên nguy cơ trong học kỳ này" />
-                          ) : (
-                            <Empty description="Vui lòng chọn học kỳ" />
-                          ),
-                        }}
-                      />
-                    </Spin>
-                  </div>
                 ),
               },
               {
@@ -659,59 +438,22 @@ export const AdvisorClasses = () => {
                             width: 150,
                             align: "center",
                           },
-                          // {
-                          //   title: "Thao tác",
-                          //   key: "action",
-                          //   width: 120,
-                          //   align: "center",
-                          //   render: (_, record) => (
-                          //     // <Button
-                          //     //   type="link"
-                          //     //   size="small"
-                          //     //   icon={<EyeOutlined />}
-                          //     //   onClick={() => {
-                          //     //     Modal.info({
-                          //     //       title: record.title,
-                          //     //       width: 800,
-                          //     //       content: (
-                          //     //         <div className="space-y-4 mt-4">
-                          //     //           <div>
-                          //     //             <div className="font-semibold mb-2">
-                          //     //               Thông tin sinh viên:
-                          //     //             </div>
-                          //     //             <div className="pl-4">
-                          //     //               <p>MSSV: {record.user_code}</p>
-                          //     //               <p>Họ tên: {record.student_name}</p>
-                          //     //               <p>Lớp: {record.class_name}</p>
-                          //     //             </div>
-                          //     //           </div>
-                          //     //           <div>
-                          //     //             <div className="font-semibold mb-2">
-                          //     //               Nội dung cảnh cáo:
-                          //     //             </div>
-                          //     //             <div className="pl-4 whitespace-pre-wrap">
-                          //     //               {record.content ||
-                          //     //                 "Không có nội dung"}
-                          //     //             </div>
-                          //     //           </div>
-                          //     //           <div>
-                          //     //             <div className="font-semibold mb-2">
-                          //     //               Lời khuyên:
-                          //     //             </div>
-                          //     //             <div className="pl-4 whitespace-pre-wrap">
-                          //     //               {record.advice ||
-                          //     //                 "Không có lời khuyên"}
-                          //     //             </div>
-                          //     //           </div>
-                          //     //         </div>
-                          //     //       ),
-                          //     //     });
-                          //     //   }}
-                          //     // >
-                          //     //   Chi tiết
-                          //     // </Button>
-                          //   ),
-                          // },
+                          {
+                            title: "Thao tác",
+                            key: "action",
+                            width: 150,
+                            align: "center",
+                            render: (_, record) => (
+                              <Button
+                                type="primary"
+                                size="small"
+                                icon={<PlusOutlined />}
+                                onClick={() => handleAddNote(record)}
+                              >
+                                Thêm ghi chú
+                              </Button>
+                            ),
+                          },
                         ]}
                         dataSource={warningsList}
                         rowKey="warning_id"
@@ -729,6 +471,103 @@ export const AdvisorClasses = () => {
             ]}
           />
         </Card>
+
+        {/* Modal Tạo Ghi Chú */}
+        <Modal
+          title="Tạo ghi chú theo dõi sinh viên"
+          open={noteModalVisible}
+          onOk={() => noteForm.submit()}
+          onCancel={handleCloseNoteModal}
+          width={700}
+          loading={loadingNote}
+          okText="Tạo"
+          cancelText="Hủy"
+        >
+          {selectedWarning && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-semibold">MSSV:</span>{" "}
+                  {selectedWarning.user_code}
+                </div>
+                <div>
+                  <span className="font-semibold">Họ tên:</span>{" "}
+                  {selectedWarning.student_name}
+                </div>
+                <div>
+                  <span className="font-semibold">Lớp:</span>{" "}
+                  {selectedWarning.class_name}
+                </div>
+                <div>
+                  <span className="font-semibold">Cảnh cáo:</span>{" "}
+                  {selectedWarning.title}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Form form={noteForm} layout="vertical" onFinish={handleSubmitNote}>
+            {/* Field user_code đã được fill và disabled */}
+            <Form.Item
+              label="Mã số sinh viên (user_code)"
+              name="user_code"
+              rules={[{ required: true, message: "Mã số sinh viên" }]}
+            >
+              <Input placeholder="Mã số sinh viên" disabled />
+            </Form.Item>
+
+            <Form.Item
+              label="Học kỳ"
+              name="semester_id"
+              rules={[{ required: true, message: "Chọn học kỳ" }]}
+            >
+              <Select placeholder="Chọn học kỳ">
+                {semesters.map((sem) => (
+                  <Select.Option key={sem.semester_id} value={sem.semester_id}>
+                    {sem.semester_name} - {sem.academic_year}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Danh mục"
+              name="category"
+              rules={[{ required: true, message: "Chọn danh mục" }]}
+            >
+              <Select placeholder="Chọn danh mục">
+                <Select.Option value="academic">Học tập</Select.Option>
+                <Select.Option value="personal">Cá nhân</Select.Option>
+                <Select.Option value="attendance">Chuyên cần</Select.Option>
+                <Select.Option value="other">Khác</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Tiêu đề"
+              name="title"
+              rules={[
+                { required: true, message: "Nhập tiêu đề" },
+                { min: 5, message: "Tối thiểu 5 ký tự" },
+                { max: 255, message: "Tối đa 255 ký tự" },
+              ]}
+            >
+              <Input placeholder="Nhập tiêu đề ghi chú" />
+            </Form.Item>
+
+            <Form.Item
+              label="Nội dung"
+              name="content"
+              rules={[
+                { required: true, message: "Nhập nội dung" },
+                { min: 10, message: "Tối thiểu 10 ký tự" },
+                { max: 5000, message: "Tối đa 5000 ký tự" },
+              ]}
+            >
+              <Input.TextArea rows={6} placeholder="Nhập nội dung ghi chú" />
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
     </AdvisorLayout>
   );

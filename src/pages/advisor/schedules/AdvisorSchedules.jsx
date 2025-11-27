@@ -8,24 +8,13 @@ import {
   Modal,
   Form,
   Select,
-  Alert,
   Tabs,
   Table,
-  Input,
   Empty,
   Spin,
-  Collapse,
   Tag,
-  Popconfirm,
 } from "antd";
-import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  EyeOutlined,
-  SearchOutlined,
-  DeleteOutlined,
-  CalendarOutlined,
-} from "@ant-design/icons";
+import { CalendarOutlined, EyeOutlined } from "@ant-design/icons";
 import {
   getClassesApi,
   getSemestersApi,
@@ -386,10 +375,27 @@ export const AdvisorSchedules = () => {
               },
               {
                 title: "Số môn",
-                dataIndex: "total_courses",
                 key: "total_courses",
                 width: 80,
-                render: (count) => <Tag color="blue">{count || 0}</Tag>,
+                render: (_, record) => {
+                  // --- CẬP NHẬT: Tính số môn dựa trên flat_schedule ---
+                  let count = 0;
+                  // Kiểm tra xem record.schedule có tồn tại và có mảng flat_schedule không
+                  if (
+                    record.schedule &&
+                    Array.isArray(record.schedule.flat_schedule)
+                  ) {
+                    // Dùng Set để lọc ra các mã học phần (course_class_code) duy nhất
+                    const uniqueCourses = new Set(
+                      record.schedule.flat_schedule.map(
+                        (item) => item.course_class_code
+                      )
+                    );
+                    count = uniqueCourses.size;
+                  }
+                  return <Tag color="blue">{count}</Tag>;
+                  // ----------------------------------------------------
+                },
               },
               {
                 title: "Thao tác",
@@ -401,6 +407,9 @@ export const AdvisorSchedules = () => {
                       type="link"
                       size="small"
                       icon={<EyeOutlined />}
+                      // --- CẬP NHẬT: Disable nếu không có lịch ---
+                      disabled={!record.has_schedule}
+                      // -------------------------------------------
                       onClick={() => {
                         handleViewStudentScheduleDetail(
                           record.student_id,

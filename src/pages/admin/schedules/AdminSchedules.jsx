@@ -8,18 +8,13 @@ import {
   Modal,
   Form,
   Select,
-  Divider,
   Alert,
   Tabs,
   Table,
-  Input,
-  InputNumber,
   Empty,
   Spin,
-  Collapse,
   Tag,
   Popconfirm,
-  // Thêm component
   Avatar,
   List,
   Badge,
@@ -28,13 +23,11 @@ import {
 import {
   UploadOutlined,
   DownloadOutlined,
-  CheckCircleOutlined,
   FileExcelOutlined,
   ClockCircleOutlined,
   DeleteOutlined,
   EyeOutlined,
   SearchOutlined,
-  // Thêm icon
   UserOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
@@ -46,7 +39,6 @@ import {
   importScheduleExcelApi,
   getClassesApi,
   getSemestersApi,
-  getStudentScheduleApi,
   getClassScheduleApi,
   deleteStudentScheduleApi,
 } from "../../../services/api.service";
@@ -62,6 +54,41 @@ const DAYS_OF_WEEK = [
   { value: 8, label: "Chủ nhật" },
 ];
 
+// --- HELPER FUNCTIONS ---
+
+// Hàm lấy màu sắc dựa trên loại lịch
+const getScheduleTypeColor = (type) => {
+  const t = type?.toUpperCase();
+  if (t === "LT" || t?.includes("LÝ THUYẾT")) return "blue";
+  if (t === "TH" || t?.includes("THỰC HÀNH")) return "orange";
+  return "cyan";
+};
+
+// Hàm gom nhóm các buổi học phẳng (flat_schedule) thành danh sách môn học
+const groupScheduleByCourse = (flatSchedule) => {
+  if (!flatSchedule || !Array.isArray(flatSchedule)) return [];
+
+  const groups = {};
+
+  flatSchedule.forEach((item) => {
+    // Sử dụng mã lớp học phần làm key để gom nhóm
+    const code = item.course_class_code;
+    if (!groups[code]) {
+      groups[code] = {
+        course_class_code: code,
+        course_name: item.course_name,
+        // Lấy thông tin chung từ item đầu tiên
+        instructor: item.instructor,
+        credits: item.credits || null,
+        schedules: [],
+      };
+    }
+    groups[code].schedules.push(item);
+  });
+
+  return Object.values(groups);
+};
+
 export const AdminSchedules = () => {
   // Common states
   const [loading, setLoading] = useState(false);
@@ -71,11 +98,6 @@ export const AdminSchedules = () => {
   // Group A - Import states
   const [importLoading, setImportLoading] = useState(false);
 
-  // Group B - Student schedule states
-  const [studentScheduleData, setStudentScheduleData] = useState(null);
-  const [_studentScheduleLoading, _setStudentScheduleLoading] = useState(false);
-  const [studentScheduleForm] = Form.useForm();
-
   // Group B - Class schedule states
   const [classScheduleData, setClassScheduleData] = useState(null);
   const [classScheduleLoading, setClassScheduleLoading] = useState(false);
@@ -83,11 +105,8 @@ export const AdminSchedules = () => {
 
   // Group B - Detail modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [detailModalLoading, setDetailModalLoading] = useState(false);
+  // detailModalData bây giờ sẽ chứa object sinh viên được chọn từ bảng
   const [detailModalData, setDetailModalData] = useState(null);
-
-  // Group C - Delete states
-  const [deleteForm] = Form.useForm();
 
   // Initialize data
   const loadInitialData = async () => {
@@ -105,7 +124,7 @@ export const AdminSchedules = () => {
       }
     } catch (error) {
       console.error("Error loading initial data:", error);
-      toast.error("Không thể tải dữ liệu");
+      toast.error("Không thể tải dữ liệu ban đầu");
     }
   };
 
@@ -168,28 +187,13 @@ export const AdminSchedules = () => {
 
   // ==================== GROUP B: VIEW SCHEDULES ====================
   const handleClassScheduleChange = () => {
-    // This is just for handling the change event in the UI
+    // UI Change handler
   };
 
-  const handleViewStudentScheduleDetail = async (studentId, semesterId) => {
-    try {
-      setDetailModalLoading(true);
-      setIsDetailModalOpen(true); // Mở modal trước để hiện loading
-      const response = await getStudentScheduleApi(studentId, semesterId);
-
-      if (response?.success && response.data) {
-        setDetailModalData(response.data);
-      } else {
-        toast.error("Không có dữ liệu lịch học");
-        setIsDetailModalOpen(false); // Đóng nếu lỗi
-      }
-    } catch (error) {
-      console.error("Error fetching student schedule detail:", error);
-      toast.error(error?.message || "Không thể tải lịch sinh viên");
-      setIsDetailModalOpen(false);
-    } finally {
-      setDetailModalLoading(false);
-    }
+  // Hàm mở modal xem chi tiết (Không cần gọi API nữa vì data đã có sẵn)
+  const handleViewStudentScheduleDetail = (studentRecord) => {
+    setDetailModalData(studentRecord);
+    setIsDetailModalOpen(true);
   };
 
   const handleGetClassSchedule = async () => {
@@ -235,25 +239,52 @@ export const AdminSchedules = () => {
     }
   };
 
-  // --- HELPER FUNCTIONS FOR RENDERING ---
-  const getScheduleTypeColor = (type) => {
-    const t = type?.toUpperCase();
-    if (t === "LT" || t?.includes("LÝ THUYẾT")) return "blue";
-    if (t === "TH" || t?.includes("THỰC HÀNH")) return "orange";
-    return "cyan";
-  };
+  // ==================== RENDER FUNCTIONS ====================
 
-  // Render detail modal content (CẬP NHẬT GIAO DIỆN ĐẸP HƠN)
+  // Render nội dung Modal Chi tiết (Đã cập nhật theo JSON mới)
   const renderDetailModalContent = () => {
     if (!detailModalData) {
       return <Empty description="Không có dữ liệu" />;
     }
 
-    const { student, semester, schedule } = detailModalData;
+    const { schedule } = detailModalData;
+    const student = detailModalData; // Vì detailModalData chính là record sinh viên
+
+    // Nếu không có object schedule hoặc flat_schedule rỗng
+    if (
+      !schedule ||
+      !schedule.flat_schedule ||
+      schedule.flat_schedule.length === 0
+    ) {
+      return (
+        <div className="space-y-6">
+          {/* Vẫn hiện thông tin sinh viên dù không có lịch */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+            <div className="flex items-start gap-4">
+              <Avatar
+                size={64}
+                icon={<UserOutlined />}
+                style={{ backgroundColor: "#ccc" }}
+              />
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 m-0">
+                  {student.full_name}
+                </h3>
+                <div className="text-gray-500">{student.user_code}</div>
+              </div>
+            </div>
+          </div>
+          <Empty description="Sinh viên chưa có lịch học nào" />
+        </div>
+      );
+    }
+
+    // Gom nhóm flat_schedule thành các môn học
+    const courseList = groupScheduleByCourse(schedule.flat_schedule);
 
     return (
       <div className="space-y-6">
-        {/* 1. Header Information */}
+        {/* 1. Header Information - Thông tin sinh viên */}
         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
           <div className="flex items-start gap-4">
             <Avatar
@@ -268,42 +299,45 @@ export const AdminSchedules = () => {
                   ({student.user_code})
                 </span>
               </h3>
-              <div className="text-blue-600 font-medium mb-1">
-                {student.class_name}
-              </div>
 
-              <Descriptions size="small" column={{ xs: 1, sm: 2 }}>
-                <Descriptions.Item label="Khoa">
-                  {student.faculty_name}
-                </Descriptions.Item>
+              <Descriptions
+                size="small"
+                column={{ xs: 1, sm: 2 }}
+                className="mt-2"
+              >
                 <Descriptions.Item label="Email">
                   {student.email}
                 </Descriptions.Item>
+                <Descriptions.Item label="SĐT">
+                  {student.phone_number || "N/A"}
+                </Descriptions.Item>
                 <Descriptions.Item label="Học kỳ">
                   <Tag color="geekblue">
-                    {semester.semester_name} ({semester.academic_year})
+                    {schedule.semester} ({schedule.academic_year})
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
-                  <Tag color="success">Đang học</Tag>
+                  {student.status === "studying" ? (
+                    <Tag color="success">Đang học</Tag>
+                  ) : (
+                    <Tag color="default">{student.status}</Tag>
+                  )}
                 </Descriptions.Item>
               </Descriptions>
             </div>
           </div>
         </div>
 
-        {/* 2. Stats & Last Updated */}
+        {/* 2. Stats - Thống kê nhanh */}
         <div className="flex justify-between items-center flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-gray-700">Tổng quan:</span>
             <Tag icon={<BookOutlined />} color="blue">
-              {schedule.total_courses || 0} Môn học
+              {courseList.length} Môn học
             </Tag>
-            {schedule.total_credits && (
-              <Tag icon={<TagsOutlined />} color="purple">
-                {schedule.total_credits} Tín chỉ
-              </Tag>
-            )}
+            <Tag icon={<ClockCircleOutlined />} color="purple">
+              {schedule.total_schedules} Buổi học
+            </Tag>
           </div>
           {schedule.updated_at && (
             <div className="text-xs text-gray-500 italic flex items-center gap-1">
@@ -313,11 +347,10 @@ export const AdminSchedules = () => {
           )}
         </div>
 
-        {/* 3. Detailed Schedule List */}
+        {/* 3. Detailed Schedule List - Danh sách các môn */}
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
-          {schedule.registered_courses &&
-          schedule.registered_courses.length > 0 ? (
-            schedule.registered_courses.map((course, courseIdx) => (
+          {courseList.length > 0 ? (
+            courseList.map((course, courseIdx) => (
               <Card
                 key={courseIdx}
                 size="small"
@@ -330,7 +363,7 @@ export const AdminSchedules = () => {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <div className="bg-blue-600 text-white font-bold px-2 py-1 rounded text-xs min-w-[50px] text-center">
-                        {course.course_code}
+                        {course.course_class_code}
                       </div>
                       <span
                         className="font-bold text-gray-800 text-base"
@@ -348,106 +381,91 @@ export const AdminSchedules = () => {
                   </div>
                 }
               >
-                {course.schedules && course.schedules.length > 0 ? (
-                  <List
-                    itemLayout="horizontal"
-                    dataSource={course.schedules}
-                    split={false}
-                    renderItem={(sch) => (
-                      <div
-                        className={`mb-3 last:mb-0 rounded-lg p-3 border ${
-                          sch.type === "TH"
-                            ? "bg-orange-50 border-orange-100"
-                            : "bg-blue-50 border-blue-100"
-                        }`}
-                      >
-                        {/* Day and Type Header */}
-                        <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200 border-dashed">
-                          <div className="flex items-center gap-2">
-                            <Tag
-                              color={getScheduleTypeColor(sch.type)}
-                              className="mr-0 font-bold px-3"
-                            >
-                              {sch.type}
-                            </Tag>
-                            <span className="text-sm text-gray-500 font-medium">
-                              ({sch.phase})
-                            </span>
-                          </div>
-                          <span className="font-bold text-gray-800 text-base">
-                            {DAYS_OF_WEEK.find(
-                              (d) => d.value === sch.day_of_week
-                            )?.label || `Thứ ${sch.day_of_week}`}
+                {/* Danh sách các buổi học của môn này */}
+                <List
+                  itemLayout="horizontal"
+                  dataSource={course.schedules}
+                  split={false}
+                  renderItem={(sch) => (
+                    <div
+                      className={`mb-3 last:mb-0 rounded-lg p-3 border ${
+                        sch.type === "TH"
+                          ? "bg-orange-50 border-orange-100"
+                          : "bg-blue-50 border-blue-100"
+                      }`}
+                    >
+                      {/* Day and Type Header */}
+                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200 border-dashed">
+                        <div className="flex items-center gap-2">
+                          <Tag
+                            color={getScheduleTypeColor(sch.type)}
+                            className="mr-0 font-bold px-3"
+                          >
+                            {sch.type}
+                          </Tag>
+                          <span className="text-sm text-gray-500 font-medium">
+                            {/* Format ngày: DD/MM/YYYY */}
+                            {new Date(sch.start_date).toLocaleDateString(
+                              "vi-VN"
+                            )}
                           </span>
                         </div>
+                        <span className="font-bold text-gray-800 text-base">
+                          {DAYS_OF_WEEK.find((d) => d.value === sch.day_of_week)
+                            ?.label || `Thứ ${sch.day_of_week}`}
+                        </span>
+                      </div>
 
-                        {/* Details Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                          {/* Time */}
-                          <div className="flex items-start gap-2">
-                            <ClockCircleOutlined className="text-blue-500 mt-1" />
-                            <div>
-                              <div className="font-bold text-gray-800 text-lg leading-tight">
-                                {sch.start_time.slice(0, 5)} -{" "}
-                                {sch.end_time.slice(0, 5)}
-                              </div>
-                              <div className="text-gray-500 text-xs mt-1">
-                                Tiết {sch.start_period} - {sch.end_period}
-                              </div>
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        {/* Time */}
+                        <div className="flex items-start gap-2">
+                          <ClockCircleOutlined className="text-blue-500 mt-1" />
+                          <div>
+                            <div className="font-bold text-gray-800 text-lg leading-tight">
+                              {sch.time_range}
                             </div>
-                          </div>
-
-                          {/* Room */}
-                          <div className="flex items-start gap-2">
-                            <EnvironmentOutlined className="text-red-500 mt-1" />
-                            <div>
-                              <div className="font-bold text-gray-800 text-lg leading-tight">
-                                {sch.room}
-                              </div>
-                              {sch.note && (
-                                <div className="text-gray-500 text-xs italic mt-1">
-                                  {sch.note}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Date Range */}
-                          <div className="flex items-start gap-2">
-                            <CalendarOutlined className="text-green-600 mt-1" />
-                            <div className="text-gray-700">
-                              {new Date(sch.start_date).toLocaleDateString(
-                                "vi-VN",
-                                { day: "2-digit", month: "2-digit" }
-                              )}
-                              {" - "}
-                              {new Date(sch.end_date).toLocaleDateString(
-                                "vi-VN",
-                                { day: "2-digit", month: "2-digit" }
-                              )}
+                            <div className="text-gray-500 text-xs mt-1">
+                              Tiết {sch.start_period} - {sch.end_period}
                             </div>
                           </div>
                         </div>
+
+                        {/* Room */}
+                        <div className="flex items-start gap-2">
+                          <EnvironmentOutlined className="text-red-500 mt-1" />
+                          <div>
+                            <div className="font-bold text-gray-800 text-md leading-tight break-words">
+                              {sch.room}
+                            </div>
+                            {sch.note && (
+                              <div className="text-gray-500 text-xs italic mt-1">
+                                {sch.note}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Instructor */}
+                        <div className="flex items-start gap-2">
+                          <UserOutlined className="text-green-600 mt-1" />
+                          <div className="text-gray-700">{sch.instructor}</div>
+                        </div>
                       </div>
-                    )}
-                  />
-                ) : (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Chưa có lịch chi tiết"
-                  />
-                )}
+                    </div>
+                  )}
+                />
               </Card>
             ))
           ) : (
-            <Empty description="Sinh viên chưa đăng ký môn học nào trong học kỳ này" />
+            <Empty description="Không có lịch chi tiết" />
           )}
         </div>
       </div>
     );
   };
 
-  // Render class schedule content
+  // Render danh sách sinh viên trong lớp
   const renderClassScheduleContent = () => {
     if (!classScheduleData) {
       return (
@@ -531,6 +549,7 @@ export const AdminSchedules = () => {
                     leader: "Bí thư",
                     secretary: "Thư ký",
                     member: "Thành viên",
+                    vice_leader: "Lớp phó",
                   };
                   return positionMap[pos] || pos;
                 },
@@ -544,12 +563,23 @@ export const AdminSchedules = () => {
                   <Tag color={has ? "green" : "red"}>{has ? "Có" : "Chưa"}</Tag>
                 ),
               },
+              // --- CỘT SỐ MÔN (Đã cập nhật logic tính toán) ---
               {
                 title: "Số môn",
-                dataIndex: "total_courses",
                 key: "total_courses",
                 width: 80,
-                render: (count) => <Tag color="blue">{count}</Tag>,
+                render: (_, record) => {
+                  if (!record.schedule || !record.schedule.flat_schedule) {
+                    return <Tag>0</Tag>;
+                  }
+                  // Dùng Set để đếm số lượng mã học phần duy nhất
+                  const uniqueCourses = new Set(
+                    record.schedule.flat_schedule.map(
+                      (s) => s.course_class_code
+                    )
+                  );
+                  return <Tag color="blue">{uniqueCourses.size}</Tag>;
+                },
               },
               {
                 title: "Thao tác",
@@ -561,12 +591,8 @@ export const AdminSchedules = () => {
                       type="link"
                       size="small"
                       icon={<EyeOutlined />}
-                      onClick={() => {
-                        handleViewStudentScheduleDetail(
-                          record.student_id,
-                          semester.semester_id
-                        );
-                      }}
+                      onClick={() => handleViewStudentScheduleDetail(record)}
+                      disabled={!record.has_schedule}
                     >
                       Xem
                     </Button>
@@ -582,12 +608,14 @@ export const AdminSchedules = () => {
                           semester.semester_id
                         );
                       }}
+                      disabled={!record.has_schedule}
                     >
                       <Button
                         type="link"
                         danger
                         size="small"
                         icon={<DeleteOutlined />}
+                        disabled={!record.has_schedule}
                       >
                         Xóa
                       </Button>
@@ -629,13 +657,6 @@ export const AdminSchedules = () => {
                   Điền thông tin vào 2 sheet: <strong>"Lịch lớp học"</strong> và{" "}
                   <strong>"Đăng ký lớp"</strong>.
                 </li>
-                <li>
-                  Sheet 1: Mã lớp, Tên môn, Giảng viên, Giai đoạn, Ngày, Thứ,
-                  Tiết, Phòng.
-                </li>
-                <li>
-                  Sheet 2: MSSV, Họ tên, Lớp, Mã lớp học, Học kỳ, Năm học.
-                </li>
                 <li>File chỉ chấp nhận .xlsx hoặc .xls (tối đa 5MB).</li>
               </ol>
             </div>
@@ -670,7 +691,7 @@ export const AdminSchedules = () => {
 
             <Alert
               message="Lưu ý quan trọng"
-              description="Hệ thống sẽ tự động phát hiện loại lịch (Lý thuyết/Thực hành) từ cột Ghi chú và ánh xạ tiết học sang giờ học thực tế."
+              description="Hệ thống sẽ tự động phát hiện loại lịch (Lý thuyết/Thực hành) từ cột Ghi chú."
               type="info"
               showIcon
               className="mt-4"
@@ -800,13 +821,7 @@ export const AdminSchedules = () => {
           </span>
         </div>
 
-        {detailModalLoading ? (
-          <div className="text-center py-12">
-            <Spin size="large" tip="Đang tải dữ liệu..." />
-          </div>
-        ) : (
-          renderDetailModalContent()
-        )}
+        {renderDetailModalContent()}
       </Modal>
     </div>
   );
