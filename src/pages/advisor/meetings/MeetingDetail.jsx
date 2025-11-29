@@ -17,7 +17,6 @@ import {
   Progress,
   Badge,
   Empty,
-  Checkbox,
   Popconfirm,
 } from "antd";
 import {
@@ -37,6 +36,8 @@ import {
   LinkOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
+  GoogleOutlined,
+  SyncOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import {
@@ -48,6 +49,8 @@ import {
   sendMeetingFeedbackApi,
   getMeetingFeedbacksApi,
   updateAttendanceApi,
+  checkGoogleAttendanceApi,
+  syncGoogleAttendanceApi,
 } from "../../../services/meeting.service";
 import dayjs from "dayjs";
 
@@ -64,6 +67,8 @@ export const MeetingDetail = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [deleteMinutesLoading, setDeleteMinutesLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [googleSyncLoading, setGoogleSyncLoading] = useState(false);
+  const [googleAttendanceData, setGoogleAttendanceData] = useState(null);
 
   useEffect(() => {
     fetchMeetingDetail();
@@ -157,11 +162,11 @@ export const MeetingDetail = () => {
       setUploadLoading(false);
     }
   };
+
   const handleConfirmDeleteMinutes = async () => {
     try {
       setDeleteMinutesLoading(true);
       const response = await deleteMeetingMinutesApi(id);
-      console.log("Delete minutes response:", response);
 
       if (response?.success || response?.data?.success) {
         toast.success(response?.message || "Xóa biên bản thành công");
@@ -211,7 +216,6 @@ export const MeetingDetail = () => {
       toast.success(
         attended ? "Đánh dấu có mặt thành công" : "Đánh dấu vắng mặt thành công"
       );
-      // Update local state instead of refetching
       setMeeting((prev) => ({
         ...prev,
         attendees: prev.attendees.map((a) =>
@@ -239,7 +243,6 @@ export const MeetingDetail = () => {
           ? "Đánh dấu tất cả có mặt thành công"
           : "Đánh dấu tất cả vắng mặt thành công"
       );
-      // Update local state instead of refetching
       setMeeting((prev) => ({
         ...prev,
         attendees: prev.attendees.map((a) => ({ ...a, attended })),
@@ -249,6 +252,46 @@ export const MeetingDetail = () => {
       toast.error("Không thể cập nhật điểm danh tất cả");
     } finally {
       setAttendanceLoading(false);
+    }
+  };
+
+  const handleCheckGoogleAttendance = async () => {
+    try {
+      setGoogleSyncLoading(true);
+      const response = await checkGoogleAttendanceApi(id);
+      if (response?.data) {
+        setGoogleAttendanceData(response.data);
+        toast.success("Kiểm tra trạng thái Google Calendar thành công");
+      }
+    } catch (error) {
+      console.error("Error checking Google attendance:", error);
+      toast.error(
+        "Không thể kiểm tra Google Calendar (có thể chưa cấu hình hoặc cuộc họp không có Google Meet link)"
+      );
+    } finally {
+      setGoogleSyncLoading(false);
+    }
+  };
+
+  const handleSyncGoogleAttendance = async () => {
+    try {
+      setGoogleSyncLoading(true);
+      const response = await syncGoogleAttendanceApi(id);
+      if (response?.data) {
+        toast.success(
+          `Đồng bộ điểm danh thành công! Đã cập nhật ${
+            response.data.synced_count || 0
+          } sinh viên`
+        );
+        fetchMeetingDetail();
+      }
+    } catch (error) {
+      console.error("Error syncing Google attendance:", error);
+      toast.error(
+        "Không thể đồng bộ từ Google Calendar (có thể chưa cấu hình hoặc cuộc họp không có Google Meet link)"
+      );
+    } finally {
+      setGoogleSyncLoading(false);
     }
   };
 
@@ -538,6 +581,186 @@ export const MeetingDetail = () => {
             pagination={false}
             className="shadow-md rounded-lg"
           />
+        </div>
+      ),
+    },
+    {
+      key: "google",
+      label: (
+        <span className="text-base">
+          <GoogleOutlined className="mr-2" />
+          Google Calendar
+        </span>
+      ),
+      children: (
+        <div className="space-y-4">
+          {meeting?.meeting_link &&
+          meeting.meeting_link.includes("meet.google.com") ? (
+            <>
+              <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-lg">
+                <div className="text-center py-6">
+                  <GoogleOutlined className="text-4xl text-blue-600 mb-4" />
+                  <p className="text-gray-600 mb-6">
+                    Quản lý phản hồi của sinh viên từ lời mời Google Calendar
+                  </p>
+                  <Space
+                    direction="vertical"
+                    size="middle"
+                    style={{ width: "100%" }}
+                  >
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<SyncOutlined />}
+                      onClick={handleCheckGoogleAttendance}
+                      loading={googleSyncLoading}
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 border-0 shadow-lg"
+                    >
+                      Kiểm tra trạng thái Google Calendar
+                    </Button>
+                    <Button
+                      type="dashed"
+                      size="large"
+                      icon={<SyncOutlined />}
+                      onClick={handleSyncGoogleAttendance}
+                      loading={googleSyncLoading}
+                    >
+                      Đồng bộ điểm danh từ Google Calendar
+                    </Button>
+                  </Space>
+                </div>
+              </Card>
+
+              {googleAttendanceData && (
+                <Card title="Trạng thái phản hồi" className="shadow-lg">
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-3xl font-bold text-green-600">
+                        {googleAttendanceData.summary?.accepted || 0}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-2">
+                        Chấp nhận
+                      </div>
+                    </div>
+                    <div className="text-center p-4 bg-red-50 rounded-lg">
+                      <div className="text-3xl font-bold text-red-600">
+                        {googleAttendanceData.summary?.declined || 0}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-2">Từ chối</div>
+                    </div>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                      <div className="text-3xl font-bold text-yellow-600">
+                        {googleAttendanceData.summary?.tentative || 0}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-2">
+                        Chưa chắc
+                      </div>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-3xl font-bold text-gray-600">
+                        {googleAttendanceData.summary?.needsAction || 0}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-2">
+                        Chưa trả lời
+                      </div>
+                    </div>
+                  </div>
+
+                  <Divider />
+
+                  <Table
+                    columns={[
+                      {
+                        title: "Họ và tên",
+                        dataIndex: "student_name",
+                        key: "student_name",
+                        width: "30%",
+                        render: (text) => (
+                          <span className="font-semibold">{text}</span>
+                        ),
+                      },
+                      {
+                        title: "Email",
+                        dataIndex: "email",
+                        key: "email",
+                        width: "40%",
+                        render: (text) => (
+                          <span className="text-gray-600">{text}</span>
+                        ),
+                      },
+                      {
+                        title: "Trạng thái",
+                        dataIndex: "response_status",
+                        key: "response_status",
+                        width: "30%",
+                        align: "center",
+                        render: (status) => {
+                          const statusMap = {
+                            accepted: {
+                              color: "success",
+                              text: "Đã chấp nhận",
+                              icon: <CheckCircleOutlined />,
+                            },
+                            declined: {
+                              color: "error",
+                              text: "Từ chối",
+                              icon: <CloseCircleOutlined />,
+                            },
+                            tentative: {
+                              color: "warning",
+                              text: "Chưa chắc",
+                              icon: <ExclamationCircleOutlined />,
+                            },
+                            needsAction: {
+                              color: "default",
+                              text: "Chưa phản hồi",
+                              icon: <CalendarOutlined />,
+                            },
+                          };
+                          const config = statusMap[status] || {
+                            color: "default",
+                            text: status,
+                            icon: null,
+                          };
+                          return (
+                            <Tag
+                              icon={config.icon}
+                              color={config.color}
+                              className="min-w-[120px] text-center"
+                            >
+                              {config.text}
+                            </Tag>
+                          );
+                        },
+                      },
+                    ]}
+                    dataSource={googleAttendanceData.attendees || []}
+                    rowKey="email"
+                    pagination={{ pageSize: 10 }}
+                    size="small"
+                    bordered
+                  />
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card className="bg-gradient-to-br from-gray-50 to-white border-gray-200 shadow-lg">
+              <Empty
+                description={
+                  <div className="text-center py-8">
+                    <GoogleOutlined className="text-5xl text-gray-400 mb-4" />
+                    <p className="text-gray-500 text-lg mb-2">
+                      Không có Google Meet
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Thêm link Google Meet vào cuộc họp để sử dụng tính năng
+                      này
+                    </p>
+                  </div>
+                }
+              />
+            </Card>
+          )}
         </div>
       ),
     },

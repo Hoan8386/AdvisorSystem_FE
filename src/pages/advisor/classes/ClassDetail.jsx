@@ -16,7 +16,7 @@ import {
   Space,
   Avatar,
   List,
-  Badge,
+  Tooltip,
 } from "antd";
 import { toast } from "react-toastify";
 import {
@@ -33,7 +33,8 @@ import {
   CalendarOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
-  TagsOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
@@ -317,10 +318,11 @@ export const ClassDetail = () => {
 
       const response = await getStudentScheduleApi(studentId, selectedSemester);
 
-      if (response?.success && response.data) {
-        setSelectedStudentSchedule(response.data);
+      if (response?.success) {
+        // Dù data có hay không cũng set để mở modal, modal sẽ tự xử lý hiển thị Empty
+        setSelectedStudentSchedule(response.data || null);
       } else {
-        toast.error("Không có lịch học");
+        toast.error("Không tải được lịch học");
       }
     } catch (error) {
       console.error("Error fetching student schedule:", error);
@@ -471,13 +473,67 @@ export const ClassDetail = () => {
     );
   };
 
-  // --- HÀM RENDER THỜI KHÓA BIỂU ĐƯỢC VIẾT LẠI ---
+  // --- FIX: Hàm Render lịch học với kiểm tra Null an toàn ---
   const renderStudentScheduleContent = () => {
+    // 1. Kiểm tra selectedStudentSchedule có tồn tại không
     if (!selectedStudentSchedule) {
       return <Empty description="Không có dữ liệu" />;
     }
 
     const { student, semester, schedule } = selectedStudentSchedule;
+
+    // 2. Render Header sinh viên (Luôn hiển thị để biết đang xem của ai)
+    const renderHeader = () => (
+      <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm mb-6">
+        <div className="flex items-start gap-4">
+          <Avatar
+            size={64}
+            icon={<UserOutlined />}
+            style={{ backgroundColor: "#1890ff" }}
+          />
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-800 m-0">
+              {student?.full_name}{" "}
+              <span className="text-gray-400 font-normal">
+                ({student?.user_code})
+              </span>
+            </h3>
+            <div className="text-blue-600 font-medium mb-1">
+              {student?.class_name}
+            </div>
+
+            <Descriptions size="small" column={{ xs: 1, sm: 2 }}>
+              <Descriptions.Item label="Khoa">
+                {student?.faculty_name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                {student?.email}
+              </Descriptions.Item>
+              <Descriptions.Item label="Học kỳ">
+                {semester && (
+                  <Tag color="geekblue">
+                    {semester.semester_name} ({semester.academic_year})
+                  </Tag>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                {getStatusTag(student?.status)}
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        </div>
+      </div>
+    );
+
+    // 3. FIX ERROR: Kiểm tra nếu schedule hoặc flat_schedule null
+    if (!schedule || !schedule.flat_schedule) {
+      return (
+        <div>
+          {renderHeader()}
+          <Empty description="Sinh viên chưa có thời khóa biểu trong học kỳ này" />
+        </div>
+      );
+    }
 
     // Helper: Gom nhóm các buổi học từ flat_schedule theo mã môn/lớp
     const groupCourses = (flatSchedule) => {
@@ -485,10 +541,9 @@ export const ClassDetail = () => {
       const groups = {};
 
       flatSchedule.forEach((item) => {
-        // Gom nhóm theo course_class_code
         if (!groups[item.course_class_code]) {
           groups[item.course_class_code] = {
-            course_code: item.course_class_code, // Sử dụng mã lớp học phần làm mã hiển thị
+            course_code: item.course_class_code,
             course_name: item.course_name,
             schedules: [],
           };
@@ -509,50 +564,12 @@ export const ClassDetail = () => {
 
     return (
       <div className="space-y-6">
-        {/* 1. Header Information */}
-        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
-          <div className="flex items-start gap-4">
-            <Avatar
-              size={64}
-              icon={<UserOutlined />}
-              style={{ backgroundColor: "#1890ff" }}
-            />
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-800 m-0">
-                {student.full_name}{" "}
-                <span className="text-gray-400 font-normal">
-                  ({student.user_code})
-                </span>
-              </h3>
-              <div className="text-blue-600 font-medium mb-1">
-                {student.class_name}
-              </div>
+        {renderHeader()}
 
-              <Descriptions size="small" column={{ xs: 1, sm: 2 }}>
-                <Descriptions.Item label="Khoa">
-                  {student.faculty_name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Email">
-                  {student.email}
-                </Descriptions.Item>
-                <Descriptions.Item label="Học kỳ">
-                  <Tag color="geekblue">
-                    {semester.semester_name} ({semester.academic_year})
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Trạng thái">
-                  {getStatusTag(student.status)}
-                </Descriptions.Item>
-              </Descriptions>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Stats & Last Updated */}
+        {/* Stats & Last Updated */}
         <div className="flex justify-between items-center flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-gray-700">Tổng quan:</span>
-            {/* Đếm số môn học duy nhất dựa trên danh sách đã gom nhóm */}
             <Tag icon={<BookOutlined />} color="blue">
               {groupedCourses.length} Môn học
             </Tag>
@@ -568,7 +585,7 @@ export const ClassDetail = () => {
           )}
         </div>
 
-        {/* 3. Detailed Schedule List */}
+        {/* Detailed Schedule List */}
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
           {groupedCourses.length > 0 ? (
             groupedCourses.map((course, courseIdx) => (
@@ -596,7 +613,6 @@ export const ClassDetail = () => {
                   </div>
                 }
               >
-                {/* Render danh sách buổi học của môn này */}
                 <List
                   itemLayout="horizontal"
                   dataSource={course.schedules}
@@ -609,7 +625,6 @@ export const ClassDetail = () => {
                           : "bg-blue-50 border-blue-100"
                       }`}
                     >
-                      {/* Day and Type Header */}
                       <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200 border-dashed">
                         <div className="flex items-center gap-2">
                           <Tag
@@ -619,20 +634,16 @@ export const ClassDetail = () => {
                             {sch.type}
                           </Tag>
                           <span className="text-sm text-gray-500 font-medium">
-                            {/* Hiển thị loại lịch: Lịch học / Lịch bù */}
                             {sch.schedule_type && `(${sch.schedule_type})`}
                           </span>
                         </div>
-
                         <span className="font-bold text-gray-800 text-base">
                           {DAYS_OF_WEEK.find((d) => d.value === sch.day_of_week)
                             ?.label || `Thứ ${sch.day_of_week}`}
                         </span>
                       </div>
 
-                      {/* Details Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        {/* Time */}
                         <div className="flex items-start gap-2">
                           <ClockCircleOutlined className="text-blue-500 mt-1" />
                           <div>
@@ -642,13 +653,8 @@ export const ClassDetail = () => {
                             <div className="text-gray-500 text-xs mt-1">
                               Tiết {sch.start_period} - {sch.end_period}
                             </div>
-                            <div className="text-gray-500 text-xs">
-                              ({sch.start_time_str} - {sch.end_time_str})
-                            </div>
                           </div>
                         </div>
-
-                        {/* Room & Instructor */}
                         <div className="flex items-start gap-2">
                           <EnvironmentOutlined className="text-red-500 mt-1" />
                           <div>
@@ -659,38 +665,13 @@ export const ClassDetail = () => {
                               <UserOutlined className="mr-1" />
                               {sch.instructor}
                             </div>
-                            {sch.note && (
-                              <div className="text-gray-500 text-xs italic mt-1">
-                                {sch.note}
-                              </div>
-                            )}
                           </div>
                         </div>
-
-                        {/* Date Range */}
                         <div className="flex items-start gap-2">
                           <CalendarOutlined className="text-green-600 mt-1" />
                           <div className="text-gray-700">
                             {new Date(sch.start_date).toLocaleDateString(
-                              "vi-VN",
-                              {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              }
-                            )}
-                            {sch.start_date !== sch.end_date && (
-                              <>
-                                {" - "}
-                                {new Date(sch.end_date).toLocaleDateString(
-                                  "vi-VN",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  }
-                                )}
-                              </>
+                              "vi-VN"
                             )}
                           </div>
                         </div>
@@ -701,7 +682,7 @@ export const ClassDetail = () => {
               </Card>
             ))
           ) : (
-            <Empty description="Sinh viên chưa đăng ký môn học nào trong học kỳ này" />
+            <Empty description="Sinh viên chưa đăng ký môn học nào" />
           )}
         </div>
       </div>
@@ -771,7 +752,7 @@ export const ClassDetail = () => {
       },
     },
     {
-      title: "Điểm công tác",
+      title: "Điểm công tác XH",
       dataIndex: "social_points",
       key: "social_points",
       width: 120,
@@ -1094,7 +1075,7 @@ export const ClassDetail = () => {
                     label: (
                       <span className="flex items-center gap-2">
                         <UserOutlined />
-                        Danh sách lớp ({students.length})
+                        Danh sách sinh viên ({students.length})
                       </span>
                     ),
                     children: (
@@ -1529,7 +1510,9 @@ export const ClassDetail = () => {
           ) : null}
         </Modal>
 
-        {/* Student Points (Training & Social Activities) Modal */}
+        {/* ==========================================================
+            UPDATED: Student Points (Training & Social Activities) Modal
+           ========================================================== */}
         <Modal
           title={
             <Space>
@@ -1574,8 +1557,7 @@ export const ClassDetail = () => {
                     <Statistic
                       title="Tổng điểm CTXH"
                       value={
-                        selectedStudentPoints.summary?.total_social_points +
-                          "/180 " || 0
+                        selectedStudentPoints.summary?.total_social_points || 0
                       }
                       valueStyle={{ color: "#1890ff" }}
                       prefix={<TrophyOutlined />}
@@ -1597,7 +1579,7 @@ export const ClassDetail = () => {
                 </Col>
               </Row>
 
-              {/* Training Activities */}
+              {/* Training Activities - CẬP NHẬT CỘT */}
               <Card
                 size="small"
                 title={
@@ -1618,25 +1600,83 @@ export const ClassDetail = () => {
                       dataIndex: "activity_title",
                       key: "activity_title",
                       width: 250,
+                      render: (text) => (
+                        <span className="font-medium">{text}</span>
+                      ),
                     },
                     {
                       title: "Vai trò",
                       dataIndex: "role_name",
                       key: "role_name",
-                      width: 150,
+                      width: 120,
                       render: (role) => <Tag color="blue">{role}</Tag>,
                     },
                     {
-                      title: "Điểm",
-                      dataIndex: "points_awarded",
-                      key: "points_awarded",
-                      width: 80,
+                      title: "Trạng thái",
+                      dataIndex: "status",
+                      key: "status",
+                      width: 140,
                       align: "center",
-                      render: (points) => (
-                        <Tag color="green" className="font-semibold">
-                          {points}
-                        </Tag>
-                      ),
+                      render: (_, record) => {
+                        const statusColor =
+                          record.status === "absent"
+                            ? "error"
+                            : record.status === "present"
+                            ? "success"
+                            : "default";
+                        const icon =
+                          record.status === "absent" ? (
+                            <CloseCircleOutlined />
+                          ) : (
+                            <CheckCircleOutlined />
+                          );
+
+                        return (
+                          <Tag
+                            color={statusColor}
+                            icon={icon}
+                            style={{ minWidth: 90, textAlign: "center" }}
+                          >
+                            {record.status_text || record.status}
+                          </Tag>
+                        );
+                      },
+                    },
+                    {
+                      title: "Điểm",
+                      key: "points",
+                      width: 120,
+                      align: "center",
+                      render: (_, record) => {
+                        const actual = record.actual_points;
+                        const awarded = record.points_awarded;
+                        const isNegative = actual < 0;
+
+                        return (
+                          <div className="flex flex-col items-center">
+                            <Tooltip
+                              title={
+                                isNegative
+                                  ? "Điểm bị trừ do vắng mặt"
+                                  : "Điểm thực nhận"
+                              }
+                            >
+                              <span
+                                className={`font-bold text-base ${
+                                  isNegative ? "text-red-600" : "text-green-600"
+                                }`}
+                              >
+                                {actual > 0 ? `+${actual}` : actual}
+                              </span>
+                            </Tooltip>
+                            {awarded !== undefined && (
+                              <span className="text-xs text-gray-400">
+                                (Max: {awarded})
+                              </span>
+                            )}
+                          </div>
+                        );
+                      },
                     },
                     {
                       title: "Ngày diễn ra",
@@ -1660,7 +1700,9 @@ export const ClassDetail = () => {
                     },
                   ]}
                   dataSource={selectedStudentPoints.training_activities || []}
-                  rowKey={(record) => record.activity_id}
+                  rowKey={(record) =>
+                    record.activity_id || record.registration_id
+                  }
                   pagination={false}
                   scroll={{ y: 250 }}
                   locale={{
@@ -1671,7 +1713,7 @@ export const ClassDetail = () => {
                 />
               </Card>
 
-              {/* Social Activities */}
+              {/* Social Activities - ĐÃ CẬP NHẬT: THÊM CỘT TRẠNG THÁI */}
               <Card
                 size="small"
                 title={
@@ -1692,6 +1734,9 @@ export const ClassDetail = () => {
                       dataIndex: "activity_title",
                       key: "activity_title",
                       width: 250,
+                      render: (text) => (
+                        <span className="font-medium">{text}</span>
+                      ),
                     },
                     {
                       title: "Vai trò",
@@ -1701,14 +1746,51 @@ export const ClassDetail = () => {
                       render: (role) => <Tag color="purple">{role}</Tag>,
                     },
                     {
+                      // Thêm cột Trạng thái cho CTXH
+                      title: "Trạng thái",
+                      key: "status",
+                      width: 140,
+                      align: "center",
+                      render: (_, record) => {
+                        let color = "default";
+                        let text = "Chưa cập nhật";
+                        let icon = null;
+
+                        // Ưu tiên hiển thị nếu có trường status từ API
+                        if (record.status) {
+                          if (record.status === "absent") {
+                            color = "error";
+                            text = "Vắng mặt";
+                            icon = <CloseCircleOutlined />;
+                          } else {
+                            color = "success";
+                            text = "Tham gia";
+                            icon = <CheckCircleOutlined />;
+                          }
+                        }
+                        // Nếu không có status, dựa vào điểm để hiển thị
+                        else if (record.points_awarded > 0) {
+                          color = "success";
+                          text = "Hoàn thành";
+                          icon = <CheckCircleOutlined />;
+                        }
+
+                        return (
+                          <Tag color={color} icon={icon}>
+                            {record.status_text || text}
+                          </Tag>
+                        );
+                      },
+                    },
+                    {
                       title: "Điểm",
                       dataIndex: "points_awarded",
                       key: "points_awarded",
-                      width: 80,
+                      width: 100,
                       align: "center",
                       render: (points) => (
-                        <Tag color="blue" className="font-semibold">
-                          {points}
+                        <Tag color="blue" className="font-semibold text-base">
+                          +{points}
                         </Tag>
                       ),
                     },

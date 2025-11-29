@@ -91,13 +91,34 @@ export const AdvisorSchedules = () => {
     }
   };
 
-  // Render detail modal content
+  // Render detail modal content (ĐÃ CẬP NHẬT LOGIC MỚI)
   const renderDetailModalContent = () => {
     if (!detailModalData) {
       return <Empty description="Không có dữ liệu" />;
     }
 
     const { student = {}, semester = {}, schedule = {} } = detailModalData;
+
+    // --- XỬ LÝ DỮ LIỆU: Gom nhóm flat_schedule theo môn học ---
+    const groupedCourses = {};
+    if (schedule?.flat_schedule && Array.isArray(schedule.flat_schedule)) {
+      schedule.flat_schedule.forEach((item) => {
+        const code = item.course_class_code;
+        // Nếu chưa có môn này trong danh sách gom nhóm thì tạo mới
+        if (!groupedCourses[code]) {
+          groupedCourses[code] = {
+            course_code: code,
+            course_name: item.course_name,
+            schedules: [],
+          };
+        }
+        // Push lịch vào môn tương ứng
+        groupedCourses[code].schedules.push(item);
+      });
+    }
+    // Chuyển object thành array để map
+    const coursesList = Object.values(groupedCourses);
+    // -----------------------------------------------------------
 
     return (
       <div>
@@ -149,101 +170,91 @@ export const AdvisorSchedules = () => {
           }`}
         >
           <p className="text-gray-600 mb-4">
-            Tổng số môn: <Tag color="blue">{schedule?.total_courses || 0}</Tag>
+            Tổng số môn: <Tag color="blue">{coursesList.length}</Tag>
+            <span className="mx-2">|</span>
+            Tổng số buổi:{" "}
+            <Tag color="cyan">{schedule?.flat_schedule?.length || 0}</Tag>
           </p>
 
-          {schedule?.registered_courses &&
-          schedule?.registered_courses.length > 0 ? (
+          {coursesList.length > 0 ? (
             <div className="space-y-4">
-              {schedule?.registered_courses?.map((course, courseIdx) => (
+              {coursesList.map((course, courseIdx) => (
                 <Card
                   key={courseIdx}
                   size="small"
                   className="bg-gray-50"
-                  title={`${course?.course_code || "N/A"} - ${
-                    course?.course_name || "N/A"
-                  }`}
+                  title={`${course.course_code} - ${course.course_name}`}
                 >
-                  {course?.schedules && course?.schedules.length > 0 ? (
-                    <div className="space-y-3">
-                      {course?.schedules?.map((sch, schIdx) => (
-                        <div
-                          key={schIdx}
-                          className="bg-white p-3 rounded border border-gray-200"
-                        >
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <p className="text-gray-600 text-xs">Giai đoạn</p>
-                              <p className="font-semibold">{sch.phase}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">Loại</p>
-                              <Tag color="blue">{sch.type}</Tag>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">Ghi chú</p>
-                              <p className="text-sm">{sch.note}</p>
-                            </div>
+                  <div className="space-y-3">
+                    {course.schedules.map((sch, schIdx) => (
+                      <div
+                        key={schIdx}
+                        className="bg-white p-3 rounded border border-gray-200"
+                      >
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-gray-600 text-xs">Giảng viên</p>
+                            <p className="font-semibold text-sm">
+                              {sch.instructor || "Chưa cập nhật"}
+                            </p>
                           </div>
-
-                          <div className="grid grid-cols-4 gap-4 mt-3">
-                            <div>
-                              <p className="text-gray-600 text-xs">Thứ</p>
-                              <p className="font-semibold">
-                                {
-                                  DAYS_OF_WEEK.find(
-                                    (d) => d.value === sch.day_of_week
-                                  )?.label
-                                }
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">Thời gian</p>
-                              <p className="font-semibold">
-                                {sch.start_time} - {sch.end_time}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">Phòng</p>
-                              <Tag color="green">{sch.room}</Tag>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">Tiết</p>
-                              <p className="text-sm">
-                                {sch.start_period} - {sch.end_period}
-                              </p>
-                            </div>
+                          <div>
+                            <p className="text-gray-600 text-xs">Loại</p>
+                            <Tag color={sch.type === "LT" ? "blue" : "orange"}>
+                              {sch.type}
+                            </Tag>
                           </div>
-
-                          <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-100">
-                            <div>
-                              <p className="text-gray-600 text-xs">Từ</p>
-                              <p className="text-sm font-semibold">
-                                {new Date(sch.start_date).toLocaleDateString(
-                                  "vi-VN"
-                                )}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 text-xs">Đến</p>
-                              <p className="text-sm font-semibold">
-                                {new Date(sch.end_date).toLocaleDateString(
-                                  "vi-VN"
-                                )}
-                              </p>
-                            </div>
+                          <div>
+                            <p className="text-gray-600 text-xs">Ghi chú</p>
+                            <p className="text-sm">{sch.note || "-"}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <Empty description="Không có lịch học" />
-                  )}
+
+                        <div className="grid grid-cols-4 gap-4 mt-3">
+                          <div>
+                            <p className="text-gray-600 text-xs">Thứ</p>
+                            <p className="font-semibold">
+                              {DAYS_OF_WEEK.find(
+                                (d) => d.value === sch.day_of_week
+                              )?.label || `Thứ ${sch.day_of_week}`}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 text-xs">Thời gian</p>
+                            <p className="font-semibold">
+                              {sch.start_time_str} - {sch.end_time_str}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 text-xs">Phòng</p>
+                            <Tag color="green">{sch.room}</Tag>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 text-xs">Tiết</p>
+                            <p className="text-sm">
+                              {sch.start_period} - {sch.end_period}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-100">
+                          <div>
+                            <p className="text-gray-600 text-xs">Ngày học</p>
+                            <p className="text-sm font-semibold">
+                              {new Date(sch.start_date).toLocaleDateString(
+                                "vi-VN"
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </Card>
               ))}
             </div>
           ) : (
-            <Empty description="Sinh viên không có môn học nào" />
+            <Empty description="Không có lịch học" />
           )}
         </Card>
       </div>

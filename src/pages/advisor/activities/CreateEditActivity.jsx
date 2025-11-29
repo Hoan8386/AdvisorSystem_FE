@@ -59,11 +59,25 @@ export const CreateEditActivity = () => {
       const res = await getActivityDetailAPI(id);
       if (res && res.data) {
         const activity = res.data;
+
+        // --- XỬ LÝ HIỂN THỊ GIỜ ---
+        // Nếu server trả về định dạng UTC (VD: ...12:00:00Z), ta xóa chữ 'Z'
+        // để Dayjs hiểu đây là giờ Local (giữ nguyên con số 12:00)
+        const startTimeStr = activity.start_time
+          ? activity.start_time.replace("Z", "")
+          : null;
+        const endTimeStr = activity.end_time
+          ? activity.end_time.replace("Z", "")
+          : null;
+
         form.setFieldsValue({
           title: activity.title,
           general_description: activity.general_description,
           location: activity.location,
-          time: [dayjs(activity.start_time), dayjs(activity.end_time)],
+          time: [
+            startTimeStr ? dayjs(startTimeStr) : null,
+            endTimeStr ? dayjs(endTimeStr) : null,
+          ],
           organizer_unit_id: activity.organizer_unit_id,
           status: activity.status,
           class_ids: activity.classes?.map((cls) => cls.class_id) || [],
@@ -95,7 +109,6 @@ export const CreateEditActivity = () => {
             label: res.data.unit.unit_name,
           },
         ]);
-        // Set default unit
         if (!id) {
           form.setFieldValue("organizer_unit_id", res.data.unit.unit_id);
         }
@@ -107,22 +120,17 @@ export const CreateEditActivity = () => {
 
   const fetchClasses = async () => {
     try {
-      // Gọi API /api/auth/me để lấy dữ liệu advisor mới nhất với danh sách lớp
       const res = await getAccountAPI();
-
       let advisorClasses = [];
 
-      // Lấy classes từ res.data.classes hoặc res.classes
       if (res?.data?.classes) {
         advisorClasses = res.data.classes;
       } else if (res?.classes) {
         advisorClasses = res.classes;
       } else if (res?.data?.advisor?.classes) {
-        // Fallback nếu API trả về cấu trúc cũ
         advisorClasses = res.data.advisor.classes;
       }
 
-      // Convert to Ant Design checkbox options format
       const classOptions = advisorClasses.map((classItem) => ({
         label: `${classItem.class_name} - ${classItem.description || ""}`,
         value: classItem.class_id,
@@ -139,16 +147,28 @@ export const CreateEditActivity = () => {
     }
   };
 
+  // --- 1. CHẶN KHÔNG CHO CLICK VÀO NGÀY HÔM NAY VÀ QUÁ KHỨ ---
+  const disabledDate = (current) => {
+    // Chỉ cho phép chọn từ ngày mai trở đi
+    return current && current <= dayjs().endOf("day");
+  };
+
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+
+      // --- 2. XỬ LÝ LƯU GIỜ (QUAN TRỌNG) ---
+      // Dùng .format() để chuyển thành chuỗi cứng, không bị convert sang UTC
+      // Ví dụ: Chọn 07:00 -> Gửi "2025-11-29 07:00:00" -> DB lưu 07:00
+      const formattedStartTime = values.time[0].format("YYYY-MM-DD HH:mm:ss");
+      const formattedEndTime = values.time[1].format("YYYY-MM-DD HH:mm:ss");
 
       const activityData = {
         title: values.title,
         general_description: values.general_description,
         location: values.location,
-        start_time: values.time[0].format("YYYY-MM-DD HH:mm:ss"),
-        end_time: values.time[1].format("YYYY-MM-DD HH:mm:ss"),
+        start_time: formattedStartTime,
+        end_time: formattedEndTime,
         organizer_unit_id: values.organizer_unit_id,
         status: values.status || "upcoming",
         class_ids: values.class_ids || [],
@@ -189,7 +209,6 @@ export const CreateEditActivity = () => {
   return (
     <AdvisorLayout>
       <div className="space-y-6 p-4">
-        {/* Header */}
         <div className="flex items-center gap-4">
           <Button
             type="text"
@@ -202,7 +221,6 @@ export const CreateEditActivity = () => {
           </h1>
         </div>
 
-        {/* Form */}
         <Card
           style={{
             borderRadius: 12,
@@ -216,12 +234,7 @@ export const CreateEditActivity = () => {
             onFinish={handleSubmit}
             initialValues={{
               status: "upcoming",
-              roles: [
-                {
-                  point_type: "ctxh",
-                  points_awarded: 5,
-                },
-              ],
+              roles: [{ point_type: "ctxh", points_awarded: 5 }],
             }}
           >
             <Row gutter={24}>
@@ -231,10 +244,7 @@ export const CreateEditActivity = () => {
                   name="title"
                   rules={[
                     { required: true, message: "Vui lòng nhập tiêu đề" },
-                    {
-                      min: 5,
-                      message: "Tiêu đề phải từ 5 ký tự trở lên",
-                    },
+                    { min: 5, message: "Tiêu đề phải từ 5 ký tự trở lên" },
                   ]}
                 >
                   <Input placeholder="Nhập tiêu đề hoạt động" size="large" />
@@ -244,10 +254,7 @@ export const CreateEditActivity = () => {
                   label="Mô tả chung"
                   name="general_description"
                   rules={[
-                    {
-                      min: 10,
-                      message: "Mô tả phải từ 10 ký tự trở lên",
-                    },
+                    { min: 10, message: "Mô tả phải từ 10 ký tự trở lên" },
                   ]}
                 >
                   <TextArea
@@ -264,10 +271,7 @@ export const CreateEditActivity = () => {
                       label="Địa điểm"
                       name="location"
                       rules={[
-                        {
-                          required: true,
-                          message: "Vui lòng nhập địa điểm",
-                        },
+                        { required: true, message: "Vui lòng nhập địa điểm" },
                       ]}
                     >
                       <Input placeholder="Nhập địa điểm tổ chức" size="large" />
@@ -278,21 +282,30 @@ export const CreateEditActivity = () => {
                       label="Thời gian"
                       name="time"
                       rules={[
+                        { required: true, message: "Vui lòng chọn thời gian" },
+                        // --- 3. VALIDATOR LOGIC ---
                         {
-                          required: true,
-                          message: "Vui lòng chọn thời gian",
+                          validator: (_, value) => {
+                            if (value && value[0]) {
+                              // Nếu ngày bắt đầu <= ngày hiện tại -> Báo lỗi
+                              if (!value[0].isAfter(dayjs(), "day")) {
+                                return Promise.reject(
+                                  "Ngày bắt đầu phải lớn hơn ngày hiện tại (từ ngày mai)"
+                                );
+                              }
+                            }
+                            return Promise.resolve();
+                          },
                         },
                       ]}
                     >
                       <RangePicker
-                        showTime
+                        showTime={{ format: "HH:mm" }}
                         format="DD/MM/YYYY HH:mm"
-                        placeholder={[
-                          "Thời gian bắt đầu",
-                          "Thời gian kết thúc",
-                        ]}
+                        placeholder={["Bắt đầu", "Kết thúc"]}
                         size="large"
                         style={{ width: "100%" }}
+                        disabledDate={disabledDate} // Áp dụng hàm chặn lịch
                       />
                     </Form.Item>
                   </Col>
@@ -349,7 +362,7 @@ export const CreateEditActivity = () => {
                               },
                             ]}
                           >
-                            <Input placeholder="VD: Người tham gia, Tình nguyện viên..." />
+                            <Input placeholder="VD: Người tham gia..." />
                           </Form.Item>
 
                           <Form.Item
@@ -357,10 +370,7 @@ export const CreateEditActivity = () => {
                             label="Mô tả vai trò"
                             name={[name, "description"]}
                           >
-                            <TextArea
-                              placeholder="Mô tả chi tiết về vai trò này"
-                              rows={2}
-                            />
+                            <TextArea placeholder="Mô tả chi tiết" rows={2} />
                           </Form.Item>
 
                           <Form.Item
@@ -368,10 +378,7 @@ export const CreateEditActivity = () => {
                             label="Yêu cầu"
                             name={[name, "requirements"]}
                           >
-                            <TextArea
-                              placeholder="Các yêu cầu để tham gia vai trò này"
-                              rows={2}
-                            />
+                            <TextArea placeholder="Các yêu cầu" rows={2} />
                           </Form.Item>
 
                           <Row gutter={16}>
@@ -409,14 +416,8 @@ export const CreateEditActivity = () => {
                                 <Select
                                   placeholder="Chọn loại"
                                   options={[
-                                    {
-                                      label: "Cộng tác xã hội",
-                                      value: "ctxh",
-                                    },
-                                    {
-                                      label: "Rèn luyện",
-                                      value: "ren_luyen",
-                                    },
+                                    { label: "Cộng tác xã hội", value: "ctxh" },
+                                    { label: "Rèn luyện", value: "ren_luyen" },
                                   ]}
                                 />
                               </Form.Item>
@@ -455,12 +456,7 @@ export const CreateEditActivity = () => {
                 <Form.Item
                   label="Đơn vị tổ chức"
                   name="organizer_unit_id"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng chọn đơn vị",
-                    },
-                  ]}
+                  rules={[{ required: true, message: "Vui lòng chọn đơn vị" }]}
                 >
                   <Select
                     placeholder="Chọn đơn vị"
@@ -487,31 +483,9 @@ export const CreateEditActivity = () => {
                     ]}
                   />
                 </Form.Item>
-
-                <Card
-                  size="small"
-                  style={{
-                    background: "#f0f9ff",
-                    borderRadius: 8,
-                    border: "1px solid #bae6fd",
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: "#0369a1" }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <strong>💡 Lưu ý:</strong>
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: 20 }}>
-                      <li>Mỗi hoạt động phải có ít nhất 1 vai trò</li>
-                      <li>Điểm CTXH: Cộng tác xã hội</li>
-                      <li>Điểm Rèn luyện: Hoạt động rèn luyện</li>
-                      <li>Số lượng tối đa có thể để trống (không giới hạn)</li>
-                    </ul>
-                  </div>
-                </Card>
               </Col>
             </Row>
 
-            {/* Actions */}
             <Divider />
             <Space size="middle">
               <Button

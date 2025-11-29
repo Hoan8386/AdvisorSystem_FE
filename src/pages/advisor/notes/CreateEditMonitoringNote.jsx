@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import { Card, Form, Input, Button, Select, Space } from "antd";
 import { toast } from "react-toastify";
-import { ArrowLeftOutlined } from "@ant-design/icons"; // 1. Import Icon
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import {
   createMonitoringNoteAPI,
   updateMonitoringNoteAPI,
@@ -22,6 +22,7 @@ function CreateEditMonitoringNote() {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+
   const isEdit = location.pathname.includes("/edit");
   const noteId = location.pathname.split("/")[3];
 
@@ -59,13 +60,15 @@ function CreateEditMonitoringNote() {
 
   // Fetch students by class
   const fetchStudentsByClass = useCallback(async (classId) => {
+    if (!classId) return;
     setStudentsLoading(true);
     try {
       const response = await getClassStudentsAPI(classId);
       if (response && response.data) {
         const options = response.data.map((student) => ({
           label: `${student.user_code} - ${student.full_name}`,
-          value: student.student_id,
+          value: student.user_code,
+          student_id: student.student_id,
         }));
         setStudents(options);
       }
@@ -84,7 +87,7 @@ function CreateEditMonitoringNote() {
 
   const handleClassChange = (classId) => {
     setSelectedClass(classId);
-    form.setFieldValue("student_id", undefined);
+    form.setFieldValue("user_code", undefined);
     if (classId) {
       fetchStudentsByClass(classId);
     } else {
@@ -92,18 +95,52 @@ function CreateEditMonitoringNote() {
     }
   };
 
+  // --- PHẦN XỬ LÝ TỰ ĐỘNG FILL DỮ LIỆU ---
   useEffect(() => {
-    if (isEdit && location.state?.note) {
-      const note = location.state.note;
-      form.setFieldsValue({
-        student_id: note.student_id,
-        semester_id: note.semester_id,
-        category: note.category,
-        title: note.title,
-        content: note.content,
-      });
-    }
-  }, [isEdit, location.state, form]);
+    const initData = async () => {
+      // TRƯỜNG HỢP 1: Chế độ EDIT (Sửa)
+      if (isEdit && location.state?.note) {
+        const note = location.state.note;
+
+        // Cần lấy class_id từ thông tin sinh viên trong note
+        const classId = note.student?.class_id || note.student?.class?.class_id;
+
+        // Tải danh sách sinh viên của lớp đó để Select hiển thị đúng tên
+        if (classId) {
+          setSelectedClass(classId);
+          await fetchStudentsByClass(classId);
+        }
+
+        form.setFieldsValue({
+          class_id: classId,
+          user_code: note.student?.user_code || note.user_code,
+          semester_id: note.semester_id,
+          category: note.category,
+          title: note.title,
+          content: note.content,
+        });
+      }
+      // TRƯỜNG HỢP 2: Chế độ CREATE (Tạo mới) nhưng có truyền dữ liệu sinh viên
+      else if (!isEdit && location.state?.selectedStudent) {
+        const student = location.state.selectedStudent;
+
+        // 1. Set Class ID trước
+        setSelectedClass(student.class_id);
+
+        // 2. Gọi API lấy danh sách sinh viên của lớp đó ngay lập tức
+        await fetchStudentsByClass(student.class_id);
+
+        // 3. Fill dữ liệu vào Form
+        form.setFieldsValue({
+          class_id: student.class_id,
+          user_code: student.user_code,
+        });
+      }
+    };
+
+    initData();
+  }, [isEdit, location.state, form, fetchStudentsByClass]);
+  // ----------------------------------------
 
   const handleSubmit = async (values) => {
     setLoading(true);
@@ -127,7 +164,6 @@ function CreateEditMonitoringNote() {
     <AdvisorLayout>
       <div className="max-w-7xl mx-auto p-6">
         <Card>
-          {/* 2. Thêm phần Header chứa nút Back */}
           <div className="flex items-center gap-4 mb-5">
             <Button
               type="text"
@@ -146,51 +182,52 @@ function CreateEditMonitoringNote() {
             onFinish={handleSubmit}
             className="max-w-2xl"
           >
-            {!isEdit && (
-              <>
-                <Form.Item label="Lớp" name="class_id">
-                  <Select
-                    placeholder="Chọn lớp để tải danh sách sinh viên"
-                    onChange={handleClassChange}
-                    options={classes}
-                  />
-                </Form.Item>
+            {/* Khi Edit hoặc khi đã có selectedStudent (từ trang danh sách qua), 
+                chúng ta disable chọn lớp để tránh thay đổi ngữ cảnh sai 
+            */}
+            <Form.Item
+              label="Lớp"
+              name="class_id"
+              rules={[{ required: true, message: "Vui lòng chọn lớp" }]}
+            >
+              <Select
+                placeholder="Chọn lớp để tải danh sách sinh viên"
+                onChange={handleClassChange}
+                options={classes}
+                // Disable nếu đang sửa hoặc đã được pre-fill từ danh sách
+                disabled={isEdit || !!location.state?.selectedStudent}
+              />
+            </Form.Item>
 
-                <Form.Item
-                  label="Sinh viên"
-                  name="student_id"
-                  rules={[{ required: true, message: "Chọn sinh viên" }]}
-                >
-                  <Select
-                    placeholder="Chọn sinh viên"
-                    disabled={!selectedClass || students.length === 0}
-                    options={students}
-                    notFoundContent={
-                      !selectedClass
-                        ? "Vui lòng chọn lớp trước"
-                        : studentsLoading
-                        ? "Đang tải..."
-                        : "Không có sinh viên"
-                    }
-                  />
-                </Form.Item>
-              </>
-            )}
-
-            {isEdit && (
-              <Form.Item
-                label="Sinh viên"
-                name="student_id"
-                rules={[{ required: true, message: "Chọn sinh viên" }]}
-              >
-                <Select placeholder="Chọn sinh viên" disabled />
-              </Form.Item>
-            )}
+            <Form.Item
+              label="Sinh viên"
+              name="user_code"
+              rules={[{ required: true, message: "Vui lòng chọn sinh viên" }]}
+            >
+              <Select
+                placeholder="Chọn sinh viên từ danh sách"
+                disabled={
+                  !selectedClass ||
+                  students.length === 0 ||
+                  isEdit ||
+                  !!location.state?.selectedStudent
+                }
+                options={students}
+                loading={studentsLoading}
+                notFoundContent={
+                  !selectedClass
+                    ? "Vui lòng chọn lớp trước"
+                    : studentsLoading
+                    ? "Đang tải danh sách sinh viên..."
+                    : "Không có sinh viên trong lớp này"
+                }
+              />
+            </Form.Item>
 
             <Form.Item
               label="Học kỳ"
               name="semester_id"
-              rules={[{ required: true, message: "Chọn học kỳ" }]}
+              rules={[{ required: true, message: "Vui lòng chọn học kỳ" }]}
             >
               <Select placeholder="Chọn học kỳ" options={semesters} />
             </Form.Item>
@@ -198,10 +235,10 @@ function CreateEditMonitoringNote() {
             <Form.Item
               label="Danh mục"
               name="category"
-              rules={[{ required: true, message: "Chọn danh mục" }]}
+              rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
             >
               <Select
-                placeholder="Chọn danh mục"
+                placeholder="Chọn danh mục ghi chú"
                 options={[
                   { label: "Học tập", value: "academic" },
                   { label: "Cá nhân", value: "personal" },
@@ -215,29 +252,37 @@ function CreateEditMonitoringNote() {
               label="Tiêu đề"
               name="title"
               rules={[
-                { required: true, message: "Nhập tiêu đề" },
-                { min: 5, message: "Tối thiểu 5 ký tự" },
-                { max: 255, message: "Tối đa 255 ký tự" },
+                { required: true, message: "Tiêu đề là bắt buộc" },
+                { min: 5, message: "Tiêu đề phải từ 5 ký tự trở lên" },
+                { max: 255, message: "Tiêu đề không được vượt quá 255 ký tự" },
               ]}
             >
-              <Input placeholder="Nhập tiêu đề" />
+              <Input placeholder="Ví dụ: Theo dõi học tập sinh viên" />
             </Form.Item>
 
             <Form.Item
               label="Nội dung"
               name="content"
               rules={[
-                { required: true, message: "Nhập nội dung" },
-                { min: 10, message: "Tối thiểu 10 ký tự" },
-                { max: 5000, message: "Tối đa 5000 ký tự" },
+                { required: true, message: "Nội dung là bắt buộc" },
+                { min: 10, message: "Nội dung phải từ 10 ký tự trở lên" },
+                {
+                  max: 5000,
+                  message: "Nội dung không được vượt quá 5000 ký tự",
+                },
               ]}
             >
-              <Input.TextArea rows={8} placeholder="Nhập nội dung ghi chú" />
+              <Input.TextArea
+                rows={8}
+                placeholder="Nhập chi tiết ghi chú theo dõi sinh viên..."
+                maxLength={5000}
+                showCount
+              />
             </Form.Item>
 
             <Space>
               <Button type="primary" htmlType="submit" loading={loading}>
-                {isEdit ? "Cập nhật" : "Tạo"}
+                {isEdit ? "Cập nhật ghi chú" : "Tạo ghi chú"}
               </Button>
               <Button onClick={() => navigate("/advisor/monitoring-notes")}>
                 Hủy

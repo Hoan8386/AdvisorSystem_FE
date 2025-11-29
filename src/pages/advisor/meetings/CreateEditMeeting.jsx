@@ -12,6 +12,8 @@ import {
   TimePicker,
   Divider,
   Spin,
+  Switch,
+  Alert,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -20,6 +22,7 @@ import {
   EnvironmentOutlined,
   LinkOutlined,
   FileTextOutlined,
+  GoogleOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import {
@@ -40,6 +43,9 @@ export const CreateEditMeeting = () => {
   const [classes, setClasses] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const isEditMode = !!id;
+
+  // Theo dõi giá trị của switch auto_create_meet để xử lý logic disable input
+  const autoCreateMeet = Form.useWatch("auto_create_meet", form);
 
   useEffect(() => {
     fetchClasses();
@@ -80,7 +86,7 @@ export const CreateEditMeeting = () => {
           location: meeting.location,
           meeting_link: meeting.meeting_link,
           summary: meeting.summary,
-          class_feedback: meeting.class_feedback,
+          // Đã bỏ class_feedback
           status: meeting.status,
         });
       }
@@ -118,10 +124,15 @@ export const CreateEditMeeting = () => {
           ? endDateTime.format("YYYY-MM-DD HH:mm:ss")
           : null,
         location: values.location || null,
-        meeting_link: values.meeting_link || null,
+        // Nếu chọn tự động tạo meet thì không lấy link nhập tay (hoặc gửi null)
+        meeting_link: values.auto_create_meet
+          ? null
+          : values.meeting_link || null,
         summary: values.summary || null,
-        class_feedback: values.class_feedback || null,
+        // Đã bỏ class_feedback khỏi payload
         status: values.status || "scheduled",
+        auto_create_meet: values.auto_create_meet || false,
+        sync_to_google: values.sync_to_google || false,
       };
 
       if (isEditMode) {
@@ -159,6 +170,12 @@ export const CreateEditMeeting = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Hàm chặn ngày quá khứ
+  const disabledDate = (current) => {
+    // Can not select days before today
+    return current && current < dayjs().startOf("day");
   };
 
   if (loading) {
@@ -214,6 +231,9 @@ export const CreateEditMeeting = () => {
             layout="vertical"
             onFinish={handleSubmit}
             autoComplete="off"
+            initialValues={{
+              auto_create_meet: false,
+            }}
           >
             <Divider orientation="left">
               <span className="text-lg font-semibold text-blue-600">
@@ -261,48 +281,51 @@ export const CreateEditMeeting = () => {
                   placeholder="Chọn ngày"
                   format="DD/MM/YYYY"
                   className="w-full"
+                  disabledDate={disabledDate} // Chặn ngày quá khứ
                 />
               </Form.Item>
 
-              <Form.Item
-                label={<span className="font-semibold">Giờ bắt đầu</span>}
-                name="meeting_time"
-                rules={[
-                  { required: true, message: "Vui lòng chọn giờ bắt đầu" },
-                ]}
-              >
-                <TimePicker
-                  placeholder="Chọn giờ"
-                  format="HH:mm"
-                  className="w-full"
-                />
-              </Form.Item>
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item
+                  label={<span className="font-semibold">Giờ bắt đầu</span>}
+                  name="meeting_time"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn giờ bắt đầu" },
+                  ]}
+                >
+                  <TimePicker
+                    placeholder="Chọn giờ"
+                    format="HH:mm"
+                    className="w-full"
+                  />
+                </Form.Item>
 
-              <Form.Item
-                label={<span className="font-semibold">Giờ kết thúc</span>}
-                name="end_time"
-                rules={[
-                  {
-                    validator: (_, value) => {
-                      if (!value) return Promise.resolve();
-                      const meetingTime = form.getFieldValue("meeting_time");
-                      if (!meetingTime) return Promise.resolve();
-                      if (value.isAfter(meetingTime)) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(
-                        new Error("Giờ kết thúc phải sau giờ bắt đầu")
-                      );
+                <Form.Item
+                  label={<span className="font-semibold">Giờ kết thúc</span>}
+                  name="end_time"
+                  rules={[
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        const meetingTime = form.getFieldValue("meeting_time");
+                        if (!meetingTime) return Promise.resolve();
+                        if (value.isAfter(meetingTime)) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(
+                          new Error("Giờ kết thúc phải sau giờ bắt đầu")
+                        );
+                      },
                     },
-                  },
-                ]}
-              >
-                <TimePicker
-                  placeholder="Chọn giờ kết thúc (tùy chọn)"
-                  format="HH:mm"
-                  className="w-full"
-                />
-              </Form.Item>
+                  ]}
+                >
+                  <TimePicker
+                    placeholder="Đến giờ"
+                    format="HH:mm"
+                    className="w-full"
+                  />
+                </Form.Item>
+              </div>
 
               {isEditMode && (
                 <Form.Item
@@ -340,17 +363,44 @@ export const CreateEditMeeting = () => {
                 <Input placeholder="Ví dụ: Phòng A201" />
               </Form.Item>
 
-              <Form.Item
-                label={
-                  <span className="font-semibold">
-                    <LinkOutlined className="mr-2 text-gray-400" />
-                    Link họp online
-                  </span>
-                }
-                name="meeting_link"
-              >
-                <Input placeholder="https://meet.google.com/xxx" type="url" />
-              </Form.Item>
+              <div className="flex gap-4 items-start">
+                {/* Link họp online */}
+                <Form.Item
+                  className="flex-1"
+                  label={
+                    <span className="font-semibold">
+                      <LinkOutlined className="mr-2 text-gray-400" />
+                      Link họp online
+                    </span>
+                  }
+                  name="meeting_link"
+                >
+                  <Input
+                    placeholder={
+                      autoCreateMeet
+                        ? "Hệ thống sẽ tự tạo link Google Meet"
+                        : "https://meet.google.com/xxx"
+                    }
+                    type="url"
+                    disabled={!!autoCreateMeet} // Disable nếu chọn tự động tạo
+                  />
+                </Form.Item>
+
+                {/* Switch Tạo Google Meet tự động - Chỉ hiện khi tạo mới */}
+                {!isEditMode && (
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-green-600">
+                        <GoogleOutlined className="mr-1" /> Auto Meet
+                      </span>
+                    }
+                    name="auto_create_meet"
+                    valuePropName="checked"
+                  >
+                    <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                  </Form.Item>
+                )}
+              </div>
             </div>
 
             <Divider orientation="left">
@@ -373,18 +423,30 @@ export const CreateEditMeeting = () => {
               />
             </Form.Item>
 
-            <Form.Item
-              label={<span className="font-semibold">Ý kiến lớp</span>}
-              name="class_feedback"
-            >
-              <TextArea
-                rows={4}
-                placeholder="Ghi chú ý kiến, phản hồi từ lớp (nếu có)..."
-                maxLength={1000}
-                showCount
-                className="rounded-lg"
-              />
-            </Form.Item>
+            {/* Đã bỏ Form.Item Ý kiến lớp (Class Feedback) tại đây */}
+
+            {/* Chỉ giữ lại phần Sync cho chế độ Edit, phần Auto Create đã chuyển lên trên */}
+            {isEditMode && (
+              <>
+                <Divider orientation="left">
+                  <span className="text-lg font-semibold text-green-600">
+                    <GoogleOutlined className="mr-2" />
+                    Google Calendar
+                  </span>
+                </Divider>
+                <Form.Item
+                  label={
+                    <span className="font-semibold">
+                      Đồng bộ với Google Calendar
+                    </span>
+                  }
+                  name="sync_to_google"
+                  valuePropName="checked"
+                >
+                  <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                </Form.Item>
+              </>
+            )}
 
             <Divider />
 

@@ -96,6 +96,18 @@ const getMeetingStatisticsApi = () => {
   return axios.get(URL_BACKEND);
 };
 
+// Check Google Calendar attendance
+const checkGoogleAttendanceApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/google-attendance`;
+  return axios.get(URL_BACKEND);
+};
+
+// Sync Google Calendar attendance
+const syncGoogleAttendanceApi = (meetingId) => {
+  const URL_BACKEND = `/api/meetings/${meetingId}/sync-google-attendance`;
+  return axios.post(URL_BACKEND);
+};
+
 export {
   getMeetingsApi,
   getMeetingDetailApi,
@@ -111,4 +123,6 @@ export {
   sendMeetingFeedbackApi,
   getMeetingFeedbacksApi,
   getMeetingStatisticsApi,
+  checkGoogleAttendanceApi,
+  syncGoogleAttendanceApi,
 };

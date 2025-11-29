@@ -346,7 +346,19 @@ export const AdvisorMeetings = () => {
               placeholder={["Từ ngày", "Đến ngày"]}
               onChange={handleDateRangeChange}
             />
-            <Button icon={<ReloadOutlined />} onClick={fetchMeetings}>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setFilters({
+                  class_id: null,
+                  status: null,
+                  from_date: null,
+                  to_date: null,
+                  search: "",
+                });
+                setTimeout(() => fetchMeetings(), 0);
+              }}
+            >
               Làm mới
             </Button>
           </div>

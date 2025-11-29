@@ -80,13 +80,17 @@ export const AdvisorActivities = () => {
           const toDate = filters.dateRange[1].endOf("day");
 
           filteredData = filteredData.filter((activity) => {
-            const startTime = dayjs(activity.start_time);
-            const endTime = dayjs(activity.end_time);
+            // Cũng cần xử lý múi giờ khi lọc để chính xác
+            const startRaw = activity.start_time
+              ? activity.start_time.replace("Z", "")
+              : null;
+            const endRaw = activity.end_time
+              ? activity.end_time.replace("Z", "")
+              : null;
 
-            // Hoạt động nằm trong khoảng thời gian nếu:
-            // - Bắt đầu trong khoảng thời gian, HOẶC
-            // - Kết thúc trong khoảng thời gian, HOẶC
-            // - Bắt đầu trước và kết thúc sau khoảng thời gian
+            const startTime = dayjs(startRaw);
+            const endTime = dayjs(endRaw);
+
             return (
               (startTime.isAfter(fromDate) && startTime.isBefore(toDate)) ||
               (endTime.isAfter(fromDate) && endTime.isBefore(toDate)) ||
@@ -122,19 +126,12 @@ export const AdvisorActivities = () => {
   };
 
   const handleDelete = async (activityId) => {
-    console.log("handleDelete called with activityId:", activityId);
     try {
       const res = await deleteActivityAPI(activityId);
-      console.log("Delete response:", res);
-
-      // Hiển thị thông báo thành công
       toast.success(res?.data?.message || "Hoạt động đã được xoá thành công");
-
-      // Refresh lại danh sách hoạt động
       await fetchActivities();
     } catch (error) {
       console.error("Delete error:", error);
-      console.error("Error response:", error.response);
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
@@ -142,6 +139,7 @@ export const AdvisorActivities = () => {
       );
     }
   };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "upcoming":
@@ -186,8 +184,17 @@ export const AdvisorActivities = () => {
       key: "time",
       width: 250,
       render: (_, record) => {
-        const startDate = dayjs(record.start_time);
-        const endDate = dayjs(record.end_time);
+        // --- SỬA LỖI HIỂN THỊ GIỜ TẠI ĐÂY ---
+        // Xóa chữ 'Z' (UTC marker) để Dayjs hiểu là giờ Local và không cộng thêm 7h
+        const startRaw = record.start_time
+          ? record.start_time.replace("Z", "")
+          : null;
+        const endRaw = record.end_time
+          ? record.end_time.replace("Z", "")
+          : null;
+
+        const startDate = dayjs(startRaw);
+        const endDate = dayjs(endRaw);
         const isSameDay =
           startDate.format("DD/MM/YYYY") === endDate.format("DD/MM/YYYY");
 
@@ -279,13 +286,7 @@ export const AdvisorActivities = () => {
           <Popconfirm
             title="Xoá hoạt động"
             description="Bạn chắc chắn muốn xoá hoạt động này?"
-            onConfirm={() => {
-              console.log("Delete confirmed for activity:", record.activity_id);
-              handleDelete(record.activity_id);
-            }}
-            onCancel={() => {
-              console.log("Delete cancelled");
-            }}
+            onConfirm={() => handleDelete(record.activity_id)}
             okText="Xoá"
             cancelText="Hủy"
             okButtonProps={{ danger: true }}

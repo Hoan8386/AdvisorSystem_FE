@@ -11,6 +11,7 @@ import {
   Modal,
   Input,
   Space,
+  Form,
 } from "antd";
 import {
   CalendarOutlined,
@@ -18,6 +19,7 @@ import {
   DownloadOutlined,
   SearchOutlined,
   MessageOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import { StudentLayout } from "../../../components/layout/StudentLayout";
@@ -35,7 +37,7 @@ export const StudentMeetings = () => {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
-  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackForm] = Form.useForm();
   const [selectedMeetingId, setSelectedMeetingId] = useState(null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -92,27 +94,23 @@ export const StudentMeetings = () => {
 
   const handleOpenFeedbackModal = (meetingId) => {
     setSelectedMeetingId(meetingId);
-    setFeedbackText("");
+    feedbackForm.resetFields();
     setFeedbackModalVisible(true);
   };
 
   const handleCloseFeedbackModal = () => {
     setFeedbackModalVisible(false);
-    setFeedbackText("");
     setSelectedMeetingId(null);
+    feedbackForm.resetFields();
   };
 
-  const handleSubmitFeedback = async () => {
-    if (!feedbackText.trim()) {
-      toast.error("Vui lòng nhập nội dung feedback");
-      return;
-    }
-
+  const handleSubmitFeedback = async (values) => {
     try {
       setFeedbackLoading(true);
-      await sendMeetingFeedbackApi(selectedMeetingId, feedbackText);
+      await sendMeetingFeedbackApi(selectedMeetingId, values.feedback_content);
       toast.success("Gửi feedback thành công");
       handleCloseFeedbackModal();
+      fetchMeetings();
     } catch (error) {
       console.error("Error sending feedback:", error);
       toast.error("Không thể gửi feedback");
@@ -252,7 +250,7 @@ export const StudentMeetings = () => {
                 allowClear
                 size="large"
                 style={{ width: 200 }}
-                onChange={handleStatusChange}
+                onChange={(value) => setFilters({ ...filters, status: value })}
                 options={[
                   { value: null, label: "Tất cả" },
                   { value: "scheduled", label: "Sắp diễn ra" },
@@ -260,18 +258,48 @@ export const StudentMeetings = () => {
                   { value: "cancelled", label: "Đã hủy" },
                 ]}
               />
-              <RangePicker
+              <DatePicker.RangePicker
                 size="large"
                 format="DD/MM/YYYY"
                 placeholder={["Từ ngày", "Đến ngày"]}
-                onChange={handleDateRangeChange}
+                onChange={(dates) => {
+                  if (dates && dates.length === 2) {
+                    setFilters((prev) => ({
+                      ...prev,
+                      from_date: dates[0].format("YYYY-MM-DD"),
+                      to_date: dates[1].format("YYYY-MM-DD"),
+                    }));
+                  } else {
+                    setFilters((prev) => ({
+                      ...prev,
+                      from_date: null,
+                      to_date: null,
+                    }));
+                  }
+                }}
               />
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  setFilters({
+                    status: null,
+                    from_date: null,
+                    to_date: null,
+                  });
+                  setTimeout(() => fetchMeetings(), 0);
+                }}
+              >
+                Làm mới
+              </Button>
             </div>
           </Card>
 
           {/* Table */}
           <Card
-            className="shadow-2xl rounded-2xl border-0 bg-white/90 backdrop-blur-sm"
+            style={{
+              marginTop: "20px",
+            }}
+            className="shadow-2xl rounded-2xl border-0 bg-white/90 backdrop-blur-sm "
             title={
               <span className="text-xl font-semibold">
                 <CalendarOutlined className="mr-2" />
@@ -311,24 +339,41 @@ export const StudentMeetings = () => {
         <Modal
           title="Gửi Feedback"
           open={feedbackModalVisible}
-          onOk={handleSubmitFeedback}
           onCancel={handleCloseFeedbackModal}
-          confirmLoading={feedbackLoading}
+          footer={null}
           width={600}
-          okText="Gửi"
-          cancelText="Hủy"
         >
-          <Space direction="vertical" style={{ width: "100%" }} size="large">
-            <Input.TextArea
-              rows={5}
-              placeholder="Nhập nội dung feedback của bạn..."
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-            />
-            <p className="text-gray-500 text-sm">
-              Feedback của bạn sẽ giúp cải thiện chất lượng các cuộc họp tới.
-            </p>
-          </Space>
+          <Form
+            form={feedbackForm}
+            onFinish={handleSubmitFeedback}
+            layout="vertical"
+          >
+            <Form.Item
+              name="feedback_content"
+              label="Nội dung feedback"
+              rules={[{ required: true, message: "Vui lòng nhập feedback" }]}
+            >
+              <Input.TextArea
+                rows={5}
+                placeholder="Nhập nội dung feedback của bạn..."
+              />
+            </Form.Item>
+            <Form.Item className="mb-0">
+              <Space style={{ width: "100%" }} size="middle">
+                <Button block onClick={handleCloseFeedbackModal}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  block
+                  htmlType="submit"
+                  loading={feedbackLoading}
+                >
+                  Gửi
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
         </Modal>
       </div>
     </StudentLayout>

@@ -391,6 +391,8 @@ export const StudentMeetingDetail = () => {
                 <TextArea
                   rows={6}
                   placeholder="Nhập phản hồi của bạn về cuộc họp..."
+                  maxLength={500}
+                  showCount
                 />
               </Form.Item>
               <Form.Item className="mb-0">
