@@ -294,6 +294,24 @@ const getActivityRoleDetailAPI = (activityId, roleId) => {
   return axios.get(URL_BACKEND);
 };
 
+// Create activity role
+const createActivityRoleAPI = (activityId, roleData) => {
+  const URL_BACKEND = `/api/activities/${activityId}/roles`;
+  return axios.post(URL_BACKEND, roleData);
+};
+
+// Update activity role
+const updateActivityRoleAPI = (activityId, roleId, roleData) => {
+  const URL_BACKEND = `/api/activities/${activityId}/roles/${roleId}`;
+  return axios.put(URL_BACKEND, roleData);
+};
+
+// Delete activity role
+const deleteActivityRoleAPI = (activityId, roleId) => {
+  const URL_BACKEND = `/api/activities/${activityId}/roles/${roleId}`;
+  return axios.delete(URL_BACKEND);
+};
+
 // ========== STUDENT POINTS APIs ==========
 
 // Get student points and activities (Advisor or Student)
@@ -1257,6 +1275,9 @@ export {
     getMyCancellationRequestsAPI,
     getActivityRolesAPI,
     getActivityRoleDetailAPI,
+    createActivityRoleAPI,
+    updateActivityRoleAPI,
+    deleteActivityRoleAPI,
     // Student Points APIs
     getStudentPointsAPI,
     getClassSummaryPointsAPI,

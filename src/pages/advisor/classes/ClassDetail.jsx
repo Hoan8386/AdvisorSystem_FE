@@ -332,6 +332,20 @@ export const ClassDetail = () => {
     }
   };
 
+  const handleCreateWarning = (student) => {
+    navigate("/advisor/monitoring-notes/create", {
+      state: {
+        selectedStudent: {
+          student_id: student.student_id,
+          user_code: student.user_code,
+          full_name: student.full_name,
+          class_id: classId,
+          semester_id: selectedSemester,
+        },
+      },
+    });
+  };
+
   const handleOpenPositionModal = (student) => {
     setSelectedStudent(student);
     setSelectedPosition(student.position);
@@ -818,6 +832,14 @@ export const ClassDetail = () => {
             title="Xem lịch học"
             onClick={() => handleViewStudentSchedule(record.student_id)}
             disabled={!selectedSemester}
+          />
+          <Button
+            type="link"
+            size="small"
+            icon={<WarningOutlined />}
+            title="Tạo cảnh báo"
+            onClick={() => handleCreateWarning(record)}
+            danger
           />
         </Space>
       ),
@@ -1373,9 +1395,9 @@ export const ClassDetail = () => {
                   <Descriptions.Item label="Lớp">
                     {selectedStudentGrades.student_info?.class_name}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Email">
+                  {/* <Descriptions.Item label="Email">
                     {selectedStudentGrades.student_info?.email}
-                  </Descriptions.Item>
+                  </Descriptions.Item> */}
                 </Descriptions>
               </Card>
 
