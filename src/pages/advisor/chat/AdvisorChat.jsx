@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom"; // Import Link
 import {
   Card,
   List,
   Input,
   Button,
   Avatar,
-  Space,
   Badge,
   Empty,
   message,
   Popconfirm,
-  Divider,
   Tooltip,
+  Upload,
 } from "antd";
 import {
   SendOutlined,
@@ -21,6 +21,9 @@ import {
   ReloadOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
+  PaperClipOutlined,
+  FileOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import { AdvisorLayout } from "../../../components/layout/AdvisorLayout";
 import {
@@ -48,6 +51,8 @@ export const AdvisorChat = () => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [messageContent, setMessageContent] = useState("");
+  const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [studentSearchKeyword, setStudentSearchKeyword] = useState("");
@@ -77,7 +82,6 @@ export const AdvisorChat = () => {
     } catch (error) {
       console.error("Error fetching conversations:", error);
       if (error.response?.status === 404) {
-        console.warn("Conversations endpoint not found (404)");
         setConversations([]);
         setFilteredConversations([]);
       } else {
@@ -109,7 +113,6 @@ export const AdvisorChat = () => {
     } catch (error) {
       console.error("Error fetching messages:", error);
       if (error.response?.status === 404) {
-        console.warn("Messages endpoint not found (404)");
         setMessages([]);
       } else {
         message.error("Không thể tải tin nhắn");
@@ -125,8 +128,8 @@ export const AdvisorChat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!messageContent.trim()) {
-      message.warning("Vui lòng nhập nội dung tin nhắn");
+    if (!messageContent.trim() && fileList.length === 0) {
+      message.warning("Vui lòng nhập nội dung hoặc chọn file đính kèm");
       return;
     }
 
@@ -137,14 +140,44 @@ export const AdvisorChat = () => {
 
     try {
       setSending(true);
+
+      let attachmentPath = null;
+      if (fileList.length > 0) {
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", fileList[0].originFileObj);
+
+        // Upload file trước
+        const uploadResponse = await fetch("http://localhost:8000/api/upload", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+          body: formData,
+        });
+
+        const uploadData = await uploadResponse.json();
+        if (uploadData.success) {
+          attachmentPath = uploadData.data.path;
+        } else {
+          message.error(uploadData.message || "Không thể upload file");
+          setUploading(false);
+          setSending(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       const response = await sendMessageApi({
         partner_id: selectedConversation.partner_id,
-        content: messageContent.trim(),
+        content: messageContent.trim() || "",
+        attachment_path: attachmentPath,
       });
 
       if (response?.success && response?.data) {
         setMessages((prev) => [...prev, response.data]);
         setMessageContent("");
+        setFileList([]);
         setConversations((prev) =>
           prev.map((conv) =>
             conv.partner_id === selectedConversation.partner_id
@@ -236,6 +269,23 @@ export const AdvisorChat = () => {
     setFilteredConversations(filtered);
   };
 
+  const handleFileChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList.slice(-1));
+  };
+
+  const handleRemoveFile = () => {
+    setFileList([]);
+  };
+
+  const beforeUpload = (file) => {
+    const isLt10M = file.size / 1024 / 1024 < 10;
+    if (!isLt10M) {
+      message.error("File phải nhỏ hơn 10MB!");
+      return false;
+    }
+    return false;
+  };
+
   const renderMessageItem = (msg) => {
     const isSentByMe = msg.sender_type === "advisor";
     const isDeleted = !msg.content && !msg.attachment_path;
@@ -266,12 +316,12 @@ export const AdvisorChat = () => {
             }`}
           >
             <div
-              className={`px-4 py-3 rounded-2xl transition-all duration-200 ${
+              className={`px-5 py-3 rounded-2xl transition-all duration-200 shadow-md hover:shadow-lg ${
                 isDeleted
                   ? "bg-gray-100 text-gray-400 italic border border-gray-200"
                   : isSentByMe
-                  ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl"
-                  : "bg-white text-gray-800 border border-gray-200 shadow-md hover:shadow-lg"
+                  ? "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white"
+                  : "bg-white text-gray-800 border border-gray-200"
               }`}
               style={{
                 borderBottomRightRadius: isSentByMe ? "6px" : "18px",
@@ -284,9 +334,56 @@ export const AdvisorChat = () => {
                   Tin nhắn đã bị xóa
                 </span>
               ) : (
-                <span className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                  {msg.content}
-                </span>
+                <>
+                  {msg.content && (
+                    <span className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+                      {msg.content}
+                    </span>
+                  )}
+                  {msg.attachment_path && (
+                    <div className={msg.content ? "mt-3" : ""}>
+                      <Link
+                        to={`http://localhost:8000${msg.attachment_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group/file ${
+                          isSentByMe
+                            ? "border-white/50 hover:bg-white/10"
+                            : "bg-white border-gray-200 hover:border-blue-400 shadow-sm"
+                        }`}
+                      >
+                        {/* Icon Wrapper */}
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 ${
+                            isSentByMe
+                              ? "bg-white text-blue-600"
+                              : "bg-blue-50 text-blue-600"
+                          }`}
+                        >
+                          <FileOutlined className="text-xl" />
+                        </div>
+
+                        <div className="flex flex-col overflow-hidden text-left">
+                          <span
+                            className={`text-sm font-bold truncate pr-2 ${
+                              isSentByMe ? "text-white" : "text-gray-800"
+                            }`}
+                          >
+                            {msg.attachment_path.split("/").pop()}
+                          </span>
+
+                          <span
+                            className={`text-[11px] font-medium ${
+                              isSentByMe ? "text-blue-100" : "text-gray-400"
+                            }`}
+                          >
+                            Nhấn để xem
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div
@@ -615,43 +712,122 @@ export const AdvisorChat = () => {
                   )}
                 </div>
 
-                {/* Message Input */}
-                <div className="p-5 bg-white border-t shadow-inner">
-                  <Space.Compact style={{ width: "100%" }} size="large">
-                    <TextArea
-                      value={messageContent}
-                      onChange={(e) => setMessageContent(e.target.value)}
-                      placeholder="Nhập tin nhắn của bạn..."
-                      autoSize={{ minRows: 1, maxRows: 4 }}
-                      onPressEnter={(e) => {
-                        if (!e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
+                {/* Message Input - ĐÃ CẬP NHẬT GIAO DIỆN MỚI */}
+                <div
+                  className="p-5 bg-white border-t shadow-inner"
+                  style={{
+                    borderTop: "1px solid rgba(0,0,0,0.06)",
+                  }}
+                >
+                  {/* File Preview */}
+                  {fileList.length > 0 && (
+                    <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200 w-fit">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <FileOutlined className="text-blue-500 text-lg" />
+                          <span className="text-sm font-medium text-gray-700">
+                            {fileList[0].name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ({(fileList[0].size / 1024).toFixed(2)} KB)
+                          </span>
+                        </div>
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<CloseOutlined />}
+                          onClick={handleRemoveFile}
+                          className="hover:bg-blue-100 rounded-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input Controls */}
+                  <div className="flex items-end gap-3">
+                    <Upload
+                      fileList={fileList}
+                      onChange={handleFileChange}
+                      beforeUpload={beforeUpload}
+                      maxCount={1}
+                      showUploadList={false}
+                    >
+                      <Button
+                        icon={
+                          <PaperClipOutlined style={{ fontSize: "20px" }} />
                         }
-                      }}
-                      className="rounded-xl text-base shadow-sm border-gray-300 focus:border-blue-400"
-                      style={{ padding: "12px 16px" }}
-                    />
+                        size="large"
+                        className="rounded-xl border-gray-200 flex items-center justify-center hover:border-blue-400 hover:text-blue-600 transition-colors"
+                        disabled={sending || uploading}
+                        style={{
+                          height: "46px", // Hình vuông 46x46
+                          width: "46px",
+                          padding: 0,
+                        }}
+                      />
+                    </Upload>
+
+                    <div className="flex-1">
+                      <TextArea
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        placeholder="Nhập tin nhắn..."
+                        autoSize={{ minRows: 1, maxRows: 4 }}
+                        onPressEnter={(e) => {
+                          if (!e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        className="rounded-xl border-gray-200 focus:border-blue-400 transition-colors"
+                        style={{
+                          padding: "10px 15px",
+                          fontSize: "15px",
+                          lineHeight: "24px",
+                          resize: "none",
+                        }}
+                      />
+                    </div>
+
                     <Button
                       type="primary"
                       icon={<SendOutlined />}
                       onClick={handleSendMessage}
-                      loading={sending}
-                      disabled={!messageContent.trim()}
+                      loading={sending || uploading}
+                      disabled={!messageContent.trim() && fileList.length === 0}
                       size="large"
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 min-w-[110px] rounded-xl shadow-lg hover:shadow-xl transition-all font-semibold"
+                      className="rounded-xl shadow-md hover:shadow-lg transition-all font-medium flex items-center"
                       style={{
-                        height: "auto",
-                        minHeight: "48px",
-                        marginLeft: "20px",
+                        height: "46px",
+                        background:
+                          messageContent.trim() || fileList.length > 0
+                            ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
+                            : undefined,
+                        border: "none",
+                        paddingLeft: "10px", // Padding trái 10px
+                        paddingRight: "20px",
                       }}
                     >
                       Gửi
                     </Button>
-                  </Space.Compact>
-                  <p className="text-xs text-gray-400 mt-2 text-center">
-                    Nhấn Enter để gửi, Shift + Enter để xuống dòng
-                  </p>
+                  </div>
+
+                  <div className="text-xs text-gray-400 mt-3 text-center flex items-center justify-center gap-4">
+                    <span className="flex items-center gap-1.5">
+                      <kbd className="px-2 py-1 bg-gray-100 rounded shadow-sm font-mono text-gray-600">
+                        Enter
+                      </kbd>
+                      <span>để gửi</span>
+                    </span>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1.5">
+                      <kbd className="px-2 py-1 bg-gray-100 rounded shadow-sm font-mono text-gray-600">
+                        Shift + Enter
+                      </kbd>
+                      <span>để xuống dòng</span>
+                    </span>
+                  </div>
                 </div>
               </>
             ) : (

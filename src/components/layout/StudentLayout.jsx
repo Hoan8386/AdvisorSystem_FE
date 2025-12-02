@@ -310,7 +310,7 @@ export const StudentLayout = ({ children }) => {
               />
             </div>
             <div className="text-sm text-gray-600">
-              © 2024 Student Advisory System. All rights reserved.
+              © 2025 Student Advisory System. HKY.
             </div>
           </div>
         </div>

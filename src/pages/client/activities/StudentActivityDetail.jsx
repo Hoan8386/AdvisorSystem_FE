@@ -335,6 +335,7 @@ export const StudentActivityDetail = () => {
             borderRadius: 12,
             border: "none",
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            marginTop: "20px",
           }}
         >
           <Space direction="vertical" size="large" className="w-full">
