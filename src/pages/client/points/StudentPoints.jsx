@@ -210,7 +210,7 @@ export const StudentPoints = () => {
                 }}
               >
                 <div className="text-5xl font-bold text-green-600 mb-2">
-                  {pointsData.summary?.total_social_points + "/180" || 0}
+                  {pointsData.summary?.total_social_points + "/170" || 0}
                 </div>
                 <div className="text-lg text-gray-700 font-semibold">
                   Điểm Cộng Tác Xã Hội

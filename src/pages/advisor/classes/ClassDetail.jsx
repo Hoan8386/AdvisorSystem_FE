@@ -1579,7 +1579,8 @@ export const ClassDetail = () => {
                     <Statistic
                       title="Tổng điểm CTXH"
                       value={
-                        selectedStudentPoints.summary?.total_social_points || 0
+                        selectedStudentPoints.summary?.total_social_points +
+                          "/170" || 0 + "/170"
                       }
                       valueStyle={{ color: "#1890ff" }}
                       prefix={<TrophyOutlined />}

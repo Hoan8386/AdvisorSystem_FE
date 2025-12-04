@@ -39,6 +39,11 @@ const logoutApi = () => {
      return axios.post(URL_BACKEND);
 }
 
+const refreshTokenApi = () => {
+    const URL_BACKEND = "/api/auth/refresh";
+    return axios.post(URL_BACKEND);
+}
+
 const updateUserApi = (id, updatedUserData) => {
   const URL_BACKEND = `/api/users/${id}`;
   return axios.put(URL_BACKEND, updatedUserData);
@@ -1236,6 +1241,7 @@ export {
     loginApi,
     getAccountAPI,
     logoutApi,
+    refreshTokenApi,
     updateUserApi,
     forgotPassword,
     changePassword,

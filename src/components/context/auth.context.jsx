@@ -1,5 +1,9 @@
 import { createContext, useState, useEffect } from "react";
-import { getAccountAPI, logoutApi } from "../../services/api.service";
+import {
+  getAccountAPI,
+  logoutApi,
+  refreshTokenApi,
+} from "../../services/api.service";
 
 const AuthContext = createContext({
   id: null,
@@ -85,6 +89,22 @@ const AuthWrapper = ({ children }) => {
     }
   };
 
+  const handleRefreshToken = async () => {
+    try {
+      const res = await refreshTokenApi();
+      if (res && res.token) {
+        window.localStorage.setItem("access_token", res.token);
+        return res.token;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to refresh token", error);
+      // If refresh fails, logout user
+      await handleLogout();
+      return null;
+    }
+  };
+
   // On mount: if token exists, try to fetch current account
   useEffect(() => {
     const init = async () => {
@@ -139,6 +159,7 @@ const AuthWrapper = ({ children }) => {
         setCart,
         handleLogin,
         handleLogout,
+        handleRefreshToken,
       }}
     >
       {children}

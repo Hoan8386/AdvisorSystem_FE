@@ -80,19 +80,23 @@ export const ActivityDetail = () => {
       },
     });
   };
-
   const handleExportRegistrations = async () => {
+    let toastId; // 1. Khai báo bên ngoài để scope bao trùm cả try và catch
+
     try {
-      const toastId = toast.loading("Đang xuất danh sách đăng ký...");
+      toastId = toast.loading("Đang xuất danh sách đăng ký...");
+
+      // Gọi API (Lưu ý: API này phải có config responseType: 'blob' trong service)
       const response = await exportRegistrationsAPI(id);
 
-      // Lấy tên file từ Content-Disposition header hoặc tạo tên mặc định
+      // --- XỬ LÝ DOWNLOAD FILE KHI THÀNH CÔNG ---
+
+      // Lấy tên file từ header (nếu có)
       let fileName = "DanhSachDangKy.xlsx";
       const contentDisposition = response.headers?.["content-disposition"];
-      console.log("Content-Disposition:", contentDisposition);
 
       if (contentDisposition) {
-        // Try different patterns for filename extraction
+        // Regex để bắt tên file (ưu tiên filename* UTF-8)
         let matches = contentDisposition.match(
           /filename\*=(?:UTF-8'')?(.+?)(?:;|$)/
         );
@@ -101,11 +105,10 @@ export const ActivityDetail = () => {
         }
         if (matches && matches[1]) {
           fileName = decodeURIComponent(matches[1]).replace(/"/g, "").trim();
-          console.log("Extracted fileName:", fileName);
         }
       }
 
-      // Download file - response.data là Blob từ axios interceptor
+      // Tạo Blob URL và tải xuống
       const blob = response.data || response;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -116,21 +119,50 @@ export const ActivityDetail = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
+      // Tắt loading và báo thành công
       toast.dismiss(toastId);
       toast.success("Xuất danh sách đăng ký thành công");
     } catch (error) {
-      const errorMsg =
-        error?.response?.status === 403
-          ? "Bạn không có quyền xuất danh sách này"
-          : error?.response?.status === 404
-          ? "Hoạt động không tồn tại"
-          : error?.message ||
-            "Lỗi khi xuất danh sách đăng ký. Vui lòng thử lại.";
+      // --- XỬ LÝ LỖI ---
+
+      // 2. Luôn tắt loading trước tiên
+      if (toastId) toast.dismiss(toastId);
+
+      let errorMsg = "Không có sinh viên nào tham gia hoạt động.  ";
+
+      // 3. QUAN TRỌNG: Giải nén Blob lỗi để lấy message từ Server
+      if (error.response?.data instanceof Blob) {
+        try {
+          // Chuyển Blob thành text
+          const blobText = await error.response.data.text();
+          // Parse text thành JSON object
+          const errorJson = JSON.parse(blobText);
+
+          // Nếu server trả về message, dùng nó (Ví dụ: "Chưa có sinh viên nào...")
+          if (errorJson.message) {
+            errorMsg = errorJson.message;
+          }
+        } catch (e) {
+          // Nếu không parse được JSON thì bỏ qua, dùng message mặc định hoặc status code
+          console.error("Lỗi khi đọc Blob error:", e);
+        }
+      }
+      // Trường hợp lỗi không phải Blob (ví dụ lỗi mạng, hoặc config sai)
+      else if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      }
+      // Fallback theo status code nếu không lấy được message cụ thể
+      else if (error.response?.status === 403) {
+        errorMsg = "Bạn không có quyền xuất danh sách này.";
+      } else if (error.response?.status === 404) {
+        errorMsg = "Hoạt động không tồn tại.";
+      }
+
+      // Hiển thị lỗi
       toast.error(errorMsg);
-      console.error(error);
+      console.error("Export Error:", error);
     }
   };
-
   const handleExportAttendanceTemplate = async () => {
     try {
       const toastId = toast.loading("Đang xuất file mẫu điểm danh...");
