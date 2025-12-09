@@ -872,6 +872,12 @@ const searchMessagesApi = (partnerId, keyword) => {
   return axios.get(URL_BACKEND);
 };
 
+// Send typing status
+const sendTypingStatusApi = (data) => {
+  const URL_BACKEND = "/api/messages/typing";
+  return axios.post(URL_BACKEND, data);
+};
+
 // Advisor APIs
 const getAdvisorsApi = (params = {}) => {
   const queryParams = new URLSearchParams();
@@ -1377,6 +1383,7 @@ export {
   deleteMessageApi,
   getUnreadCountApi,
   searchMessagesApi,
+  sendTypingStatusApi,
   // Advisor APIs
   getAdvisorsApi,
   updateAdvisorApi,

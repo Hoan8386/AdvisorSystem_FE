@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom"; // Import Link
 import {
   Card,
@@ -33,6 +33,8 @@ import {
   deleteMessageApi,
   searchMessagesApi,
 } from "../../../services/api.service";
+import { AuthContext } from "../../../components/context/auth.context";
+import { getEcho, initEcho } from "../../../utils/echo";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -44,11 +46,13 @@ const { TextArea } = Input;
 const { Search } = Input;
 
 export const AdvisorChat = () => {
+  const { user } = useContext(AuthContext);
   const [conversations, setConversations] = useState([]);
   const [filteredConversations, setFilteredConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Loading cho conversations list
+  const [messagesLoading, setMessagesLoading] = useState(false); // Loading cho messages
   const [sending, setSending] = useState(false);
   const [messageContent, setMessageContent] = useState("");
   const [fileList, setFileList] = useState([]);
@@ -56,7 +60,129 @@ export const AdvisorChat = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [studentSearchKeyword, setStudentSearchKeyword] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState(null);
   const messagesEndRef = useRef(null);
+  const echoChannelRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  // Khởi tạo Echo với token
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token && !getEcho()) {
+      initEcho(token);
+    }
+  }, []);
+
+  // Subscribe WebSocket channel khi có user
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const echo = getEcho();
+    if (!echo) return;
+
+    // Subscribe vào channel advisor
+    const channelName = `chat.advisor.${user.id}`;
+    console.log("🔵 [Advisor] Subscribing to channel:", channelName);
+    console.log("🔵 [Advisor] User ID:", user.id);
+    console.log("🔵 [Advisor] User Role:", user.role);
+
+    echoChannelRef.current = echo.private(channelName);
+
+    // Listen sự kiện tin nhắn mới
+    echoChannelRef.current.listen(".message.sent", (event) => {
+      console.log("📩 [Advisor] Received new message:", event);
+      console.log("📩 [Advisor] Sender info:", event.sender);
+      console.log("📩 [Advisor] Sender type:", event.sender?.type);
+      console.log(
+        "📩 [Advisor] Current selected conversation:",
+        selectedConversation?.partner_id
+      );
+
+      // ✅ Reload conversations để cập nhật tin nhắn mới nhất và unread count
+      // Giống như advisor-chat.blade.php dòng 702: loadStudents()
+      fetchConversations();
+
+      // ✅ CHỈ hiển thị tin nhắn từ student (không phải từ chính mình)
+      // Giống như trong advisor-chat.blade.php: if (e.sender.type !== currentUser.role && selectedStudent && e.sender.id === selectedStudent.id)
+      if (event.sender && event.sender.type !== 'advisor') {
+        // Thêm tin nhắn vào danh sách nếu đang xem conversation đó
+        if (
+          selectedConversation &&
+          event.message.student_id === selectedConversation.partner_id
+        ) {
+          setMessages((prev) => {
+            // Kiểm tra tin nhắn đã tồn tại chưa
+            const exists = prev.some(
+              (msg) => msg.message_id === event.message.message_id
+            );
+            if (!exists) {
+              return [...prev, event.message];
+            }
+            return prev;
+          });
+        }
+
+        // Hiển thị thông báo nếu không đang xem conversation đó
+        if (
+          !selectedConversation ||
+          selectedConversation.partner_id !== event.message.student_id
+        ) {
+          message.info(`Tin nhắn mới từ ${event.sender?.name || "Sinh viên"}`);
+        }
+      }
+    });
+
+    // Listen sự kiện đã đọc
+    echoChannelRef.current.listen(".message.read", (event) => {
+      console.log("Message read:", event);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.message_id === event.message.message_id
+            ? { ...msg, is_read: 1 }
+            : msg
+        )
+      );
+    });
+
+    // Listen sự kiện typing
+    echoChannelRef.current.listen(".user.typing", (event) => {
+      console.log("User typing:", event);
+      if (
+        selectedConversation &&
+        event.sender_id === selectedConversation.partner_id
+      ) {
+        setIsTyping(event.is_typing);
+        setTypingUser(event.sender_name);
+
+        // Tự động tắt typing indicator sau 3 giây
+        if (event.is_typing) {
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+          }
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+            setTypingUser(null);
+          }, 3000);
+        }
+      }
+    });
+
+    console.log(
+      `✅ [Advisor] Successfully subscribed to channel: ${channelName}`
+    );
+
+    // Cleanup khi unmount
+    return () => {
+      if (echoChannelRef.current) {
+        echo.leave(channelName);
+        console.log(`❌ [Advisor] Unsubscribed from channel: ${channelName}`);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [user?.id, selectedConversation]);
 
   useEffect(() => {
     fetchConversations();
@@ -94,7 +220,7 @@ export const AdvisorChat = () => {
 
   const fetchMessages = async (partnerId) => {
     try {
-      setLoading(true);
+      setMessagesLoading(true);
       const response = await getMessagesApi(partnerId);
       if (response?.success && response?.data) {
         setMessages(response.data);
@@ -118,13 +244,19 @@ export const AdvisorChat = () => {
         message.error("Không thể tải tin nhắn");
       }
     } finally {
-      setLoading(false);
+      setMessagesLoading(false);
     }
   };
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.partner_id);
+    
+    // ✅ Reload conversations sau khi xem tin nhắn để cập nhật unread count = 0
+    // Giống như advisor-chat.blade.php dòng 676-678
+    setTimeout(() => {
+      fetchConversations();
+    }, 500); // Delay để backend kịp mark messages as read
   };
 
   const handleSendMessage = async () => {
@@ -141,41 +273,28 @@ export const AdvisorChat = () => {
     try {
       setSending(true);
 
-      let attachmentPath = null;
+      // ✅ Gửi file trực tiếp cùng với tin nhắn (giống Blade.php)
+      const formData = new FormData();
+      formData.append('partner_id', selectedConversation.partner_id);
+      if (messageContent.trim()) {
+        formData.append('content', messageContent.trim());
+      }
       if (fileList.length > 0) {
-        setUploading(true);
-        const formData = new FormData();
-        formData.append("file", fileList[0].originFileObj);
-
-        // Upload file trước
-        const uploadResponse = await fetch("http://localhost:8000/api/upload", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-          body: formData,
-        });
-
-        const uploadData = await uploadResponse.json();
-        if (uploadData.success) {
-          attachmentPath = uploadData.data.path;
-        } else {
-          message.error(uploadData.message || "Không thể upload file");
-          setUploading(false);
-          setSending(false);
-          return;
-        }
-        setUploading(false);
+        formData.append('attachment', fileList[0].originFileObj);
       }
 
-      const response = await sendMessageApi({
-        partner_id: selectedConversation.partner_id,
-        content: messageContent.trim() || "",
-        attachment_path: attachmentPath,
+      const response = await fetch('http://localhost:8000/api/dialogs/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: formData,
       });
 
-      if (response?.success && response?.data) {
-        setMessages((prev) => [...prev, response.data]);
+      const data = await response.json();
+
+      if (data?.success && data?.data) {
+        setMessages((prev) => [...prev, data.data]);
         setMessageContent("");
         setFileList([]);
         setConversations((prev) =>
@@ -183,12 +302,15 @@ export const AdvisorChat = () => {
             conv.partner_id === selectedConversation.partner_id
               ? {
                   ...conv,
-                  last_message: response.data.content,
-                  last_message_time: response.data.sent_at,
+                  last_message: data.data.content || "Đã gửi file đính kèm",
+                  last_message_time: data.data.sent_at,
                 }
               : conv
           )
         );
+        message.success("Gửi tin nhắn thành công");
+      } else {
+        message.error(data?.message || "Không thể gửi tin nhắn");
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -681,7 +803,7 @@ export const AdvisorChat = () => {
 
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 via-white to-blue-50/30 p-6">
-                  {loading ? (
+                  {messagesLoading ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-14 w-14 border-4 border-blue-200 border-t-blue-500 mx-auto mb-4 shadow-lg"></div>
@@ -707,6 +829,38 @@ export const AdvisorChat = () => {
                   ) : (
                     <div>
                       {messages.map(renderMessageItem)}
+                      {/* Typing Indicator */}
+                      {isTyping && typingUser && (
+                        <div className="flex justify-start mb-4">
+                          <div className="flex gap-3 items-center">
+                            <Avatar
+                              src={selectedConversation.partner_avatar}
+                              icon={<UserOutlined />}
+                              size={36}
+                              className="flex-shrink-0"
+                            />
+                            <div className="bg-gray-200 px-5 py-3 rounded-2xl">
+                              <div className="flex gap-1.5">
+                                <span
+                                  className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                                  style={{ animationDelay: "0ms" }}
+                                ></span>
+                                <span
+                                  className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                                  style={{ animationDelay: "150ms" }}
+                                ></span>
+                                <span
+                                  className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                                  style={{ animationDelay: "300ms" }}
+                                ></span>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400 italic">
+                              {typingUser} đang nhập...
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <div ref={messagesEndRef} />
                     </div>
                   )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import {
   Card,
@@ -34,6 +34,8 @@ import {
   deleteMessageApi,
   searchMessagesApi,
 } from "../../../services/api.service";
+import { AuthContext } from "../../../components/context/auth.context";
+import { getEcho, initEcho } from "../../../utils/echo";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
@@ -45,6 +47,7 @@ const { TextArea } = Input;
 const { Search } = Input;
 
 export const StudentChat = () => {
+  const { user } = useContext(AuthContext);
   const [advisor, setAdvisor] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +57,118 @@ export const StudentChat = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState(null);
   const messagesEndRef = useRef(null);
+  const echoChannelRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  // Khởi tạo Echo với token
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token && !getEcho()) {
+      initEcho(token);
+    }
+  }, []);
+
+  // Subscribe WebSocket channel khi có user
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const echo = getEcho();
+    if (!echo) return;
+
+    // Subscribe vào channel student
+    const channelName = `chat.student.${user.id}`;
+    console.log("🟢 [Student] Subscribing to channel:", channelName);
+    console.log("🟢 [Student] User ID:", user.id);
+    console.log("🟢 [Student] User Role:", user.role);
+
+    echoChannelRef.current = echo.private(channelName);
+
+    // Listen sự kiện tin nhắn mới
+    echoChannelRef.current.listen(".message.sent", (event) => {
+      console.log("📩 [Student] Received new message:", event);
+      console.log("📩 [Student] Sender info:", event.sender);
+      console.log("📩 [Student] Sender type:", event.sender?.type);
+      console.log("📩 [Student] Message sender_type:", event.message?.sender_type);
+
+      // ✅ CHỈ hiển thị tin nhắn từ advisor (không phải từ chính mình)
+      // Giống như trong student-chat.blade.php: if (e.sender.type !== currentUser.role)
+      if (event.sender && event.sender.type !== 'student') {
+        // Thêm tin nhắn vào danh sách
+        setMessages((prev) => {
+          // Kiểm tra tin nhắn đã tồn tại chưa
+          const exists = prev.some(
+            (msg) => msg.message_id === event.message.message_id
+          );
+          if (!exists) {
+            return [...prev, event.message];
+          }
+          return prev;
+        });
+
+        // Cập nhật advisor info
+        if (advisor) {
+          setAdvisor((prev) => ({
+            ...prev,
+            last_message: event.message.content || "Đã gửi file đính kèm",
+            last_message_time: event.message.sent_at,
+          }));
+        }
+
+        // Hiển thị thông báo tin nhắn mới từ advisor
+        message.info(`Tin nhắn mới từ ${event.sender?.name || "Cố vấn"}`);
+      }
+    });
+
+    // Listen sự kiện đã đọc
+    echoChannelRef.current.listen(".message.read", (event) => {
+      console.log("Message read:", event);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.message_id === event.message.message_id
+            ? { ...msg, is_read: 1 }
+            : msg
+        )
+      );
+    });
+
+    // Listen sự kiện typing
+    echoChannelRef.current.listen(".user.typing", (event) => {
+      console.log("User typing:", event);
+      if (advisor && event.sender_id === advisor.partner_id) {
+        setIsTyping(event.is_typing);
+        setTypingUser(event.sender_name);
+
+        // Tự động tắt typing indicator sau 3 giây
+        if (event.is_typing) {
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+          }
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+            setTypingUser(null);
+          }, 3000);
+        }
+      }
+    });
+
+    console.log(
+      `✅ [Student] Successfully subscribed to channel: ${channelName}`
+    );
+
+    // Cleanup khi unmount
+    return () => {
+      if (echoChannelRef.current) {
+        echo.leave(channelName);
+        console.log(`❌ [Student] Unsubscribed from channel: ${channelName}`);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [user?.id, advisor]);
 
   useEffect(() => {
     fetchConversation();
@@ -119,48 +233,38 @@ export const StudentChat = () => {
     try {
       setSending(true);
 
-      let attachmentPath = null;
+      // ✅ Gửi file trực tiếp cùng với tin nhắn (giống Blade.php)
+      const formData = new FormData();
+      formData.append('partner_id', advisor.partner_id);
+      if (messageContent.trim()) {
+        formData.append('content', messageContent.trim());
+      }
       if (fileList.length > 0) {
-        setUploading(true);
-        const formData = new FormData();
-        formData.append("file", fileList[0].originFileObj);
-
-        // Upload file trước
-        const uploadResponse = await fetch("http://localhost:8000/api/upload", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-          body: formData,
-        });
-
-        const uploadData = await uploadResponse.json();
-        if (uploadData.success) {
-          attachmentPath = uploadData.data.path;
-        } else {
-          message.error(uploadData.message || "Không thể upload file");
-          setUploading(false);
-          setSending(false);
-          return;
-        }
-        setUploading(false);
+        formData.append('attachment', fileList[0].originFileObj);
       }
 
-      const response = await sendMessageApi({
-        partner_id: advisor.partner_id,
-        content: messageContent.trim() || "",
-        attachment_path: attachmentPath,
+      const response = await fetch('http://localhost:8000/api/dialogs/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: formData,
       });
 
-      if (response?.success && response?.data) {
-        setMessages((prev) => [...prev, response.data]);
+      const data = await response.json();
+
+      if (data?.success && data?.data) {
+        setMessages((prev) => [...prev, data.data]);
         setMessageContent("");
         setFileList([]);
         setAdvisor((prev) => ({
           ...prev,
-          last_message: response.data.content,
-          last_message_time: response.data.sent_at,
+          last_message: data.data.content || "Đã gửi file đính kèm",
+          last_message_time: data.data.sent_at,
         }));
+        message.success("Gửi tin nhắn thành công");
+      } else {
+        message.error(data?.message || "Không thể gửi tin nhắn");
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -555,6 +659,42 @@ export const StudentChat = () => {
                 ) : (
                   <div className="space-y-4">
                     {messages.map(renderMessageItem)}
+                    {/* Typing Indicator */}
+                    {isTyping && typingUser && (
+                      <div className="flex justify-start mb-4">
+                        <div className="flex gap-3 items-center">
+                          <Avatar
+                            src={advisor?.partner_avatar}
+                            icon={<UserOutlined />}
+                            size={40}
+                            className="flex-shrink-0 shadow-md border-2 border-white"
+                            style={{
+                              background:
+                                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            }}
+                          />
+                          <div className="bg-gray-200 px-5 py-3 rounded-2xl">
+                            <div className="flex gap-1.5">
+                              <span
+                                className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                                style={{ animationDelay: "0ms" }}
+                              ></span>
+                              <span
+                                className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                                style={{ animationDelay: "150ms" }}
+                              ></span>
+                              <span
+                                className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                                style={{ animationDelay: "300ms" }}
+                              ></span>
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400 italic">
+                            {typingUser} đang nhập...
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
                 )}
