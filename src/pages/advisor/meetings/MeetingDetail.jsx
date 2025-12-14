@@ -496,11 +496,7 @@ export const MeetingDetail = () => {
                 {meeting?.summary || "Chưa có nội dung"}
               </div>
             </Descriptions.Item>
-            <Descriptions.Item label="Ý kiến lớp" span={2}>
-              <div className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                {meeting?.class_feedback || "Chưa có ý kiến"}
-              </div>
-            </Descriptions.Item>
+
             <Descriptions.Item label="Giảng viên chủ nhiệm" span={2}>
               <div className="flex items-center gap-2">
                 <TeamOutlined className="text-blue-600" />

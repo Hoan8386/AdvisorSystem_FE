@@ -405,18 +405,19 @@ function AdvisorMonitoringNotes() {
             </Row>
           )}
 
-          {tableData.length > 0 ? (
-            <Table
-              columns={columns}
-              dataSource={tableData}
-              loading={loading}
-              rowKey="student_id"
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: 1000 }}
-            />
-          ) : (
-            <Empty description="Không có dữ liệu" />
-          )}
+          <Table
+            columns={columns}
+            dataSource={tableData}
+            loading={loading}
+            rowKey="student_id"
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: 1000 }}
+            locale={{
+              emptyText: loading ? null : (
+                <Empty description="Không có dữ liệu" />
+              ),
+            }}
+          />
         </Card>
 
         {/* --- MODAL TIMELINE ĐÃ ĐƯỢC LÀM ĐẸP --- */}
@@ -518,7 +519,22 @@ function AdvisorMonitoringNotes() {
                               onClick={() => {
                                 navigate(
                                   `/advisor/monitoring-notes/${note.note_id}/edit`,
-                                  { state: { note } }
+                                  {
+                                    state: {
+                                      note: {
+                                        ...note,
+                                        student: {
+                                          ...note.student,
+                                          user_code:
+                                            selectedStudent?.user_code ||
+                                            note.student?.user_code,
+                                          class_id:
+                                            selectedStudent?.class_id ||
+                                            note.student?.class_id,
+                                        },
+                                      },
+                                    },
+                                  }
                                 );
                                 setTimelineModalOpen(false);
                               }}

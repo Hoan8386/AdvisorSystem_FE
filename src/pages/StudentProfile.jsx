@@ -176,8 +176,8 @@ export const StudentProfile = () => {
   return (
     <StudentLayout>
       <div
+        className="p-3 sm:p-4 md:p-6 lg:p-8"
         style={{
-          padding: "32px 24px",
           backgroundColor: "#f5f5f5",
           flex: 1,
         }}
@@ -185,9 +185,7 @@ export const StudentProfile = () => {
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <Spin spinning={loading}>
             {studentInfo && (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 24 }}
-              >
+              <div className="flex flex-col gap-4 md:gap-6">
                 {/* Avatar & Basic Info Card */}
                 <Card
                   style={{
@@ -209,34 +207,27 @@ export const StudentProfile = () => {
 
                   {/* Avatar & Name Container */}
                   <div
+                    className="px-4 sm:px-6 md:px-8 pb-6 md:pb-8"
                     style={{
-                      padding: "0 32px 32px 32px",
                       marginTop: "-60px",
                       position: "relative",
                       zIndex: 10,
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 32,
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div style={{ display: "flex", gap: 24, flex: 1 }}>
+                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-8 items-start sm:items-center justify-between">
+                      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 flex-1 w-full">
                         {/* Avatar */}
                         <div style={{ position: "relative", flexShrink: 0 }}>
                           <Avatar
-                            size={140}
+                            size={window.innerWidth < 640 ? 100 : 140}
                             src={getAvatarUrl(studentInfo.avatar_url)}
                             icon={<UserOutlined />}
                             style={{
                               background:
                                 "linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%)",
-                              border: "6px solid white",
+                              border: "4px solid white",
                               boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                              fontSize: 60,
+                              fontSize: window.innerWidth < 640 ? 40 : 60,
                             }}
                           />
                           {/* SỬA: Nút mở Modal Avatar (Không bọc Upload ở đây nữa) */}

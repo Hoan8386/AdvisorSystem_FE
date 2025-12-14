@@ -158,25 +158,27 @@ export const StudentPoints = () => {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <span className="text-4xl">🏆</span>
-              <h1 className="text-3xl font-bold">Điểm Rèn Luyện Của Tôi</h1>
+        <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl md:text-4xl">🏆</span>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                Điểm Rèn Luyện Của Tôi
+              </h1>
             </div>
             <Select
-              style={{ width: 250 }}
+              className="w-full sm:w-64"
               placeholder="Chọn học kỳ"
               value={selectedSemester}
               onChange={handleSemesterChange}
               options={semesters}
-              size="large"
+              size="middle"
             />
           </div>
           {pointsData?.student_info && (
-            <div className="text-lg opacity-90">
+            <div className="text-sm sm:text-base md:text-lg opacity-90 break-words">
               <span className="font-semibold">
                 {pointsData.student_info.full_name}
               </span>
@@ -185,7 +187,7 @@ export const StudentPoints = () => {
             </div>
           )}
           {pointsData?.filter_info && (
-            <div className="mt-2 text-sm opacity-80">
+            <div className="mt-2 text-xs sm:text-sm opacity-80">
               📅 {pointsData.filter_info.semester_name} -{" "}
               {pointsData.filter_info.academic_year}
             </div>
@@ -199,7 +201,7 @@ export const StudentPoints = () => {
         ) : pointsData ? (
           <>
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <Card
                 className="text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
                 style={{
@@ -209,13 +211,13 @@ export const StudentPoints = () => {
                     "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
                 }}
               >
-                <div className="text-5xl font-bold text-green-600 mb-2">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600 mb-2">
                   {pointsData.summary?.total_social_points + "/170" || 0}
                 </div>
-                <div className="text-lg text-gray-700 font-semibold">
+                <div className="text-base sm:text-lg text-gray-700 font-semibold">
                   Điểm Cộng Tác Xã Hội
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-xs sm:text-sm text-gray-500 mt-1">
                   Tổng điểm hoạt động CTXH
                 </div>
               </Card>
@@ -228,13 +230,13 @@ export const StudentPoints = () => {
                     "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
                 }}
               >
-                <div className="text-5xl font-bold text-blue-600 mb-2">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 mb-2">
                   {pointsData.summary?.total_training_points + "/70" || 0}
                 </div>
-                <div className="text-lg text-gray-700 font-semibold">
+                <div className="text-base sm:text-lg text-gray-700 font-semibold">
                   Điểm Rèn Luyện
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-xs sm:text-sm text-gray-500 mt-1">
                   Tổng điểm hoạt động rèn luyện
                 </div>
               </Card>
@@ -242,6 +244,7 @@ export const StudentPoints = () => {
 
             {/* Activities Table */}
             <Card
+              className="overflow-x-auto"
               style={{
                 borderRadius: 16,
                 border: "none",
@@ -254,8 +257,8 @@ export const StudentPoints = () => {
                   {
                     key: "training",
                     label: (
-                      <span className="text-lg font-semibold">
-                        🔥 Hoạt động Rèn luyện (
+                      <span className="text-sm sm:text-base md:text-lg font-semibold">
+                        🔥 Rèn luyện (
                         {pointsData.training_activities?.length || 0})
                       </span>
                     ),
@@ -266,10 +269,12 @@ export const StudentPoints = () => {
                           columns={trainingColumns}
                           dataSource={pointsData.training_activities}
                           rowKey={(record) => record.activity_id}
+                          scroll={{ x: 800 }}
                           pagination={{
                             pageSize: 10,
                             showSizeChanger: false,
                             showTotal: (total) => `Tổng ${total} hoạt động`,
+                            responsive: true,
                           }}
                         />
                       ) : (
@@ -282,9 +287,8 @@ export const StudentPoints = () => {
                   {
                     key: "social",
                     label: (
-                      <span className="text-lg font-semibold">
-                        💚 Hoạt động CTXH (
-                        {pointsData.social_activities?.length || 0})
+                      <span className="text-sm sm:text-base md:text-lg font-semibold">
+                        💚 CTXH ({pointsData.social_activities?.length || 0})
                       </span>
                     ),
                     children:
@@ -294,10 +298,12 @@ export const StudentPoints = () => {
                           columns={socialColumns}
                           dataSource={pointsData.social_activities}
                           rowKey={(record) => record.activity_id}
+                          scroll={{ x: 800 }}
                           pagination={{
                             pageSize: 10,
                             showSizeChanger: false,
                             showTotal: (total) => `Tổng ${total} hoạt động`,
+                            responsive: true,
                           }}
                         />
                       ) : (

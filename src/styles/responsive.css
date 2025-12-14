@@ -1,0 +1,480 @@
+/* ===== RESPONSIVE STYLES FOR CLIENT PAGES ===== */
+
+/* Mobile First Approach */
+
+/* Base Mobile Styles (< 640px) */
+@media (max-width: 639px) {
+  /* Ant Design Component Overrides */
+  .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .ant-card-head-title {
+    font-size: 14px !important;
+  }
+
+  .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .ant-btn {
+    padding: 4px 12px;
+    font-size: 13px;
+    height: auto;
+  }
+
+  .ant-btn-lg {
+    padding: 6px 16px;
+    font-size: 14px;
+  }
+
+  .ant-input,
+  .ant-select-selector,
+  .ant-picker {
+    font-size: 14px !important;
+  }
+
+  .ant-table {
+    font-size: 11px;
+  }
+
+  .ant-table-thead > tr > th {
+    padding: 6px 4px !important;
+    font-size: 11px;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 6px 4px !important;
+  }
+
+  .ant-tag {
+    font-size: 10px;
+    padding: 0 4px;
+    line-height: 18px;
+  }
+
+  .ant-statistic-title {
+    font-size: 12px !important;
+  }
+
+  .ant-statistic-content {
+    font-size: 18px !important;
+  }
+
+  /* Modal responsive */
+  .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px auto !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+  }
+
+  /* Form responsive */
+  .ant-form-item {
+    margin-bottom: 12px !important;
+  }
+
+  .ant-form-item-label {
+    padding-bottom: 4px !important;
+  }
+
+  /* Tabs responsive */
+  .ant-tabs-tab {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+
+  /* Empty state */
+  .ant-empty-description {
+    font-size: 13px;
+  }
+
+  /* Pagination */
+  .ant-pagination {
+    font-size: 12px;
+  }
+
+  .ant-pagination-item,
+  .ant-pagination-prev,
+  .ant-pagination-next {
+    min-width: 28px;
+    height: 28px;
+    line-height: 28px;
+  }
+}
+
+/* Tablet Styles (640px - 1023px) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .ant-card-body {
+    padding: 16px !important;
+  }
+
+  .ant-btn {
+    font-size: 14px;
+  }
+
+  .ant-table {
+    font-size: 13px;
+  }
+
+  .ant-statistic-content {
+    font-size: 22px !important;
+  }
+}
+
+/* Desktop Styles (>= 1024px) */
+@media (min-width: 1024px) {
+  /* Default desktop styles - most Ant Design defaults are fine */
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Responsive padding */
+.p-responsive {
+  padding: 12px;
+}
+
+@media (min-width: 640px) {
+  .p-responsive {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .p-responsive {
+    padding: 24px;
+  }
+}
+
+/* Responsive margin */
+.m-responsive {
+  margin: 12px;
+}
+
+@media (min-width: 640px) {
+  .m-responsive {
+    margin: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .m-responsive {
+    margin: 24px;
+  }
+}
+
+/* Responsive gap */
+.gap-responsive {
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .gap-responsive {
+    gap: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .gap-responsive {
+    gap: 24px;
+  }
+}
+
+/* Responsive grid */
+.grid-responsive-1 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 12px;
+}
+
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 12px;
+}
+
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .grid-responsive-2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .grid-responsive-3 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .grid-responsive-3 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Responsive text truncation */
+.truncate-mobile {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .truncate-mobile {
+    white-space: normal;
+  }
+}
+
+/* Responsive flex direction */
+.flex-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .flex-responsive {
+    flex-direction: row;
+    gap: 16px;
+  }
+}
+
+/* Hide on mobile */
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .hide-mobile {
+    display: block;
+  }
+}
+
+/* Hide on desktop */
+.hide-desktop {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .hide-desktop {
+    display: none;
+  }
+}
+
+/* ===== CARD RESPONSIVE STYLES ===== */
+.responsive-card-container {
+  padding: 12px;
+}
+
+@media (min-width: 640px) {
+  .responsive-card-container {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-card-container {
+    padding: 24px;
+  }
+}
+
+/* ===== BUTTON RESPONSIVE STYLES ===== */
+.btn-responsive {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .btn-responsive {
+    width: auto;
+  }
+}
+
+/* ===== IMAGE RESPONSIVE STYLES ===== */
+.img-responsive {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+/* ===== AVATAR RESPONSIVE STYLES ===== */
+.avatar-responsive {
+  width: 80px;
+  height: 80px;
+}
+
+@media (min-width: 640px) {
+  .avatar-responsive {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (min-width: 768px) {
+  .avatar-responsive {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+/* Custom scrollbar for better mobile experience */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+@media (max-width: 639px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+/* ===== TOUCH IMPROVEMENTS ===== */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase tap target size for touch devices */
+  .ant-btn,
+  .ant-select-selector,
+  .ant-input,
+  .ant-picker,
+  a {
+    min-height: 44px;
+  }
+
+  /* Better spacing for touch */
+  .ant-space-item {
+    margin-bottom: 8px;
+  }
+}
+
+/* ===== CHAT SPECIFIC RESPONSIVE ===== */
+/* Message bubbles responsive */
+@media (max-width: 639px) {
+  .chat-message-bubble {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  .chat-message-content {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .chat-input-area {
+    padding: 12px !important;
+  }
+
+  .chat-header {
+    padding: 12px !important;
+  }
+
+  /* Make sure messages don't overflow */
+  .chat-messages-container {
+    padding: 8px !important;
+  }
+
+  /* Avatar in messages */
+  .message-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Attachment preview */
+  .attachment-preview {
+    max-width: 100%;
+  }
+}
+
+/* Tablet chat styles */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .chat-message-bubble {
+    max-width: 85%;
+  }
+}
+
+/* Desktop chat styles */
+@media (min-width: 1024px) {
+  .chat-message-bubble {
+    max-width: 75%;
+  }
+}
+
+/* ===== WORD BREAK UTILITIES ===== */
+.break-word {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+/* ===== FULL WIDTH ON MOBILE ===== */
+@media (max-width: 639px) {
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Input fields full width */
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-select,
+  .ant-picker {
+    width: 100% !important;
+  }
+
+  /* Buttons in flex containers */
+  .mobile-flex-full .ant-btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Search input in header */
+  .ant-input-search {
+    width: 100% !important;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .ant-card {
+    page-break-inside: avoid;
+  }
+
+  .ant-table {
+    page-break-inside: auto;
+  }
+
+  .ant-table-row {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

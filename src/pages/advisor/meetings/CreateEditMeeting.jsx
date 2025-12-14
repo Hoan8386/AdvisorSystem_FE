@@ -86,8 +86,9 @@ export const CreateEditMeeting = () => {
           location: meeting.location,
           meeting_link: meeting.meeting_link,
           summary: meeting.summary,
-          // Đã bỏ class_feedback
           status: meeting.status,
+          auto_create_meet: meeting.auto_create_meet || false,
+          sync_to_google: meeting.sync_to_google || false,
         });
       }
     } catch (error) {
@@ -147,6 +148,21 @@ export const CreateEditMeeting = () => {
     } catch (error) {
       console.error("Error saving meeting:", error);
 
+      // Handle meeting time conflict
+      if (error.response?.data?.conflicting_meeting) {
+        const conflictMeeting = error.response.data.conflicting_meeting;
+        const conflictTime = dayjs(conflictMeeting.meeting_time).format(
+          "DD/MM/YYYY HH:mm"
+        );
+        const conflictEndTime = dayjs(conflictMeeting.end_time).format("HH:mm");
+
+        toast.error(
+          `Thời gian họp bị trùng với cuộc họp "${conflictMeeting.title}" (${conflictTime} - ${conflictEndTime})`,
+          { autoClose: 5000 }
+        );
+        return;
+      }
+
       // Handle validation errors from API
       if (error.response?.data?.errors) {
         const errors = error.response.data.errors;
@@ -163,9 +179,12 @@ export const CreateEditMeeting = () => {
         });
         toast.error("Vui lòng kiểm tra lại thông tin");
       } else {
-        toast.error(
-          isEditMode ? "Không thể cập nhật cuộc họp" : "Không thể tạo cuộc họp"
-        );
+        const errorMessage =
+          error.response?.data?.message ||
+          (isEditMode
+            ? "Không thể cập nhật cuộc họp"
+            : "Không thể tạo cuộc họp");
+        toast.error(errorMessage);
       }
     } finally {
       setSubmitting(false);
@@ -386,20 +405,24 @@ export const CreateEditMeeting = () => {
                   />
                 </Form.Item>
 
-                {/* Switch Tạo Google Meet tự động - Chỉ hiện khi tạo mới */}
-                {!isEditMode && (
-                  <Form.Item
-                    label={
-                      <span className="font-semibold text-green-600">
-                        <GoogleOutlined className="mr-1" /> Auto Meet
-                      </span>
-                    }
-                    name="auto_create_meet"
-                    valuePropName="checked"
-                  >
-                    <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
-                  </Form.Item>
-                )}
+                {/* Switch Đồng bộ với Google Calendar - Hiện cho cả create và edit */}
+                <Form.Item
+                  label={
+                    <span className="font-semibold text-green-600">
+                      <GoogleOutlined className="mr-1" />
+                      {isEditMode ? "Đồng bộ GG" : "Auto Meet"}
+                    </span>
+                  }
+                  name="auto_create_meet"
+                  valuePropName="checked"
+                  tooltip={
+                    isEditMode
+                      ? "Đồng bộ cuộc họp với Google Calendar"
+                      : "Tự động tạo link Google Meet"
+                  }
+                >
+                  <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                </Form.Item>
               </div>
             </div>
 
@@ -422,31 +445,6 @@ export const CreateEditMeeting = () => {
                 className="rounded-lg"
               />
             </Form.Item>
-
-            {/* Đã bỏ Form.Item Ý kiến lớp (Class Feedback) tại đây */}
-
-            {/* Chỉ giữ lại phần Sync cho chế độ Edit, phần Auto Create đã chuyển lên trên */}
-            {isEditMode && (
-              <>
-                <Divider orientation="left">
-                  <span className="text-lg font-semibold text-green-600">
-                    <GoogleOutlined className="mr-2" />
-                    Google Calendar
-                  </span>
-                </Divider>
-                <Form.Item
-                  label={
-                    <span className="font-semibold">
-                      Đồng bộ với Google Calendar
-                    </span>
-                  }
-                  name="sync_to_google"
-                  valuePropName="checked"
-                >
-                  <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
-                </Form.Item>
-              </>
-            )}
 
             <Divider />
 

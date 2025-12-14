@@ -185,11 +185,12 @@ const ChatbotWidget = () => {
         setMessages((prev) => [...prev, successMessage]);
         setRegistered((prev) => new Set([...prev, activityRoleId]));
       } else {
+        // Trường hợp API trả về success: false với message cụ thể
         const errorMessage = {
           id: Date.now() + Math.random(),
           type: "bot",
-          content: `❌ Đăng ký thất bại: ${
-            response?.message || "Vui lòng thử lại"
+          content: ` ${
+            response?.message || "Đăng ký thất bại. Vui lòng thử lại."
           }`,
           timestamp: new Date().toLocaleTimeString("vi-VN", {
             hour: "2-digit",
@@ -201,13 +202,16 @@ const ChatbotWidget = () => {
       }
     } catch (error) {
       console.error("Error registering activity:", error);
+      // Ưu tiên message từ response data, sau đó từ error message
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Không thể đăng ký. Vui lòng thử lại.";
+
       const errorMessage = {
         id: Date.now() + Math.random(),
         type: "bot",
-        content: `❌ ${
-          error?.response?.data?.message ||
-          "Không thể đăng ký. Vui lòng thử lại."
-        }`,
+        content: `❌ ${errorMsg}`,
         timestamp: new Date().toLocaleTimeString("vi-VN", {
           hour: "2-digit",
           minute: "2-digit",

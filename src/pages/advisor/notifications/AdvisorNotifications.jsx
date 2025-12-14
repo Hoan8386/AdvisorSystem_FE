@@ -641,7 +641,7 @@ export const AdvisorNotifications = () => {
                             pagination={false}
                             columns={[
                               {
-                                title: "Mã SV",
+                                title: "ID",
                                 dataIndex: "student_id",
                                 key: "student_id",
                                 width: 80,

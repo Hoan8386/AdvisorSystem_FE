@@ -120,11 +120,11 @@ export const StudentDashboard = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-3 sm:p-4 md:p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold text-gray-800">
+      <div className="mb-4 md:mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
             <BellOutlined className="mr-2" />
             Thông báo của tôi
           </h1>
@@ -133,18 +133,22 @@ export const StudentDashboard = () => {
               type="primary"
               onClick={handleMarkAllRead}
               icon={<CheckCircleOutlined />}
-              className="bg-green-500 hover:bg-green-600"
+              className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
+              size="middle"
             >
-              Đánh dấu tất cả đã đọc ({unreadCount})
+              <span className="hidden sm:inline">
+                Đánh dấu tất cả đã đọc ({unreadCount})
+              </span>
+              <span className="sm:hidden">Đọc tất cả ({unreadCount})</span>
             </Button>
           )}
         </div>
       </div>
 
       {/* Stats Card */}
-      <Row gutter={16} className="mb-8">
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+      <Row gutter={[16, 16]} className="mb-4 md:mb-8">
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="h-full">
             <Statistic
               title="Tổng Thông báo"
               value={notifications.length}
@@ -153,8 +157,8 @@ export const StudentDashboard = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="h-full">
             <Badge
               showZero
               count={unreadCount}
@@ -168,8 +172,8 @@ export const StudentDashboard = () => {
             </Badge>
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+        <Col xs={24} sm={24} lg={8}>
+          <Card className="h-full">
             <Statistic
               title="Tên Sinh viên"
               value={user?.full_name || "N/A"}
@@ -193,21 +197,21 @@ export const StudentDashboard = () => {
               renderItem={(notification) => (
                 <Card
                   key={notification.notification_id}
-                  className="mb-4 hover:shadow-lg transition-shadow"
+                  className="mb-3 md:mb-4 hover:shadow-lg transition-shadow"
                   hoverable
                   onClick={() => handleViewDetail(notification.notification_id)}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex gap-2 items-center mb-2">
-                        <h3 className="text-lg font-semibold text-gray-800">
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-3">
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-wrap gap-2 items-center mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 break-words">
                           {notification.title}
                         </h3>
                         {!notification.is_read && (
                           <Badge color="blue" text="Chưa đọc" />
                         )}
                       </div>
-                      <div className="flex gap-2 items-center mb-3">
+                      <div className="flex flex-wrap gap-2 items-center mb-3">
                         <Tag color={getTypeColor(notification.type)}>
                           {getTypeLabel(notification.type)}
                         </Tag>
@@ -217,27 +221,31 @@ export const StudentDashboard = () => {
                           </Tag>
                         )}
                       </div>
-                      <p className="text-gray-600 mb-2">
+                      <p className="text-sm sm:text-base text-gray-600 mb-2 break-words">
                         {notification.summary.substring(0, 150)}
                         {notification.summary.length > 150 ? "..." : ""}
                       </p>
-                      <div className="flex gap-4 text-sm text-gray-500">
-                        <span>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
                           📅{" "}
                           {dayjs(notification.created_at).format("DD/MM/YYYY")}
                         </span>
-                        <span>👤 {notification.advisor?.user?.full_name}</span>
+                        <span className="flex items-center gap-1 break-words">
+                          👤 {notification.advisor?.user?.full_name}
+                        </span>
                       </div>
                     </div>
                     <Button
                       type="primary"
-                      className="ml-4 bg-blue-500 hover:bg-blue-600"
+                      className="md:ml-4 bg-blue-500 hover:bg-blue-600 w-full md:w-auto"
+                      size="middle"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewDetail(notification.notification_id);
                       }}
                     >
-                      Xem Chi tiết
+                      <span className="hidden sm:inline">Xem Chi tiết</span>
+                      <span className="sm:hidden">Xem</span>
                     </Button>
                   </div>
                 </Card>

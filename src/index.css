@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/responsive.css";
 
 :root {
   --primary-color: #1da1f2;
@@ -16,6 +17,169 @@
 
 .border-primary {
   border-color: var(--primary-color) !important;
+}
+
+/* ===== RESPONSIVE UTILITIES ===== */
+
+/* Container responsive */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-container {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* Responsive text sizes */
+.text-responsive-xs {
+  font-size: 0.75rem; /* 12px */
+}
+
+.text-responsive-sm {
+  font-size: 0.875rem; /* 14px */
+}
+
+.text-responsive-base {
+  font-size: 0.875rem; /* 14px */
+}
+
+.text-responsive-lg {
+  font-size: 1rem; /* 16px */
+}
+
+.text-responsive-xl {
+  font-size: 1.125rem; /* 18px */
+}
+
+@media (min-width: 640px) {
+  .text-responsive-base {
+    font-size: 1rem; /* 16px */
+  }
+  .text-responsive-lg {
+    font-size: 1.125rem; /* 18px */
+  }
+  .text-responsive-xl {
+    font-size: 1.25rem; /* 20px */
+  }
+}
+
+@media (min-width: 768px) {
+  .text-responsive-lg {
+    font-size: 1.25rem; /* 20px */
+  }
+  .text-responsive-xl {
+    font-size: 1.5rem; /* 24px */
+  }
+}
+
+/* Hide/Show based on screen size */
+.mobile-only {
+  display: block;
+}
+
+.tablet-up {
+  display: none;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .mobile-only {
+    display: none;
+  }
+  .tablet-up {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* Responsive Card padding */
+.responsive-card {
+  padding: 12px;
+}
+
+@media (min-width: 640px) {
+  .responsive-card {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-card {
+    padding: 24px;
+  }
+}
+
+/* Ant Design Table responsive overrides */
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 8px 4px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+  
+  .ant-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .ant-tag {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+}
+
+/* Responsive spacing */
+.responsive-gap-sm {
+  gap: 8px;
+}
+
+.responsive-gap-md {
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .responsive-gap-sm {
+    gap: 12px;
+  }
+  .responsive-gap-md {
+    gap: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-gap-sm {
+    gap: 16px;
+  }
+  .responsive-gap-md {
+    gap: 24px;
+  }
 }
 /* Popover padding */
 .ant-popover-content p {

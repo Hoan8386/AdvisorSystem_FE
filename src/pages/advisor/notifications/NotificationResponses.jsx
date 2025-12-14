@@ -96,6 +96,11 @@ export const NotificationResponses = () => {
       return;
     }
 
+    if (replyContent.trim().length < 10) {
+      toast.warning("Nội dung trả lời phải có ít nhất 10 ký tự");
+      return;
+    }
+
     try {
       setReplyLoading(true);
       const res = await updateNotificationResponseAPI(
@@ -179,8 +184,8 @@ export const NotificationResponses = () => {
       key: "created_at",
       width: 150,
       render: (date) => (
-        <span title={dayjs(date).format("DD/MM/YYYY HH:mm")}>
-          {dayjs(date).fromNow()}
+        <span title={dayjs(date).fromNow()}>
+          {dayjs(date).format("DD/MM/YYYY HH:mm")}
         </span>
       ),
     },

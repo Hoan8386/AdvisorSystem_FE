@@ -180,19 +180,19 @@ export const MySemesterReport = () => {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 md:py-4">
+        <div className="space-y-3 md:space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               📊 Báo cáo học kỳ
             </h1>
             <Select
-              style={{ width: 250 }}
+              className="w-full sm:w-64"
               placeholder="Chọn học kỳ"
               value={selectedSemester}
               onChange={handleSemesterChange}
               options={semesters}
-              size="large"
+              size="middle"
             />
           </div>
 
@@ -212,31 +212,31 @@ export const MySemesterReport = () => {
                 }}
               >
                 <div className="mb-2">
-                  <h3 className="text-lg font-semibold mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold mb-2">
                     Thông tin sinh viên
                   </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    <div className="text-sm sm:text-base">
                       <span className="text-gray-600">Họ và tên:</span>
-                      <span className="ml-2 font-semibold">
+                      <span className="ml-2 font-semibold break-words">
                         {reportData.student_info.full_name}
                       </span>
                     </div>
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="text-gray-600">MSSV:</span>
                       <span className="ml-2 font-semibold">
                         {reportData.student_info.user_code}
                       </span>
                     </div>
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="text-gray-600">Lớp:</span>
                       <span className="ml-2 font-semibold">
                         {reportData.student_info.class_name}
                       </span>
                     </div>
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="text-gray-600">Học kỳ:</span>
-                      <span className="ml-2 font-semibold">
+                      <span className="ml-2 font-semibold break-words">
                         {reportData.semester_info.semester_name} -{" "}
                         {reportData.semester_info.academic_year}
                       </span>
@@ -246,8 +246,12 @@ export const MySemesterReport = () => {
               </Card>
 
               {/* Thống kê điểm */}
-              <Row gutter={[12, 12]} style={{ marginBottom: "12px" }}>
-                <Col xs={24} sm={12} lg={6}>
+              <Row
+                gutter={[8, 8]}
+                className="mb-3"
+                style={{ marginBottom: "12px" }}
+              >
+                <Col xs={12} sm={12} lg={6}>
                   <Card
                     style={{
                       borderRadius: 12,
@@ -291,7 +295,7 @@ export const MySemesterReport = () => {
                     />
                   </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
+                <Col xs={12} sm={12} lg={6}>
                   <Card
                     style={{
                       borderRadius: 12,
@@ -303,15 +307,24 @@ export const MySemesterReport = () => {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: "white" }}>Điểm rèn luyện</span>
+                        <span
+                          className="text-xs sm:text-sm"
+                          style={{ color: "white" }}
+                        >
+                          Rèn luyện
+                        </span>
                       }
                       value={reportData.report.training_point_summary}
-                      valueStyle={{ color: "white", fontWeight: 700 }}
+                      valueStyle={{
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: window.innerWidth < 640 ? "20px" : "24px",
+                      }}
                       prefix={<FireOutlined />}
                     />
                   </Card>
                 </Col>
-                <Col xs={24} sm={12} lg={6}>
+                <Col xs={12} sm={12} lg={6}>
                   <Card
                     style={{
                       borderRadius: 12,
@@ -322,9 +335,20 @@ export const MySemesterReport = () => {
                     }}
                   >
                     <Statistic
-                      title={<span style={{ color: "white" }}>Điểm CTXH</span>}
+                      title={
+                        <span
+                          className="text-xs sm:text-sm"
+                          style={{ color: "white" }}
+                        >
+                          CTXH
+                        </span>
+                      }
                       value={reportData.report.social_point_summary}
-                      valueStyle={{ color: "white", fontWeight: 700 }}
+                      valueStyle={{
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: window.innerWidth < 640 ? "20px" : "24px",
+                      }}
                       prefix={<HeartOutlined />}
                     />
                   </Card>
@@ -372,8 +396,9 @@ export const MySemesterReport = () => {
 
               {/* Bảng điểm các môn học */}
               <Card
+                className="overflow-x-auto"
                 title={
-                  <span className="text-lg font-semibold">
+                  <span className="text-sm sm:text-base md:text-lg font-semibold">
                     Điểm các môn học ({reportData.course_grades?.length || 0}{" "}
                     môn)
                   </span>
@@ -390,7 +415,11 @@ export const MySemesterReport = () => {
                     columns={columns}
                     dataSource={reportData.course_grades}
                     rowKey={(record) => record.course_code}
-                    pagination={false}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: false,
+                      responsive: true,
+                    }}
                     scroll={{ x: 800 }}
                   />
                 ) : (

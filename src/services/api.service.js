@@ -125,9 +125,14 @@ const createNotificationAPI = (formData) => {
 // Update notification (Advisor only)
 const updateNotificationAPI = (notificationId, formData) => {
   const URL_BACKEND = `/api/notifications/${notificationId}`;
-  return axios.put(URL_BACKEND, formData, {
-    headers: formData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
-  });
+  // Use POST with _method=PUT for FormData (Laravel standard)
+  if (formData instanceof FormData) {
+    formData.append('_method', 'PUT');
+    return axios.post(URL_BACKEND, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  }
+  return axios.put(URL_BACKEND, formData);
 };
 
 // Delete notification (Advisor only)

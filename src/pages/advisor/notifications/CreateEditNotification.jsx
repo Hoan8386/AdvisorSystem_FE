@@ -21,6 +21,7 @@ import {
   ArrowLeftOutlined,
   UploadOutlined,
   DeleteOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
@@ -36,8 +37,11 @@ export const CreateEditNotification = () => {
   const { id } = useParams();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(!!id);
   const [classes, setClasses] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
+  const [existingAttachments, setExistingAttachments] = useState([]);
+  const [attachmentsToDelete, setAttachmentsToDelete] = useState([]);
 
   useEffect(() => {
     if (id) {
@@ -48,9 +52,24 @@ export const CreateEditNotification = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const handleDownloadAttachment = (attachment) => {
+    const baseUrl =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    const fileUrl = `${baseUrl}/storage/${attachment.file_path}`;
+
+    // Tạo link tạm để download
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = attachment.file_name;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const fetchNotificationData = async () => {
     try {
-      setLoading(true);
+      setInitializing(true);
       const res = await getNotificationDetailAPI(id);
       if (res && res.data) {
         const notification = res.data;
@@ -61,12 +80,16 @@ export const CreateEditNotification = () => {
           link: notification.link,
           class_ids: notification.classes?.map((c) => c.class_id) || [],
         });
+        // Lưu các file đính kèm đã có
+        if (notification.attachments && notification.attachments.length > 0) {
+          setExistingAttachments(notification.attachments);
+        }
       }
     } catch (error) {
       toast.error("Lỗi khi tải dữ liệu thông báo");
       console.error(error);
     } finally {
-      setLoading(false);
+      setInitializing(false);
     }
   };
 
@@ -125,8 +148,18 @@ export const CreateEditNotification = () => {
       if (values.attachments && values.attachments.length > 0) {
         values.attachments.forEach((file) => {
           if (file.originFileObj) {
-            formData.append("attachments[]", file.originFileObj);
+            // Khi edit, backend expect "attachments_to_add[]"
+            // Khi create, backend expect "attachments[]"
+            const fieldName = isEdit ? "attachments_to_add[]" : "attachments[]";
+            formData.append(fieldName, file.originFileObj);
           }
+        });
+      }
+
+      // Append attachments to delete (for edit mode)
+      if (isEdit && attachmentsToDelete.length > 0) {
+        attachmentsToDelete.forEach((attachmentId) => {
+          formData.append("attachment_ids_to_delete[]", attachmentId);
         });
       }
 
@@ -160,52 +193,56 @@ export const CreateEditNotification = () => {
   };
   return (
     <AdvisorLayout>
-      <Spin spinning={loading}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          padding: "0 16px",
+        }}
+      >
+        {/* Header */}
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: 24,
-            padding: "0 16px",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
           }}
         >
-          {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/advisor/notifications")}
-              style={{ fontSize: 18 }}
-            />
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: "clamp(20px, 5vw, 28px)",
-                  fontWeight: 700,
-                  color: "#c8102e",
-                }}
-              >
-                {isEdit ? "✏️ Chỉnh sửa thông báo" : "📝 Tạo thông báo mới"}
-              </h1>
-            </div>
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/advisor/notifications")}
+            style={{ fontSize: 18 }}
+          />
+          <div>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(20px, 5vw, 28px)",
+                fontWeight: 700,
+                color: "#c8102e",
+              }}
+            >
+              {isEdit ? "✏️ Chỉnh sửa thông báo" : "📝 Tạo thông báo mới"}
+            </h1>
           </div>
+        </div>
 
-          {/* Form */}
-          <Card
-            style={{
-              borderRadius: 12,
-              border: "none",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            }}
-          >
+        {/* Form */}
+        <Card
+          style={{
+            borderRadius: 12,
+            border: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          }}
+        >
+          {initializing ? (
+            <div style={{ textAlign: "center", padding: "60px 0" }}>
+              <Spin size="large" tip="Đang tải dữ liệu..." />
+            </div>
+          ) : (
             <Form
               form={form}
               layout="vertical"
@@ -276,8 +313,103 @@ export const CreateEditNotification = () => {
                     <Checkbox.Group options={classes} />
                   </Form.Item>
 
+                  {/* Hiển thị file đính kèm đã có (nếu đang edit) */}
+                  {isEdit && existingAttachments.length > 0 && (
+                    <Form.Item label="Tệp đính kèm hiện có">
+                      <div style={{ marginBottom: 12 }}>
+                        {existingAttachments.map((attachment) => (
+                          <div
+                            key={attachment.attachment_id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "8px 12px",
+                              marginBottom: 8,
+                              background: "#f5f5f5",
+                              borderRadius: 6,
+                              border: attachmentsToDelete.includes(
+                                attachment.attachment_id
+                              )
+                                ? "1px solid #ff4d4f"
+                                : "1px solid #d9d9d9",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 14,
+                                color: attachmentsToDelete.includes(
+                                  attachment.attachment_id
+                                )
+                                  ? "#999"
+                                  : "#333",
+                                textDecoration: attachmentsToDelete.includes(
+                                  attachment.attachment_id
+                                )
+                                  ? "line-through"
+                                  : "none",
+                                flex: 1,
+                              }}
+                            >
+                              📎 {attachment.file_name}
+                            </span>
+                            <Space size="small">
+                              <Button
+                                type="primary"
+                                size="small"
+                                icon={<DownloadOutlined />}
+                                onClick={() =>
+                                  handleDownloadAttachment(attachment)
+                                }
+                                disabled={attachmentsToDelete.includes(
+                                  attachment.attachment_id
+                                )}
+                                style={{
+                                  borderRadius: 4,
+                                }}
+                              >
+                                Tải về
+                              </Button>
+                              <Button
+                                danger
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                onClick={() => {
+                                  if (
+                                    attachmentsToDelete.includes(
+                                      attachment.attachment_id
+                                    )
+                                  ) {
+                                    // Khôi phục file
+                                    setAttachmentsToDelete(
+                                      attachmentsToDelete.filter(
+                                        (id) => id !== attachment.attachment_id
+                                      )
+                                    );
+                                  } else {
+                                    // Đánh dấu xóa
+                                    setAttachmentsToDelete([
+                                      ...attachmentsToDelete,
+                                      attachment.attachment_id,
+                                    ]);
+                                  }
+                                }}
+                              >
+                                {attachmentsToDelete.includes(
+                                  attachment.attachment_id
+                                )
+                                  ? "Khôi phục"
+                                  : "Xóa"}
+                              </Button>
+                            </Space>
+                          </div>
+                        ))}
+                      </div>
+                    </Form.Item>
+                  )}
+
                   <Form.Item
-                    label="Tệp đính kèm"
+                    label={isEdit ? "Thêm tệp đính kèm mới" : "Tệp đính kèm"}
                     name="attachments"
                     valuePropName="fileList"
                     getValueFromEvent={(e) => {
@@ -392,26 +524,26 @@ export const CreateEditNotification = () => {
                 </Col>
               </Row>
             </Form>
-          </Card>
+          )}
+        </Card>
 
-          {/* Help */}
-          <Card
-            title="💡 Gợi ý"
-            style={{
-              borderRadius: 12,
-              border: "none",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            }}
-          >
-            <ul style={{ marginBottom: 0 }}>
-              <li>Tiêu đề nên rõ ràng, ngắn gọn</li>
-              <li>Nội dung nên chi tiết, dễ hiểu</li>
-              <li>Chọn lớp đúng để thông báo tới sinh viên</li>
-              <li>Loại thông báo ảnh hưởng tới độ ưu tiên</li>
-            </ul>
-          </Card>
-        </div>
-      </Spin>
+        {/* Help */}
+        <Card
+          title="💡 Gợi ý"
+          style={{
+            borderRadius: 12,
+            border: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          }}
+        >
+          <ul style={{ marginBottom: 0 }}>
+            <li>Tiêu đề nên rõ ràng, ngắn gọn</li>
+            <li>Nội dung nên chi tiết, dễ hiểu</li>
+            <li>Chọn lớp đúng để thông báo tới sinh viên</li>
+            <li>Loại thông báo ảnh hưởng tới độ ưu tiên</li>
+          </ul>
+        </Card>
+      </div>
     </AdvisorLayout>
   );
 };

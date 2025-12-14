@@ -195,12 +195,13 @@ export const StudentMeetings = () => {
       width: 250,
       align: "center",
       render: (_, record) => (
-        <div className="flex gap-2 justify-center">
+        <Space direction="vertical" size="small" className="w-full">
           <Button
             type="primary"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/student/meetings/${record.meeting_id}`)}
             size="small"
+            block
           >
             Xem
           </Button>
@@ -211,6 +212,7 @@ export const StudentMeetings = () => {
                 handleDownloadMinutes(record.meeting_id, record.title)
               }
               size="small"
+              block
             >
               Biên bản
             </Button>
@@ -219,37 +221,38 @@ export const StudentMeetings = () => {
             icon={<MessageOutlined />}
             onClick={() => handleOpenFeedbackModal(record.meeting_id)}
             size="small"
+            block
           >
             Feedback
           </Button>
-        </div>
+        </Space>
       ),
     },
   ];
 
   return (
     <StudentLayout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-3 sm:p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-5">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-              <CalendarOutlined className="mr-3" />
+          <div className="mb-4 md:mb-5">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+              <CalendarOutlined className="mr-2 md:mr-3" />
               Cuộc họp lớp
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-sm sm:text-base md:text-lg">
               Danh sách các cuộc họp của lớp bạn
             </p>
           </div>
 
           {/* Filters */}
-          <Card className="mb-5 shadow-lg rounded-2xl border-0 bg-white/90 backdrop-blur-sm">
-            <div className="flex flex-wrap gap-4">
+          <Card className="mb-4 md:mb-5 shadow-lg rounded-2xl border-0 bg-white/90 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
               <Select
                 placeholder="Trạng thái"
                 allowClear
-                size="large"
-                style={{ width: 200 }}
+                size="middle"
+                className="w-full sm:w-48"
                 onChange={(value) => setFilters({ ...filters, status: value })}
                 options={[
                   { value: null, label: "Tất cả" },
@@ -259,9 +262,10 @@ export const StudentMeetings = () => {
                 ]}
               />
               <DatePicker.RangePicker
-                size="large"
+                size="middle"
                 format="DD/MM/YYYY"
                 placeholder={["Từ ngày", "Đến ngày"]}
+                className="w-full sm:w-auto"
                 onChange={(dates) => {
                   if (dates && dates.length === 2) {
                     setFilters((prev) => ({
@@ -280,6 +284,7 @@ export const StudentMeetings = () => {
               />
               <Button
                 icon={<ReloadOutlined />}
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setFilters({
                     status: null,
@@ -296,12 +301,9 @@ export const StudentMeetings = () => {
 
           {/* Table */}
           <Card
-            style={{
-              marginTop: "20px",
-            }}
-            className="shadow-2xl rounded-2xl border-0 bg-white/90 backdrop-blur-sm "
+            className="shadow-2xl rounded-2xl border-0 bg-white/90 backdrop-blur-sm overflow-x-auto"
             title={
-              <span className="text-xl font-semibold">
+              <span className="text-base sm:text-lg md:text-xl font-semibold">
                 <CalendarOutlined className="mr-2" />
                 Danh sách cuộc họp
               </span>
@@ -312,18 +314,20 @@ export const StudentMeetings = () => {
               dataSource={meetings}
               rowKey="meeting_id"
               loading={loading}
+              scroll={{ x: 800 }}
               pagination={{
                 pageSize: 10,
                 showTotal: (total) => `Tổng ${total} cuộc họp`,
                 showSizeChanger: true,
                 pageSizeOptions: ["10", "20", "50"],
+                responsive: true,
               }}
               locale={{
                 emptyText: (
                   <Empty
                     description={
                       <div className="py-8">
-                        <p className="text-gray-500 text-lg">
+                        <p className="text-gray-500 text-base md:text-lg">
                           Chưa có cuộc họp nào
                         </p>
                       </div>

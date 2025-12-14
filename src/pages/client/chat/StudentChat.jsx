@@ -91,11 +91,14 @@ export const StudentChat = () => {
       console.log("📩 [Student] Received new message:", event);
       console.log("📩 [Student] Sender info:", event.sender);
       console.log("📩 [Student] Sender type:", event.sender?.type);
-      console.log("📩 [Student] Message sender_type:", event.message?.sender_type);
+      console.log(
+        "📩 [Student] Message sender_type:",
+        event.message?.sender_type
+      );
 
       // ✅ CHỈ hiển thị tin nhắn từ advisor (không phải từ chính mình)
       // Giống như trong student-chat.blade.php: if (e.sender.type !== currentUser.role)
-      if (event.sender && event.sender.type !== 'student') {
+      if (event.sender && event.sender.type !== "student") {
         // Thêm tin nhắn vào danh sách
         setMessages((prev) => {
           // Kiểm tra tin nhắn đã tồn tại chưa
@@ -235,21 +238,24 @@ export const StudentChat = () => {
 
       // ✅ Gửi file trực tiếp cùng với tin nhắn (giống Blade.php)
       const formData = new FormData();
-      formData.append('partner_id', advisor.partner_id);
+      formData.append("partner_id", advisor.partner_id);
       if (messageContent.trim()) {
-        formData.append('content', messageContent.trim());
+        formData.append("content", messageContent.trim());
       }
       if (fileList.length > 0) {
-        formData.append('attachment', fileList[0].originFileObj);
+        formData.append("attachment", fileList[0].originFileObj);
       }
 
-      const response = await fetch('http://localhost:8000/api/dialogs/messages', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        "http://localhost:8000/api/dialogs/messages",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+          body: formData,
+        }
+      );
 
       const data = await response.json();
 
@@ -358,16 +364,17 @@ export const StudentChat = () => {
   const renderMessageItem = (msg) => {
     const isSentByMe = msg.sender_type === "student";
     const isDeleted = !msg.content && !msg.attachment_path;
+    const isMobile = window.innerWidth < 640;
 
     return (
       <div
         key={msg.message_id}
         className={`flex ${
           isSentByMe ? "justify-end" : "justify-start"
-        } mb-4 group`}
+        } mb-3 sm:mb-4 group px-2 sm:px-0`}
       >
         <div
-          className={`flex gap-3 max-w-[75%] ${
+          className={`flex gap-2 sm:gap-3 w-full sm:max-w-[85%] md:max-w-[75%] ${
             isSentByMe ? "flex-row-reverse" : "flex-row"
           }`}
         >
@@ -375,7 +382,7 @@ export const StudentChat = () => {
             <Avatar
               src={advisor?.partner_avatar}
               icon={<UserOutlined />}
-              size={40}
+              size={isMobile ? 32 : 40}
               className="flex-shrink-0 shadow-md border-2 border-white"
               style={{
                 background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -383,12 +390,12 @@ export const StudentChat = () => {
             />
           )}
           <div
-            className={`flex flex-col ${
+            className={`flex flex-col flex-1 min-w-0 ${
               isSentByMe ? "items-end" : "items-start"
             }`}
           >
             <div
-              className={`px-5 py-3 rounded-2xl shadow-md transition-all duration-200 hover:shadow-lg ${
+              className={`px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-2xl shadow-md transition-all duration-200 hover:shadow-lg break-words ${
                 isDeleted
                   ? "bg-gray-50 text-gray-400 italic border border-gray-200"
                   : isSentByMe
@@ -398,6 +405,9 @@ export const StudentChat = () => {
               style={{
                 borderBottomRightRadius: isSentByMe ? "6px" : "18px",
                 borderBottomLeftRadius: isSentByMe ? "18px" : "6px",
+                maxWidth: "100%",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
               }}
             >
               {isDeleted ? (
@@ -520,17 +530,17 @@ export const StudentChat = () => {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-2 sm:p-4 md:p-6">
         <Card
           bodyStyle={{
             padding: 0,
-            height: "calc(100vh - 200px)",
+            height: "calc(100vh - 150px)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
           }}
           style={{
-            borderRadius: 16,
+            borderRadius: window.innerWidth < 640 ? 8 : 16,
             border: "none",
             boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
             overflow: "hidden",
@@ -540,18 +550,22 @@ export const StudentChat = () => {
             <>
               {/* Chat Header */}
               <div
-                className="p-5 border-b bg-gradient-to-r from-blue-50 via-white to-blue-50"
+                className="p-3 sm:p-4 md:p-5 border-b bg-gradient-to-r from-blue-50 via-white to-blue-50"
                 style={{
                   borderBottom: "1px solid rgba(0,0,0,0.06)",
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Badge dot status="success" offset={[-5, 35]}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                    <Badge
+                      dot
+                      status="success"
+                      offset={[-5, window.innerWidth < 640 ? 30 : 35]}
+                    >
                       <Avatar
                         src={advisor.partner_avatar}
                         icon={<UserOutlined />}
-                        size={56}
+                        size={window.innerWidth < 640 ? 44 : 56}
                         className="shadow-lg border-3 border-white"
                         style={{
                           background:
@@ -559,35 +573,94 @@ export const StudentChat = () => {
                         }}
                       />
                     </Badge>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-1 truncate">
                         {advisor.partner_name}
                       </h3>
-                      <p className="text-sm text-gray-500 flex items-center gap-2">
+                      <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2">
                         <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        Cố vấn học tập • Đang hoạt động
+                        <span className="hidden sm:inline">
+                          Cố vấn học tập • Đang hoạt động
+                        </span>
+                        <span className="sm:hidden">Đang hoạt động</span>
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Search
-                      placeholder="Tìm kiếm tin nhắn..."
-                      onSearch={handleSearchMessages}
-                      style={{ width: 280 }}
-                      enterButton={<SearchOutlined />}
-                      allowClear
-                      onClear={handleClearSearch}
-                      size="large"
-                      className="rounded-lg"
-                    />
+                  <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                    <div
+                      className="flex-1 sm:flex-none"
+                      style={{
+                        maxWidth:
+                          window.innerWidth < 640
+                            ? "calc(100% - 96px)"
+                            : "280px",
+                      }}
+                    >
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1 w-full min-w-0">
+                          <TextArea
+                            value={searchKeyword}
+                            onChange={(e) => setSearchKeyword(e.target.value)}
+                            placeholder={
+                              window.innerWidth < 640
+                                ? "Tìm kiếm..."
+                                : "Tìm kiếm tin nhắn..."
+                            }
+                            autoSize={{ minRows: 1, maxRows: 2 }}
+                            onPressEnter={(e) => {
+                              if (!e.shiftKey) {
+                                e.preventDefault();
+                                handleSearchMessages(searchKeyword);
+                              }
+                            }}
+                            className="rounded-xl border-gray-200 focus:border-blue-400 transition-colors w-full"
+                            style={{
+                              padding:
+                                window.innerWidth < 640
+                                  ? "8px 12px"
+                                  : "10px 15px",
+                              fontSize:
+                                window.innerWidth < 640 ? "14px" : "15px",
+                              lineHeight: "24px",
+                              resize: "none",
+                              width: "100%",
+                            }}
+                          />
+                        </div>
+                        <Button
+                          type="primary"
+                          onClick={() => handleSearchMessages(searchKeyword)}
+                          disabled={!searchKeyword.trim()}
+                          size={window.innerWidth < 640 ? "middle" : "large"}
+                          className="rounded-xl shadow-md hover:shadow-lg transition-all font-medium flex items-center flex-shrink-0"
+                          style={{
+                            height: window.innerWidth < 640 ? "38px" : "46px",
+                            background: searchKeyword.trim()
+                              ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
+                              : undefined,
+                            border: "none",
+                            paddingLeft:
+                              window.innerWidth < 640 ? "8px" : "10px",
+                            paddingRight:
+                              window.innerWidth < 640 ? "12px" : "20px",
+                          }}
+                        >
+                          {window.innerWidth >= 640 ? (
+                            "Tìm"
+                          ) : (
+                            <SearchOutlined />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                     <Tooltip title="Làm mới">
                       <Button
                         icon={<ReloadOutlined />}
                         onClick={handleRefresh}
                         loading={loading}
                         type="default"
-                        size="large"
-                        className="rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                        size={window.innerWidth < 640 ? "middle" : "large"}
+                        className="rounded-lg shadow-sm hover:shadow-md transition-shadow flex-shrink-0"
                       />
                     </Tooltip>
                   </div>
@@ -625,7 +698,7 @@ export const StudentChat = () => {
                 }}
               >
                 {loading ? (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center py-20">
                     <div className="text-center">
                       <div className="relative w-16 h-16 mx-auto mb-4">
                         <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-200 rounded-full"></div>
@@ -637,7 +710,7 @@ export const StudentChat = () => {
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center py-20">
                     <Empty
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description={
@@ -702,7 +775,7 @@ export const StudentChat = () => {
 
               {/* Message Input - ĐÃ FORMAT LẠI */}
               <div
-                className="p-5 bg-white border-t"
+                className="p-3 sm:p-4 md:p-5 bg-white border-t"
                 style={{
                   borderTop: "1px solid rgba(0,0,0,0.06)",
                   boxShadow: "0 -4px 12px rgba(0,0,0,0.05)",
@@ -710,8 +783,8 @@ export const StudentChat = () => {
               >
                 {/* File đã chọn */}
                 {fileList.length > 0 && (
-                  <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200 w-fit">
-                    <div className="flex items-center gap-3">
+                  <div className="mb-3 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200 w-full">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex items-center gap-2">
                         <FileOutlined className="text-blue-500 text-lg" />
                         <span className="text-sm font-medium text-gray-700">
@@ -734,7 +807,7 @@ export const StudentChat = () => {
                 )}
 
                 {/* Input Controls */}
-                <div className="flex items-end gap-3">
+                <div className="flex items-end gap-2 sm:gap-3">
                   <Upload
                     fileList={fileList}
                     onChange={handleFileChange}
@@ -743,23 +816,33 @@ export const StudentChat = () => {
                     showUploadList={false}
                   >
                     <Button
-                      icon={<PaperClipOutlined style={{ fontSize: "20px" }} />}
-                      size="large"
-                      className="rounded-xl border-gray-200 flex items-center justify-center hover:border-blue-400 hover:text-blue-600 transition-colors"
+                      icon={
+                        <PaperClipOutlined
+                          style={{
+                            fontSize: window.innerWidth < 640 ? "16px" : "20px",
+                          }}
+                        />
+                      }
+                      size={window.innerWidth < 640 ? "middle" : "large"}
+                      className="rounded-xl border-gray-200 flex items-center justify-center hover:border-blue-400 hover:text-blue-600 transition-colors flex-shrink-0"
                       disabled={sending || uploading}
                       style={{
-                        height: "46px", // Chiều cao bằng với TextArea mặc định
-                        width: "46px", // Hình vuông
+                        height: window.innerWidth < 640 ? "38px" : "46px",
+                        width: window.innerWidth < 640 ? "38px" : "46px",
                         padding: 0,
                       }}
                     />
                   </Upload>
 
-                  <div className="flex-1">
+                  <div className="flex-1 w-full min-w-0">
                     <TextArea
                       value={messageContent}
                       onChange={(e) => setMessageContent(e.target.value)}
-                      placeholder="Nhập tin nhắn gửi cho cố vấn..."
+                      placeholder={
+                        window.innerWidth < 640
+                          ? "Nhập tin nhắn..."
+                          : "Nhập tin nhắn gửi cho cố vấn..."
+                      }
                       autoSize={{ minRows: 1, maxRows: 4 }}
                       onPressEnter={(e) => {
                         if (!e.shiftKey) {
@@ -767,40 +850,41 @@ export const StudentChat = () => {
                           handleSendMessage();
                         }
                       }}
-                      className="rounded-xl border-gray-200 focus:border-blue-400 transition-colors"
+                      className="rounded-xl border-gray-200 focus:border-blue-400 transition-colors w-full"
                       style={{
-                        padding: "10px 15px",
-                        fontSize: "15px",
+                        padding:
+                          window.innerWidth < 640 ? "8px 12px" : "10px 15px",
+                        fontSize: window.innerWidth < 640 ? "14px" : "15px",
                         lineHeight: "24px",
                         resize: "none",
+                        width: "100%",
                       }}
                     />
                   </div>
 
                   <Button
                     type="primary"
-                    icon={<SendOutlined />}
                     onClick={handleSendMessage}
                     loading={sending || uploading}
                     disabled={!messageContent.trim() && fileList.length === 0}
-                    size="large"
-                    className="rounded-xl shadow-md hover:shadow-lg transition-all font-medium flex items-center"
+                    size={window.innerWidth < 640 ? "middle" : "large"}
+                    className="rounded-xl shadow-md hover:shadow-lg transition-all font-medium flex items-center flex-shrink-0"
                     style={{
-                      height: "46px", // Chiều cao bằng với TextArea
+                      height: window.innerWidth < 640 ? "38px" : "46px",
                       background:
                         messageContent.trim() || fileList.length > 0
                           ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
                           : undefined,
                       border: "none",
-                      paddingLeft: "10px", // Padding trái 10px như yêu cầu
-                      paddingRight: "20px",
+                      paddingLeft: window.innerWidth < 640 ? "8px" : "10px",
+                      paddingRight: window.innerWidth < 640 ? "12px" : "20px",
                     }}
                   >
-                    Gửi
+                    {window.innerWidth >= 640 ? "Gửi" : <SendOutlined />}
                   </Button>
                 </div>
 
-                <div className="text-xs text-gray-400 mt-3 text-center flex items-center justify-center gap-4">
+                <div className="hidden sm:flex text-xs text-gray-400 mt-3 text-center items-center justify-center gap-4">
                   <span className="flex items-center gap-1.5">
                     <kbd className="px-2 py-1 bg-gray-100 rounded shadow-sm font-mono text-gray-600">
                       Enter

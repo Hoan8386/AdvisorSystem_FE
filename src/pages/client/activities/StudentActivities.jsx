@@ -117,12 +117,12 @@ export const StudentActivities = () => {
 
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto space-y-6 p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 p-3 sm:p-4 md:p-6">
         {/* Header - Enhanced */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 m-0 mb-2 flex items-center gap-3">
-              <span className="text-4xl">🎯</span>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 m-0 mb-2 flex items-center gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl md:text-4xl">🎯</span>
               <span className="bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                 Hoạt động ngoại khóa
               </span>
@@ -130,18 +130,19 @@ export const StudentActivities = () => {
           </div>
           <Button
             type="primary"
-            size="large"
+            size="middle"
             onClick={() => navigate("/student/activities/my-registrations")}
-            className="shadow-lg hover:shadow-xl transition-all rounded-xl font-medium"
+            className="shadow-lg hover:shadow-xl transition-all rounded-xl font-medium w-full sm:w-auto"
             style={{
               background: "linear-gradient(135deg, #c8102e 0%, #e65100 100%)",
               border: "none",
-              height: "48px",
-              padding: "0 28px",
+              height: "40px",
+              padding: "0 20px",
             }}
             icon={<StarOutlined />}
           >
-            Hoạt động đã đăng ký
+            <span className="hidden sm:inline">Hoạt động đã đăng ký</span>
+            <span className="sm:hidden">Đã đăng ký</span>
           </Button>
         </div>
 
@@ -152,91 +153,90 @@ export const StudentActivities = () => {
             border: "none",
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
-            margin: "20px 0",
           }}
         >
-          <Space size="middle" wrap className="w-full">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 text-gray-700 font-semibold">
-              <FilterOutlined className="text-lg" />
-              <span>Bộ lọc</span>
+              <FilterOutlined className="text-base sm:text-lg" />
+              <span className="text-sm sm:text-base">Bộ lọc</span>
             </div>
 
-            <Select
-              placeholder="Chọn trạng thái"
-              style={{ width: 180 }}
-              size="large"
-              allowClear
-              value={filters.status}
-              onChange={(value) => handleFilterChange("status", value)}
-              className="rounded-lg"
-              options={[
-                {
-                  label: (
-                    <Space>
-                      <ClockCircleOutlined style={{ color: "#1677ff" }} />
-                      Sắp diễn ra
-                    </Space>
-                  ),
-                  value: "upcoming",
-                },
-                {
-                  label: (
-                    <Space>
-                      <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                      Đang diễn ra
-                    </Space>
-                  ),
-                  value: "ongoing",
-                },
-                {
-                  label: (
-                    <Space>
-                      <CheckCircleOutlined style={{ color: "#8c8c8c" }} />
-                      Đã hoàn thành
-                    </Space>
-                  ),
-                  value: "completed",
-                },
-                {
-                  label: (
-                    <Space>
-                      <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
-                      Đã hủy
-                    </Space>
-                  ),
-                  value: "cancelled",
-                },
-              ]}
-            />
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+              <Select
+                placeholder="Chọn trạng thái"
+                className="w-full sm:w-48 rounded-lg"
+                size="middle"
+                allowClear
+                value={filters.status}
+                onChange={(value) => handleFilterChange("status", value)}
+                options={[
+                  {
+                    label: (
+                      <Space>
+                        <ClockCircleOutlined style={{ color: "#1677ff" }} />
+                        Sắp diễn ra
+                      </Space>
+                    ),
+                    value: "upcoming",
+                  },
+                  {
+                    label: (
+                      <Space>
+                        <CheckCircleOutlined style={{ color: "#52c41a" }} />
+                        Đang diễn ra
+                      </Space>
+                    ),
+                    value: "ongoing",
+                  },
+                  {
+                    label: (
+                      <Space>
+                        <CheckCircleOutlined style={{ color: "#8c8c8c" }} />
+                        Đã hoàn thành
+                      </Space>
+                    ),
+                    value: "completed",
+                  },
+                  {
+                    label: (
+                      <Space>
+                        <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
+                        Đã hủy
+                      </Space>
+                    ),
+                    value: "cancelled",
+                  },
+                ]}
+              />
 
-            <RangePicker
-              placeholder={["Từ ngày", "Đến ngày"]}
-              format="DD/MM/YYYY"
-              size="large"
-              value={filters.dateRange}
-              onChange={(dates) => handleFilterChange("dateRange", dates)}
-              className="rounded-lg"
-              style={{ width: 280 }}
-            />
+              <RangePicker
+                placeholder={["Từ ngày", "Đến ngày"]}
+                format="DD/MM/YYYY"
+                size="middle"
+                value={filters.dateRange}
+                onChange={(dates) => handleFilterChange("dateRange", dates)}
+                className="w-full sm:w-auto rounded-lg"
+              />
 
-            {hasActiveFilters && (
-              <Button
-                type="text"
-                danger
-                icon={<ClearOutlined />}
-                onClick={() => setFilters({ status: null, dateRange: null })}
-                className="rounded-lg hover:bg-red-50"
-              >
-                Xóa bộ lọc
-              </Button>
-            )}
+              {hasActiveFilters && (
+                <Button
+                  type="text"
+                  danger
+                  icon={<ClearOutlined />}
+                  onClick={() => setFilters({ status: null, dateRange: null })}
+                  className="rounded-lg hover:bg-red-50 w-full sm:w-auto"
+                >
+                  Xóa bộ lọc
+                </Button>
+              )}
+            </div>
 
-            <div className="ml-auto text-sm text-gray-500 font-medium">
+            <div className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
               Tìm thấy{" "}
               <strong className="text-blue-600">{activities.length}</strong>{" "}
               hoạt động
             </div>
-          </Space>
+          </div>
         </Card>
 
         {/* Activities List - Enhanced */}
@@ -279,13 +279,13 @@ export const StudentActivities = () => {
             />
           </Card>
         ) : (
-          <Row gutter={[20, 20]}>
+          <Row gutter={[16, 16]}>
             {activities.map((activity) => {
               const isOngoing = isActivityOngoing(activity);
               const status = statusConfig[activity.status];
 
               return (
-                <Col xs={24} sm={12} lg={8} key={activity.activity_id}>
+                <Col xs={24} sm={12} lg={8} xl={6} key={activity.activity_id}>
                   <Card
                     hoverable
                     className="group relative overflow-hidden transition-all duration-300"

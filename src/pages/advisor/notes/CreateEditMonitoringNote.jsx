@@ -113,17 +113,19 @@ function CreateEditMonitoringNote() {
           // Tải danh sách sinh viên của lớp đó để Select hiển thị đúng tên
           if (classId) {
             setSelectedClass(classId);
+            // Load danh sách sinh viên TRƯỚC khi set giá trị vào form
             await fetchStudentsByClass(classId);
-          }
 
-          form.setFieldsValue({
-            class_id: classId,
-            user_code: note.student?.user_code || note.user_code,
-            semester_id: note.semester_id,
-            category: note.category,
-            title: note.title,
-            content: note.content,
-          });
+            // Sau khi đã có danh sách sinh viên, mới set giá trị
+            form.setFieldsValue({
+              class_id: classId,
+              user_code: note.student?.user_code || note.user_code,
+              semester_id: note.semester_id,
+              category: note.category,
+              title: note.title,
+              content: note.content,
+            });
+          }
         }
         // TRƯỜNG HỢP 2: Chế độ CREATE (Tạo mới) nhưng có truyền dữ liệu sinh viên
         else if (!isEdit && location.state?.selectedStudent) {
