@@ -151,7 +151,7 @@ export const ActivityStatistics = () => {
         </Card>
 
         {/* Main Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
           <Card
             style={{
               borderRadius: 12,
@@ -251,7 +251,7 @@ export const ActivityStatistics = () => {
         </Card>
 
         {/* Detailed Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
           <Card
             title="Chi tiết trạng thái"
             style={{

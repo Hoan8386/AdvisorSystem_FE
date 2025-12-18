@@ -26,9 +26,15 @@ import {
   MessageOutlined,
   ClearOutlined,
   SettingOutlined,
+  CheckCircleOutlined,
+  EnvironmentOutlined,
+  CalendarOutlined,
+  TeamOutlined,
+  TrophyOutlined,
 } from "@ant-design/icons";
-import { processQueryAPI } from "../../../services/rag.service";
+import { registerActivityAPI } from "../../../services/api.service";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./RAGStyles.css";
 
 const { TextArea } = Input;
@@ -38,6 +44,8 @@ const RAGChatAssistant = () => {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [threadId, setThreadId] = useState(null);
+  const [registering, setRegistering] = useState(null);
+  const [registered, setRegistered] = useState(new Set());
   const messagesEndRef = useRef(null);
 
   // Settings
@@ -74,6 +82,21 @@ const RAGChatAssistant = () => {
   const handleSend = async () => {
     if (!inputValue.trim()) return;
 
+    const accessToken = localStorage.getItem("access_token");
+
+    if (!accessToken) {
+      const loginMessage = {
+        role: "assistant",
+        content:
+          "Bạn cần đăng nhập để sử dụng tính năng chat. Vui lòng đăng nhập và thử lại! 🔐",
+        type: "error",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, loginMessage]);
+      setInputValue("");
+      return;
+    }
+
     const userMessage = {
       role: "user",
       content: inputValue,
@@ -81,59 +104,55 @@ const RAGChatAssistant = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const query = inputValue;
     setInputValue("");
     setLoading(true);
 
     try {
-      const response = await processQueryAPI({
-        query: inputValue,
-        thread_id: threadId,
-      });
+      const response = await fetch(
+        "http://localhost:3636/documents/vector/chat/process-query",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            query: query,
+            thread_id: threadId,
+          }),
+        }
+      );
 
-      const { data, thread_id: newThreadId } = response.data;
-
-      // Save thread ID for conversation context
-      if (newThreadId) {
-        setThreadId(newThreadId);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Parse response based on search type
-      let assistantMessage;
+      const data = await response.json();
 
-      if (data.search_type === "database") {
-        // Database search result (products)
-        assistantMessage = {
-          role: "assistant",
-          content: data.natural_response,
-          type: "database",
-          products: data.product_variants || [],
-          timestamp: new Date(),
-        };
-      } else if (data.search_type === "rag") {
-        // RAG search result (documents)
-        assistantMessage = {
-          role: "assistant",
-          content: data.answer,
-          type: "rag",
-          timestamp: new Date(),
-        };
+      if (data.thread_id) {
+        setThreadId(data.thread_id);
+      }
+
+      let assistantMessage = {
+        role: "assistant",
+        timestamp: new Date(),
+      };
+
+      if (data.status === "success" && data.data) {
+        assistantMessage.content = data.data.response;
+        assistantMessage.type = "general";
+        if (data.data.activities) {
+          assistantMessage.activities = data.data.activities;
+        }
       } else {
-        // Direct response (greeting, simple questions)
-        assistantMessage = {
-          role: "assistant",
-          content:
-            data.message ||
-            data.answer ||
-            "Xin lỗi, tôi không hiểu câu hỏi của bạn.",
-          type: "direct",
-          timestamp: new Date(),
-        };
+        assistantMessage.content = data.error || "Xin lỗi, đã có lỗi xảy ra.";
+        assistantMessage.type = "error";
       }
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Query error:", error);
-
+      console.error("Error:", error);
       const errorMessage = {
         role: "assistant",
         content:
@@ -141,7 +160,6 @@ const RAGChatAssistant = () => {
         type: "error",
         timestamp: new Date(),
       };
-
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
@@ -158,6 +176,55 @@ const RAGChatAssistant = () => {
       },
     ]);
     setThreadId(null);
+    setRegistered(new Set());
+  };
+
+  const handleRegisterActivity = async (
+    activityRoleId,
+    activityTitle,
+    roleName
+  ) => {
+    try {
+      setRegistering(activityRoleId);
+      const response = await registerActivityAPI(activityRoleId);
+
+      if (response?.success) {
+        const successMessage = {
+          role: "assistant",
+          content: `✅ Đăng ký thành công hoạt động "${activityTitle}" với vai trò "${roleName}"!`,
+          type: "success",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, successMessage]);
+        setRegistered((prev) => new Set([...prev, activityRoleId]));
+      } else {
+        const errorMessage = {
+          role: "assistant",
+          content: `❌ ${
+            response?.message || "Đăng ký thất bại. Vui lòng thử lại."
+          }`,
+          type: "error",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error("Error registering activity:", error);
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Không thể đăng ký. Vui lòng thử lại.";
+
+      const errorMessage = {
+        role: "assistant",
+        content: `❌ ${errorMsg}`,
+        type: "error",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setRegistering(null);
+    }
   };
 
   const renderMessage = (message, index) => {
@@ -272,6 +339,136 @@ const RAGChatAssistant = () => {
                   />
                 </div>
               )}
+
+            {/* Activities List */}
+            {!isUser && message.activities && message.activities.length > 0 && (
+              <div className="mt-4 w-full space-y-4">
+                {message.activities.map((activity) => (
+                  <Card
+                    key={activity.activity_id}
+                    size="small"
+                    className="border-blue-200 hover:shadow-lg transition-all duration-300"
+                    style={{ borderRadius: 12 }}
+                  >
+                    {/* Activity Header */}
+                    <div className="mb-3">
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <h4 className="font-bold text-blue-900 text-base">
+                          {activity.title}
+                        </h4>
+                        <Tag
+                          color={
+                            activity.status === "upcoming"
+                              ? "success"
+                              : "warning"
+                          }
+                        >
+                          {activity.status === "upcoming"
+                            ? "SẮP DIỄN RA"
+                            : "ĐANG DIỄN RA"}
+                        </Tag>
+                      </div>
+
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        className="w-full"
+                      >
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <CalendarOutlined className="text-blue-500" />
+                          <span>
+                            {new Date(activity.start_time).toLocaleDateString(
+                              "vi-VN"
+                            )}{" "}
+                            -{" "}
+                            {new Date(activity.end_time).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <EnvironmentOutlined className="text-red-500" />
+                          <span>{activity.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <TeamOutlined className="text-purple-500" />
+                          <span>{activity.organizer_unit.unit_name}</span>
+                        </div>
+                      </Space>
+                    </div>
+
+                    {/* Roles List */}
+                    {activity.roles && activity.roles.length > 0 && (
+                      <div className="space-y-2">
+                        <Divider className="my-2">Vai trò</Divider>
+                        {activity.roles.map((role) => (
+                          <Card
+                            key={role.activity_role_id}
+                            size="small"
+                            className="bg-gray-50"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <UserOutlined className="text-blue-500" />
+                                  <span className="font-bold text-gray-800">
+                                    {role.role_name}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 line-clamp-2">
+                                  {role.description}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <Tag
+                                  color={
+                                    role.point_type === "ren_luyen"
+                                      ? "blue"
+                                      : "orange"
+                                  }
+                                  className="font-bold"
+                                >
+                                  <TrophyOutlined /> +{role.points_awarded}đ
+                                </Tag>
+                                {role.max_slots && (
+                                  <span className="text-xs text-gray-400 mt-1">
+                                    {role.max_slots} slot
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <Button
+                              type="primary"
+                              size="small"
+                              block
+                              loading={registering === role.activity_role_id}
+                              disabled={registered.has(role.activity_role_id)}
+                              icon={
+                                registered.has(role.activity_role_id) ? (
+                                  <CheckCircleOutlined />
+                                ) : null
+                              }
+                              onClick={() =>
+                                handleRegisterActivity(
+                                  role.activity_role_id,
+                                  activity.title,
+                                  role.role_name
+                                )
+                              }
+                            >
+                              {registered.has(role.activity_role_id)
+                                ? "Đã đăng ký"
+                                : "Đăng ký"}
+                            </Button>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
 
             {/* Timestamp */}
             <div
@@ -433,7 +630,7 @@ const RAGChatAssistant = () => {
               onClick={handleSend}
               loading={loading}
               size="large"
-              style={{ height: "auto" }}
+              style={{ height: "auto", marginLeft: "20px" }}
             >
               Gửi
             </Button>

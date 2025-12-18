@@ -15,6 +15,7 @@ import {
   getActivityDetailAPI,
   getActivityCancellationRequestsAPI,
   updateCancellationRequestAPI,
+  updateAttendanceAPI,
 } from "../../../services/api.service";
 
 export const ActivityRegistrations = () => {
@@ -33,6 +34,9 @@ export const ActivityRegistrations = () => {
   const [cancellationRequests, setCancellationRequests] = useState([]);
   const [loadingCancellations, setLoadingCancellations] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState(null);
+
+  // Attendance update state
+  const [updatingAttendanceId, setUpdatingAttendanceId] = useState(null);
 
   useEffect(() => {
     fetchActivityInfo();
@@ -73,6 +77,31 @@ export const ActivityRegistrations = () => {
       toast.error("Lỗi khi xử lý yêu cầu hủy");
     } finally {
       setProcessingRequestId(null);
+    }
+  };
+
+  const handleUpdateAttendance = async (registrationId, newStatus) => {
+    try {
+      setUpdatingAttendanceId(registrationId);
+      await updateAttendanceAPI(id, {
+        attendances: [
+          {
+            registration_id: registrationId,
+            status: newStatus,
+          },
+        ],
+      });
+      toast.success(
+        newStatus === "attended"
+          ? "Đã cập nhật trạng thái: Tham gia"
+          : "Đã cập nhật trạng thái: Vắng mặt"
+      );
+      fetchRegistrations(); // Refresh the list
+    } catch (error) {
+      console.error("Error updating attendance:", error);
+      toast.error("Lỗi khi cập nhật trạng thái tham gia");
+    } finally {
+      setUpdatingAttendanceId(null);
     }
   };
 
@@ -170,6 +199,43 @@ export const ActivityRegistrations = () => {
           {statusConfig[status]?.text}
         </Tag>
       ),
+    },
+    {
+      title: "Cập nhật trạng thái",
+      key: "update_status",
+      width: 150,
+      align: "center",
+      render: (_, record) => {
+        // Chỉ hiển thị select khi status là attended hoặc absent
+        if (record.status === "attended" || record.status === "absent") {
+          const isLoading = updatingAttendanceId === record.registration_id;
+
+          return (
+            <Select
+              value={record.status}
+              style={{ width: 130 }}
+              size="small"
+              loading={isLoading}
+              disabled={isLoading}
+              onChange={(value) =>
+                handleUpdateAttendance(record.registration_id, value)
+              }
+              options={[
+                {
+                  label: "Tham gia",
+                  value: "attended",
+                },
+                {
+                  label: "Vắng mặt",
+                  value: "absent",
+                },
+              ]}
+            />
+          );
+        }
+        // Không hiển thị gì khi status là registered hoặc cancelled
+        return <span className="text-gray-400">-</span>;
+      },
     },
   ];
 

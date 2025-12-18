@@ -93,9 +93,20 @@ export const StudentPoints = () => {
       key: "points_awarded",
       width: 100,
       align: "center",
-      render: (points) => (
-        <span className="font-bold text-lg text-blue-600">+{points}</span>
-      ),
+      render: (points, record) => {
+        // Nếu vắng mặt thì hiển thị điểm âm
+        if (record.status === "absent") {
+          return (
+            <span className="font-bold text-lg text-red-600">
+              {record.actual_points}
+            </span>
+          );
+        }
+        // Trường hợp bình thường hiển thị điểm dương
+        return (
+          <span className="font-bold text-lg text-blue-600">+{points}</span>
+        );
+      },
     },
     {
       title: "Ngày hoạt động",

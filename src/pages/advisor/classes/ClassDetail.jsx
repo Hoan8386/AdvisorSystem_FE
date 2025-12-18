@@ -1111,11 +1111,12 @@ export const ClassDetail = () => {
                   style={{
                     borderRadius: 12,
                     border: "1px solid #e5e7eb",
+                    marginBottom: "20px",
                   }}
                   size="small"
                 >
-                  <Row gutter={[16, 16]}>
-                    <Col xs={12} sm={8} md={4}>
+                  <div className="flex gap-4 flex-wrap">
+                    <div className="flex-1 min-w-[180px]">
                       <Card size="small" className="text-center">
                         <Statistic
                           title="Đang học"
@@ -1133,8 +1134,8 @@ export const ClassDetail = () => {
                           %
                         </div>
                       </Card>
-                    </Col>
-                    <Col xs={12} sm={8} md={4}>
+                    </div>
+                    <div className="flex-1 min-w-[180px]">
                       <Card size="small" className="text-center">
                         <Statistic
                           title="Bảo lưu"
@@ -1152,8 +1153,8 @@ export const ClassDetail = () => {
                           %
                         </div>
                       </Card>
-                    </Col>
-                    <Col xs={12} sm={8} md={4}>
+                    </div>
+                    <div className="flex-1 min-w-[180px]">
                       <Card size="small" className="text-center">
                         <Statistic
                           title="Đình chỉ"
@@ -1171,8 +1172,8 @@ export const ClassDetail = () => {
                           %
                         </div>
                       </Card>
-                    </Col>
-                    <Col xs={12} sm={8} md={4}>
+                    </div>
+                    <div className="flex-1 min-w-[180px]">
                       <Card size="small" className="text-center">
                         <Statistic
                           title="Bỏ học"
@@ -1190,8 +1191,8 @@ export const ClassDetail = () => {
                           %
                         </div>
                       </Card>
-                    </Col>
-                    <Col xs={12} sm={8} md={4}>
+                    </div>
+                    <div className="flex-1 min-w-[180px]">
                       <Card size="small" className="text-center">
                         <Statistic
                           title="Tốt nghiệp"
@@ -1209,8 +1210,8 @@ export const ClassDetail = () => {
                           %
                         </div>
                       </Card>
-                    </Col>
-                  </Row>
+                    </div>
+                  </div>
                 </Card>
               </>
             )}
@@ -1236,7 +1237,7 @@ export const ClassDetail = () => {
                       </span>
                     ),
                     children: (
-                      <div className="space-y-4">
+                      <div className="space-y-4 ">
                         {/* Bộ lọc trạng thái */}
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-gray-700">
