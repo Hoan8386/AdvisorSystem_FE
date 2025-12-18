@@ -1988,11 +1988,28 @@ export const ClassDetail = () => {
                       key: "points_awarded",
                       width: 100,
                       align: "center",
-                      render: (points) => (
-                        <Tag color="blue" className="font-semibold text-base">
-                          +{points}
-                        </Tag>
-                      ),
+                      render: (points, record) => {
+                        // CTXH: Chỉ hiển thị dấu + khi tham gia (attended)
+                        if (record.status === "attended") {
+                          return (
+                            <Tag
+                              color="blue"
+                              className="font-semibold text-base"
+                            >
+                              +{points}
+                            </Tag>
+                          );
+                        }
+                        // Vắng mặt hoặc trạng thái khác không hiển thị dấu +
+                        return (
+                          <Tag
+                            color="default"
+                            className="font-semibold text-base"
+                          >
+                            {record.actual_points || 0}
+                          </Tag>
+                        );
+                      },
                     },
                     {
                       title: "Ngày diễn ra",

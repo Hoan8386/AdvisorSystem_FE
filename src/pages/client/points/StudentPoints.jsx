@@ -88,23 +88,38 @@ export const StudentPoints = () => {
       width: 200,
     },
     {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      width: 150,
+      align: "center",
+      render: (status, record) => {
+        if (status === "attended") {
+          return <Tag color="success">Đã tham gia</Tag>;
+        } else if (status === "absent") {
+          return <Tag color="error">Vắng mặt</Tag>;
+        }
+        return <Tag color="default">{record.status_text}</Tag>;
+      },
+    },
+    {
       title: "Điểm",
       dataIndex: "points_awarded",
       key: "points_awarded",
       width: 100,
       align: "center",
       render: (points, record) => {
-        // Nếu vắng mặt thì hiển thị điểm âm
+        // Nếu vắng mặt thì hiển thị điểm âm với dấu -
         if (record.status === "absent") {
           return (
             <span className="font-bold text-lg text-red-600">
-              {record.actual_points}
+              -{Math.abs(record.actual_points)}
             </span>
           );
         }
-        // Trường hợp bình thường hiển thị điểm dương
+        // Trường hợp bình thường không hiển thị dấu
         return (
-          <span className="font-bold text-lg text-blue-600">+{points}</span>
+          <span className="font-bold text-lg text-blue-600">{points}</span>
         );
       },
     },
@@ -143,14 +158,40 @@ export const StudentPoints = () => {
       width: 200,
     },
     {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      width: 150,
+      align: "center",
+      render: (status, record) => {
+        if (status === "attended") {
+          return <Tag color="success">Đã tham gia</Tag>;
+        } else if (status === "absent") {
+          return <Tag color="error">Vắng mặt</Tag>;
+        }
+        return <Tag color="default">{record.status_text}</Tag>;
+      },
+    },
+    {
       title: "Điểm",
       dataIndex: "points_awarded",
       key: "points_awarded",
       width: 100,
       align: "center",
-      render: (points) => (
-        <span className="font-bold text-lg text-green-600">+{points}</span>
-      ),
+      render: (points, record) => {
+        // CTXH: Chỉ hiển thị dấu + khi tham gia (attended)
+        if (record.status === "attended") {
+          return (
+            <span className="font-bold text-lg text-green-600">+{points}</span>
+          );
+        }
+        // Vắng mặt hoặc trạng thái khác không hiển thị dấu
+        return (
+          <span className="font-bold text-lg text-gray-500">
+            {record.actual_points}
+          </span>
+        );
+      },
     },
     {
       title: "Ngày hoạt động",
