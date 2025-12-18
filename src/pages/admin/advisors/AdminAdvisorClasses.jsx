@@ -43,8 +43,8 @@ export const AdminAdvisorClasses = () => {
     {
       title: "Khoa",
       key: "faculty",
-      render: (_, record) => (
-        <Tag color="purple">{record.faculty?.unit_name || "N/A"}</Tag>
+      render: () => (
+        <Tag color="purple">{advisor?.unit?.unit_name || "N/A"}</Tag>
       ),
     },
     {

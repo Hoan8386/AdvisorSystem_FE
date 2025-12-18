@@ -32,6 +32,7 @@ import {
   downloadTemplateApi,
   importClassesApi,
   exportClassesApi,
+  getAdvisorsApi,
 } from "../../../services/api.service";
 
 const { TextArea } = Input;
@@ -39,6 +40,7 @@ const { TextArea } = Input;
 export const AdminClasses = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
+  const [advisors, setAdvisors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
@@ -51,6 +53,7 @@ export const AdminClasses = () => {
 
   useEffect(() => {
     fetchClasses();
+    fetchAdvisors();
   }, []);
 
   const fetchClasses = async () => {
@@ -65,6 +68,18 @@ export const AdminClasses = () => {
       toast.error("Không thể tải danh sách lớp học");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdvisors = async () => {
+    try {
+      const response = await getAdvisorsApi();
+      if (response?.success && response?.data) {
+        setAdvisors(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching advisors:", error);
+      toast.error("Không thể tải danh sách giảng viên");
     }
   };
 
@@ -485,10 +500,21 @@ export const AdminClasses = () => {
               allowClear
               showSearch
               optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
             >
-              {/* TODO: Load danh sách cố vấn từ API */}
-              <Select.Option value={1}>ThS. Trần Văn An</Select.Option>
-              <Select.Option value={2}>TS. Nguyễn Thị Bình</Select.Option>
+              {advisors.map((advisor) => (
+                <Select.Option
+                  key={advisor.advisor_id}
+                  value={advisor.advisor_id}
+                  label={`${advisor.user_code} - ${advisor.full_name}`}
+                >
+                  {advisor.user_code} - {advisor.full_name}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
 

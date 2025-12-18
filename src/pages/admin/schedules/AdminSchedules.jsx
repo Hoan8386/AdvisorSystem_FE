@@ -169,20 +169,42 @@ export const AdminSchedules = () => {
       const response = await importScheduleExcelApi(file);
 
       if (response?.success) {
+        // TRƯỜNG HỢP THÀNH CÔNG
         const { data } = response;
-        toast.success(
-          `Import thành công: ${data.courses_imported} lớp học, ${data.students_imported} sinh viên`
-        );
+
+        // Hiển thị thông báo với thông tin chi tiết từ API
+        const successMessage =
+          `✓ Import lịch học thành công!\n` +
+          `📚 Sinh viên: ${data.student_name} (${data.student_code})\n` +
+          `🏫 Lớp: ${data.class_name}\n` +
+          `📅 ${data.semester} - ${data.academic_year}\n` +
+          `📊 Tổng số: ${data.total_schedules} lịch học`;
+
+        toast.success(successMessage, {
+          autoClose: 5000,
+          style: { whiteSpace: "pre-line" },
+        });
+
         await loadInitialData();
+      } else {
+        // TRƯỜNG HỢP LỖI (success: false)
+        const errorMessage =
+          response?.error || response?.message || "Lỗi import không xác định";
+        toast.error(errorMessage);
       }
     } catch (error) {
+      // TRƯỜNG HỢP LỖI MẠNG HOẶC EXCEPTION
       console.error("Error importing schedule:", error);
-      toast.error(error?.message || "Có lỗi xảy ra khi import lịch học");
+      const errorMsg =
+        error?.response?.data?.error ||
+        error?.message ||
+        "Có lỗi xảy ra khi import lịch học";
+      toast.error(errorMsg);
     } finally {
       setImportLoading(false);
     }
 
-    return false;
+    return false; // Để Upload component của Antd không tự động upload
   };
 
   // ==================== GROUP B: VIEW SCHEDULES ====================
@@ -662,14 +684,14 @@ export const AdminSchedules = () => {
             </div>
 
             <Space size="middle" className="mb-4">
-              <Button
+              {/* <Button
                 icon={<DownloadOutlined />}
                 onClick={handleDownloadTemplate}
                 loading={importLoading}
                 size="large"
               >
                 Tải template
-              </Button>
+              </Button> */}
 
               <Upload
                 accept=".xlsx,.xls"

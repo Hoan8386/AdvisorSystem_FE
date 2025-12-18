@@ -115,6 +115,9 @@ export const ClassDetail = () => {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [loadingPosition, setLoadingPosition] = useState(false);
 
+  // Filter state
+  const [selectedStatus, setSelectedStatus] = useState("all");
+
   useEffect(() => {
     if (classId) {
       fetchClassDetail();
@@ -486,6 +489,22 @@ export const ClassDetail = () => {
       </Tag>
     );
   };
+
+  // Tính toán thống kê theo trạng thái
+  const statusStatistics = {
+    total: students.length,
+    studying: students.filter((s) => s.status === "studying").length,
+    reserved: students.filter((s) => s.status === "reserved").length,
+    suspended: students.filter((s) => s.status === "suspended").length,
+    graduated: students.filter((s) => s.status === "graduated").length,
+    dropped: students.filter((s) => s.status === "dropped").length,
+  };
+
+  // Lọc sinh viên theo trạng thái
+  const filteredStudents =
+    selectedStatus === "all"
+      ? students
+      : students.filter((s) => s.status === selectedStatus);
 
   // --- FIX: Hàm Render lịch học với kiểm tra Null an toàn ---
   const renderStudentScheduleContent = () => {
@@ -1040,44 +1059,160 @@ export const ClassDetail = () => {
           <>
             {/* Class Info Cards */}
             {classData && (
-              <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} lg={6}>
-                  <Card
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      border: "none",
-                      borderRadius: 12,
-                    }}
-                  >
-                    <Statistic
-                      title={
-                        <span style={{ color: "rgba(255,255,255,0.9)" }}>
-                          Tổng sinh viên
-                        </span>
-                      }
-                      value={students.length}
-                      prefix={<UserOutlined />}
-                      valueStyle={{ color: "#fff", fontWeight: "bold" }}
-                    />
-                  </Card>
-                </Col>
-
-                {classData.description && (
-                  <Col xs={24} sm={12} lg={18}>
+              <>
+                {/* Thống kê tổng quan */}
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12} lg={6}>
                     <Card
                       style={{
+                        background:
+                          "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        border: "none",
                         borderRadius: 12,
-                        border: "1px solid #e5e7eb",
                       }}
                     >
-                      <div className="text-sm text-gray-600">
-                        <strong>Mô tả:</strong> {classData.description}
-                      </div>
+                      <Statistic
+                        title={
+                          <span style={{ color: "rgba(255,255,255,0.9)" }}>
+                            Tổng sinh viên
+                          </span>
+                        }
+                        value={students.length}
+                        prefix={<UserOutlined />}
+                        valueStyle={{ color: "#fff", fontWeight: "bold" }}
+                      />
                     </Card>
                   </Col>
-                )}
-              </Row>
+
+                  {classData.description && (
+                    <Col xs={24} sm={12} lg={18}>
+                      <Card
+                        style={{
+                          borderRadius: 12,
+                          border: "1px solid #e5e7eb",
+                        }}
+                      >
+                        <div className="text-sm text-gray-600">
+                          <strong>Mô tả:</strong> {classData.description}
+                        </div>
+                      </Card>
+                    </Col>
+                  )}
+                </Row>
+
+                {/* Thống kê theo trạng thái */}
+                <Card
+                  title={
+                    <Space>
+                      <UserOutlined />
+                      <span>Thống kê theo trạng thái</span>
+                    </Space>
+                  }
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid #e5e7eb",
+                  }}
+                  size="small"
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card size="small" className="text-center">
+                        <Statistic
+                          title="Đang học"
+                          value={statusStatistics.studying}
+                          valueStyle={{ color: "#52c41a" }}
+                          prefix={<CheckCircleOutlined />}
+                          suffix={`/ ${statusStatistics.total}`}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          {(
+                            (statusStatistics.studying /
+                              statusStatistics.total) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card size="small" className="text-center">
+                        <Statistic
+                          title="Bảo lưu"
+                          value={statusStatistics.reserved}
+                          valueStyle={{ color: "#faad14" }}
+                          prefix={<ClockCircleOutlined />}
+                          suffix={`/ ${statusStatistics.total}`}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          {(
+                            (statusStatistics.reserved /
+                              statusStatistics.total) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card size="small" className="text-center">
+                        <Statistic
+                          title="Đình chỉ"
+                          value={statusStatistics.suspended}
+                          valueStyle={{ color: "#ff7a45" }}
+                          prefix={<WarningOutlined />}
+                          suffix={`/ ${statusStatistics.total}`}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          {(
+                            (statusStatistics.suspended /
+                              statusStatistics.total) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card size="small" className="text-center">
+                        <Statistic
+                          title="Bỏ học"
+                          value={statusStatistics.dropped}
+                          valueStyle={{ color: "#ff4d4f" }}
+                          prefix={<CloseCircleOutlined />}
+                          suffix={`/ ${statusStatistics.total}`}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          {(
+                            (statusStatistics.dropped /
+                              statusStatistics.total) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                      <Card size="small" className="text-center">
+                        <Statistic
+                          title="Tốt nghiệp"
+                          value={statusStatistics.graduated}
+                          valueStyle={{ color: "#1890ff" }}
+                          prefix={<TrophyOutlined />}
+                          suffix={`/ ${statusStatistics.total}`}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          {(
+                            (statusStatistics.graduated /
+                              statusStatistics.total) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </div>
+                      </Card>
+                    </Col>
+                  </Row>
+                </Card>
+              </>
             )}
 
             {/* Tabs for Students List and Semester Reports */}
@@ -1097,25 +1232,66 @@ export const ClassDetail = () => {
                     label: (
                       <span className="flex items-center gap-2">
                         <UserOutlined />
-                        Danh sách sinh viên ({students.length})
+                        Danh sách sinh viên ({filteredStudents.length})
                       </span>
                     ),
                     children: (
-                      <Table
-                        columns={studentColumns}
-                        dataSource={students}
-                        rowKey="student_id"
-                        pagination={{
-                          pageSize: 10,
-                          showTotal: (total) => `Tổng ${total} sinh viên`,
-                          showSizeChanger: true,
-                        }}
-                        locale={{
-                          emptyText: (
-                            <Empty description="Chưa có sinh viên nào trong lớp" />
-                          ),
-                        }}
-                      />
+                      <div className="space-y-4">
+                        {/* Bộ lọc trạng thái */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Lọc theo trạng thái:
+                          </span>
+                          <Select
+                            value={selectedStatus}
+                            onChange={setSelectedStatus}
+                            style={{ width: 220 }}
+                            options={[
+                              {
+                                value: "all",
+                                label: `Tất cả (${statusStatistics.total})`,
+                              },
+                              {
+                                value: "studying",
+                                label: `Đang học (${statusStatistics.studying})`,
+                              },
+                              {
+                                value: "reserved",
+                                label: `Bảo lưu (${statusStatistics.reserved})`,
+                              },
+                              {
+                                value: "suspended",
+                                label: `Đình chỉ (${statusStatistics.suspended})`,
+                              },
+                              {
+                                value: "dropped",
+                                label: `Bỏ học (${statusStatistics.dropped})`,
+                              },
+                              {
+                                value: "graduated",
+                                label: `Tốt nghiệp (${statusStatistics.graduated})`,
+                              },
+                            ]}
+                          />
+                        </div>
+
+                        {/* Bảng sinh viên */}
+                        <Table
+                          columns={studentColumns}
+                          dataSource={filteredStudents}
+                          rowKey="student_id"
+                          pagination={{
+                            pageSize: 10,
+                            showTotal: (total) => `Tổng ${total} sinh viên`,
+                            showSizeChanger: true,
+                          }}
+                          locale={{
+                            emptyText: (
+                              <Empty description="Không có sinh viên nào" />
+                            ),
+                          }}
+                        />
+                      </div>
                     ),
                   },
                   {

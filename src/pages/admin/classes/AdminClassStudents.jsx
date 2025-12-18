@@ -250,25 +250,69 @@ export const AdminClassStudents = () => {
 
       if (response?.success) {
         const { imported, errors } = response.data;
-        toast.success(`Import thành công ${imported} sinh viên`);
 
+        // Nếu có lỗi
         if (errors && errors.length > 0) {
-          Modal.warning({
-            title: `Có ${errors.length} lỗi khi import`,
-            content: (
-              <div style={{ maxHeight: "400px", overflow: "auto" }}>
-                {errors.map((err, index) => (
-                  <div key={index} className="mb-2">
-                    {err}
+          // Nếu không import được sinh viên nào → Hiển thị error
+          if (imported === 0) {
+            toast.error("Import thất bại! Vui lòng kiểm tra danh sách lỗi.");
+            Modal.error({
+              title: `Import thất bại - ${errors.length} lỗi`,
+              content: (
+                <div style={{ maxHeight: "400px", overflow: "auto" }}>
+                  <div className="mb-3 text-gray-700">
+                    Không thể import sinh viên nào. Vui lòng kiểm tra các lỗi
+                    sau:
                   </div>
-                ))}
-              </div>
-            ),
-            width: 600,
-          });
+                  {errors.map((err, index) => (
+                    <div
+                      key={index}
+                      className="mb-2 p-2 bg-red-50 rounded border-l-4 border-red-500"
+                    >
+                      <WarningOutlined className="mr-2 text-red-500" />
+                      <span className="text-red-700">{err}</span>
+                    </div>
+                  ))}
+                </div>
+              ),
+              width: 700,
+              okText: "Đã hiểu",
+            });
+          } else {
+            // Nếu import được một số nhưng có lỗi → Hiển thị warning
+            toast.success(`Import thành công ${imported} sinh viên`);
+            Modal.warning({
+              title: `Import thành công ${imported} sinh viên - ${errors.length} lỗi`,
+              content: (
+                <div style={{ maxHeight: "400px", overflow: "auto" }}>
+                  <div className="mb-3 text-gray-700">
+                    Đã import thành công {imported} sinh viên, nhưng có{" "}
+                    {errors.length} lỗi:
+                  </div>
+                  {errors.map((err, index) => (
+                    <div
+                      key={index}
+                      className="mb-2 p-2 bg-yellow-50 rounded border-l-4 border-yellow-500"
+                    >
+                      <WarningOutlined className="mr-2 text-yellow-600" />
+                      <span className="text-gray-700">{err}</span>
+                    </div>
+                  ))}
+                </div>
+              ),
+              width: 700,
+              okText: "Đã hiểu",
+            });
+          }
+        } else {
+          // Không có lỗi → Hiển thị success
+          toast.success(`Import thành công ${imported} sinh viên`);
         }
 
-        refreshStudents();
+        // Refresh danh sách nếu có ít nhất 1 sinh viên được import
+        if (imported > 0) {
+          refreshStudents();
+        }
       }
     } catch (error) {
       console.error("Error importing students:", error);
