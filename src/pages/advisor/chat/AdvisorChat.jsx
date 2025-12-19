@@ -54,7 +54,6 @@ export const AdvisorChat = () => {
   const [loading, setLoading] = useState(false); // Loading cho conversations list
   const [messagesLoading, setMessagesLoading] = useState(false); // Loading cho messages
   const [sending, setSending] = useState(false);
-  const [messageContent, setMessageContent] = useState("");
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -62,6 +61,9 @@ export const AdvisorChat = () => {
   const [studentSearchKeyword, setStudentSearchKeyword] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
+  const [textareaKey, setTextareaKey] = useState(0);
+  const [hasText, setHasText] = useState(false);
+  const messageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const echoChannelRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -105,7 +107,7 @@ export const AdvisorChat = () => {
 
       // ✅ CHỈ hiển thị tin nhắn từ student (không phải từ chính mình)
       // Giống như trong advisor-chat.blade.php: if (e.sender.type !== currentUser.role && selectedStudent && e.sender.id === selectedStudent.id)
-      if (event.sender && event.sender.type !== 'advisor') {
+      if (event.sender && event.sender.type !== "advisor") {
         // Thêm tin nhắn vào danh sách nếu đang xem conversation đó
         if (
           selectedConversation &&
@@ -251,7 +253,7 @@ export const AdvisorChat = () => {
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.partner_id);
-    
+
     // ✅ Reload conversations sau khi xem tin nhắn để cập nhật unread count = 0
     // Giống như advisor-chat.blade.php dòng 676-678
     setTimeout(() => {
@@ -260,6 +262,9 @@ export const AdvisorChat = () => {
   };
 
   const handleSendMessage = async () => {
+    const messageContent =
+      messageInputRef.current?.resizableTextArea?.textArea?.value || "";
+
     if (!messageContent.trim() && fileList.length === 0) {
       message.warning("Vui lòng nhập nội dung hoặc chọn file đính kèm");
       return;
@@ -275,27 +280,34 @@ export const AdvisorChat = () => {
 
       // ✅ Gửi file trực tiếp cùng với tin nhắn (giống Blade.php)
       const formData = new FormData();
-      formData.append('partner_id', selectedConversation.partner_id);
+      formData.append("partner_id", selectedConversation.partner_id);
       if (messageContent.trim()) {
-        formData.append('content', messageContent.trim());
+        formData.append("content", messageContent.trim());
       }
       if (fileList.length > 0) {
-        formData.append('attachment', fileList[0].originFileObj);
+        formData.append("attachment", fileList[0].originFileObj);
       }
 
-      const response = await fetch('http://localhost:8000/api/dialogs/messages', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        "http://localhost:8000/api/dialogs/messages",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+          body: formData,
+        }
+      );
 
       const data = await response.json();
 
       if (data?.success && data?.data) {
         setMessages((prev) => [...prev, data.data]);
-        setMessageContent("");
+
+        // Reset textarea bằng cách thay đổi key để force remount component
+        setTextareaKey((prev) => prev + 1);
+        setHasText(false);
+
         setFileList([]);
         setConversations((prev) =>
           prev.map((conv) =>
@@ -924,10 +936,13 @@ export const AdvisorChat = () => {
 
                     <div className="flex-1">
                       <TextArea
-                        value={messageContent}
-                        onChange={(e) => setMessageContent(e.target.value)}
+                        key={textareaKey}
+                        ref={messageInputRef}
                         placeholder="Nhập tin nhắn..."
                         autoSize={{ minRows: 1, maxRows: 4 }}
+                        onChange={(e) =>
+                          setHasText(e.target.value.trim().length > 0)
+                        }
                         onPressEnter={(e) => {
                           if (!e.shiftKey) {
                             e.preventDefault();
@@ -949,13 +964,13 @@ export const AdvisorChat = () => {
                       icon={<SendOutlined />}
                       onClick={handleSendMessage}
                       loading={sending || uploading}
-                      disabled={!messageContent.trim() && fileList.length === 0}
+                      disabled={!hasText && fileList.length === 0}
                       size="large"
                       className="rounded-xl shadow-md hover:shadow-lg transition-all font-medium flex items-center"
                       style={{
                         height: "46px",
                         background:
-                          messageContent.trim() || fileList.length > 0
+                          hasText || fileList.length > 0
                             ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
                             : undefined,
                         border: "none",

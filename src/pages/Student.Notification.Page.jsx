@@ -336,58 +336,45 @@ export const StudentPage = () => {
           </div>
         </div>
 
-        {/* Quick Actions Bar */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-5">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              ⚡ Thao tác nhanh
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => setFilterUnread(!filterUnread)}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                  filterUnread
-                    ? "bg-gradient-to-r from-[#1da1f2] to-cyan-500 text-white shadow-blue-200"
-                    : "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-blue-200"
-                }`}
-              >
-                {filterUnread
-                  ? "📋 Hiện tất cả"
-                  : `🔴 Chưa đọc (${unreadCount})`}
-              </button>
-
-              <button
-                onClick={handleMarkAllAsRead}
-                disabled={unreadCount === 0 || loading}
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold shadow-lg shadow-green-200 hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                ✓ Đánh dấu đã đọc
-              </button>
-
-              <button
-                onClick={fetchNotifications}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                🔄 Làm mới
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Notifications List */}
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200">
-          <div className="px-6 py-5 border-b-2 border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                📌 Danh sách thông báo
-                <span className="inline-flex items-center justify-center px-3 py-1 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
+        <div className="bg-white rounded-lg shadow border border-gray-200 mb-5">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              {/* Title and Counter */}
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                Danh sách thông báo
+                <span className="inline-flex items-center justify-center px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
                   {notifications.length}
                 </span>
               </h3>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-                  Đang hiển thị: {filterUnread ? "Chưa đọc" : "Tất cả"}
-                </span>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFilterUnread(!filterUnread)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+                    filterUnread
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                >
+                  {filterUnread ? "Tất cả" : "Chưa đọc"}
+                </button>
+
+                <button
+                  onClick={handleMarkAllAsRead}
+                  disabled={unreadCount === 0 || loading}
+                  className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium transition-all duration-300 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600"
+                >
+                  ✓ Đánh dấu
+                </button>
+
+                <button
+                  onClick={fetchNotifications}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium transition-all duration-300 hover:bg-blue-700"
+                >
+                  🔄 Mới
+                </button>
               </div>
             </div>
           </div>
@@ -596,55 +583,41 @@ export const StudentPage = () => {
 
       {/* Detail Modal */}
       <Modal
-        title={
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">📌</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 m-0">
-              Chi tiết thông báo
-            </h2>
-          </div>
-        }
+        title="Chi tiết thông báo"
         open={detailModalOpen}
         onCancel={handleCloseDetailModal}
         footer={[
-          <Button
-            key="close"
-            onClick={handleCloseDetailModal}
-            type="primary"
-            size="large"
-            className="bg-gradient-to-r from-blue-500 to-purple-500 border-none font-semibold"
-          >
+          <Button key="close" onClick={handleCloseDetailModal}>
             Đóng
           </Button>,
         ]}
         width={800}
-        style={{ top: 20 }}
+        style={{ top: 20, fontSize: "36px" }}
         bodyStyle={{ maxHeight: "70vh", overflowY: "auto", padding: "24px" }}
       >
         <Spin spinning={detailLoading}>
           {selectedNotification && (
             <div className="flex flex-col gap-5">
-              {/* Title & Metadata */}
-              <div className="bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-5">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 leading-tight">
+              {/* Title Section */}
+              <div className="pb-4 border-b-2 border-gray-200">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   {selectedNotification.title}
                 </h3>
                 <div className="flex flex-wrap gap-3">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-xl font-semibold text-sm">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
                     📅{" "}
                     {dayjs(selectedNotification.created_at).format(
                       "DD/MM/YYYY HH:mm"
                     )}
                   </span>
-
                   <Tag
-                    className="!m-0 !px-4 !py-2 !text-sm !font-bold !rounded-xl"
                     style={{
                       color: "white",
                       background: getTypeInfo(selectedNotification.type).color,
                       border: "none",
+                      padding: "4px 12px",
+                      fontSize: "13px",
+                      fontWeight: "500",
                     }}
                   >
                     {getTypeInfo(selectedNotification.type).icon}{" "}
@@ -653,57 +626,54 @@ export const StudentPage = () => {
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-5">
-                <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  📝 Nội dung thông báo
-                </h4>
-                <div className="bg-white rounded-xl p-4 border border-blue-200">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {/* Content Section */}
+              {selectedNotification.summary && (
+                <div className="py-4 border-b border-gray-200">
+                  <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">
+                    📝 Nội dung
+                  </h4>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded-lg">
                     {selectedNotification.summary}
                   </p>
                 </div>
-              </div>
+              )}
 
-              {/* Link */}
+              {/* Link Section */}
               {selectedNotification.link && (
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-5">
-                  <h4 className="text-lg font-bold text-gray-900 mb-3">
-                    🔗 Liên kết đính kèm
+                <div className="py-4 border-b border-gray-200">
+                  <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">
+                    🔗 Liên kết
                   </h4>
                   <a
                     href={selectedNotification.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-3 bg-white hover:bg-amber-100 text-blue-600 font-semibold rounded-xl border-2 border-amber-200 transition-all duration-300 break-all"
+                    className="text-blue-600 font-semibold break-all hover:underline text-sm hover:text-blue-800 transition-colors p-3 bg-blue-50 rounded-lg inline-block max-w-full"
                   >
                     {selectedNotification.link}
                   </a>
                 </div>
               )}
 
-              {/* Attachments */}
+              {/* Attachments Section */}
               {selectedNotification.attachments &&
                 selectedNotification.attachments.length > 0 && (
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-5">
-                    <h4 className="text-lg font-bold text-gray-900 mb-3">
+                  <div className="py-4 border-b border-gray-200">
+                    <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">
                       📎 Tài liệu đính kèm (
                       {selectedNotification.attachments.length})
                     </h4>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2">
                       {selectedNotification.attachments.map((attachment) => (
                         <a
                           key={attachment.attachment_id}
                           href={`/api/download/${attachment.attachment_id}`}
                           download={attachment.file_name}
-                          className="group flex items-center gap-3 py-3 px-4 rounded-xl bg-white border-2 border-green-200 text-green-700 no-underline text-sm font-semibold transition-all duration-300 hover:bg-green-100 hover:shadow-lg hover:scale-[1.02]"
+                          className="flex items-center gap-2 p-3 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors border border-blue-200 hover:border-blue-400"
                         >
-                          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform">
-                            📄
-                          </div>
-                          <span className="flex-1">{attachment.file_name}</span>
-                          <span className="text-xs px-2 py-1 bg-green-100 rounded-full">
-                            Tải xuống
+                          📄 {attachment.file_name}
+                          <span className="ml-auto text-xs text-gray-500">
+                            Tải
                           </span>
                         </a>
                       ))}
@@ -711,11 +681,11 @@ export const StudentPage = () => {
                   </div>
                 )}
 
-              {/* My Response Section - Hiển thị câu hỏi và phản hồi đã gửi */}
+              {/* Conversation History Section */}
               {selectedNotification.my_response &&
                 selectedNotification.my_response.length > 0 && (
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-5">
-                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <div className="py-4 border-b border-gray-200">
+                    <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-4">
                       💬 Lịch sử hội thoại (
                       {selectedNotification.my_response.length})
                     </h4>
@@ -723,97 +693,64 @@ export const StudentPage = () => {
                     <div className="space-y-4">
                       {selectedNotification.my_response.map(
                         (response, index) => (
-                          <div key={response.response_id} className="space-y-3">
-                            {/* Tiêu đề hội thoại */}
-                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full">
-                                Hội thoại #{index + 1}
-                              </span>
+                          <div
+                            key={response.response_id}
+                            className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                          >
+                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 pb-2 border-b border-gray-200">
+                              Hội thoại #{index + 1}
                             </div>
 
-                            {/* Câu hỏi của sinh viên */}
-                            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
-                              <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                                  Q
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-bold text-blue-900 mb-1">
-                                    Câu hỏi của bạn:
-                                  </p>
-                                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                    {response.content}
-                                  </p>
-                                  <p className="text-xs text-blue-600 mt-2 italic">
-                                    📅 Gửi lúc:{" "}
-                                    {dayjs(response.created_at).format(
+                            {/* Question */}
+                            <div className="mb-4 pb-4 border-b border-gray-200">
+                              <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">
+                                ❓ Câu hỏi của bạn
+                              </p>
+                              <p className="text-gray-700 whitespace-pre-wrap text-sm mb-2">
+                                {response.content}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                📅{" "}
+                                {dayjs(response.created_at).format(
+                                  "HH:mm DD/MM/YYYY"
+                                )}
+                              </p>
+                            </div>
+
+                            {/* Response */}
+                            {response.advisor_response ? (
+                              <div>
+                                <p className="text-xs font-bold text-green-600 uppercase tracking-wide mb-2">
+                                  ✅ Phản hồi từ{" "}
+                                  {response.advisor?.full_name || "Giảng viên"}
+                                </p>
+                                <p className="text-gray-700 whitespace-pre-wrap text-sm mb-2">
+                                  {response.advisor_response}
+                                </p>
+                                {response.response_at && (
+                                  <p className="text-xs text-gray-500 mb-3">
+                                    📅{" "}
+                                    {dayjs(response.response_at).format(
                                       "HH:mm DD/MM/YYYY"
                                     )}
                                   </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Câu trả lời của giảng viên */}
-                            {response.advisor_response ? (
-                              <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4">
-                                <div className="flex items-start gap-3">
-                                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                                    A
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-bold text-green-900 mb-1">
-                                      Phản hồi của giảng viên{" "}
-                                      {response.advisor?.full_name || ""}:
-                                    </p>
-                                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                      {response.advisor_response}
-                                    </p>
-                                    {response.response_at && (
-                                      <p className="text-xs text-green-600 mt-2 italic">
-                                        📅 Trả lời lúc:{" "}
-                                        {dayjs(response.response_at).format(
-                                          "HH:mm DD/MM/YYYY"
-                                        )}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
+                                )}
+                                <Tag
+                                  color="success"
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  ✅ Đã phản hồi
+                                </Tag>
                               </div>
                             ) : (
-                              <Alert
-                                message="Giảng viên chưa phản hồi"
-                                description="Câu hỏi của bạn đang được xem xét. Vui lòng chờ phản hồi từ giảng viên."
-                                type="info"
-                                showIcon
-                                icon={<span className="text-lg">⏳</span>}
-                                className="rounded-xl border-2"
-                              />
-                            )}
-
-                            {/* Status tag */}
-                            <div className="flex justify-end">
-                              <Tag
-                                className="!px-3 !py-1 !text-xs !font-bold !rounded-lg"
-                                style={{
-                                  color: "white",
-                                  background:
-                                    response.status === "resolved"
-                                      ? "#52c41a"
-                                      : "#faad14",
-                                  border: "none",
-                                }}
-                              >
-                                {response.status === "resolved"
-                                  ? "✅ Đã phản hồi"
-                                  : "⏳ Chờ phản hồi"}
-                              </Tag>
-                            </div>
-
-                            {/* Divider giữa các hội thoại */}
-                            {index <
-                              selectedNotification.my_response.length - 1 && (
-                              <Divider className="my-4 border-purple-300" />
+                              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="text-xs font-semibold text-yellow-800 mb-1">
+                                  ⏳ Chờ phản hồi
+                                </p>
+                                <p className="text-xs text-yellow-700">
+                                  Câu hỏi của bạn đang được xem xét.
+                                </p>
+                              </div>
                             )}
                           </div>
                         )
@@ -822,34 +759,28 @@ export const StudentPage = () => {
                   </div>
                 )}
 
-              {/* Response Form - Luôn hiển thị để sinh viên có thể hỏi tiếp */}
-              <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-amber-300 rounded-2xl p-5">
-                <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+              {/* Response Form Section */}
+              <div className="pt-4">
+                <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">
                   💬{" "}
                   {selectedNotification.my_response
                     ? "Gửi câu hỏi mới"
                     : "Gửi phản hồi"}
                 </h4>
-                <div className="bg-white rounded-xl p-4 border-2 border-amber-200 mb-4">
-                  <p className="text-sm text-gray-600 mb-3">
-                    💡{" "}
-                    {selectedNotification.my_response
-                      ? "Bạn vẫn có thể gửi thêm câu hỏi nếu cần thêm thông tin hoặc làm rõ."
-                      : "Bạn có câu hỏi hoặc muốn phản hồi? Hãy để lại tin nhắn của bạn dưới đây."}
-                  </p>
-                  <Input.TextArea
-                    rows={4}
-                    placeholder="Nhập nội dung phản hồi của bạn (tối thiểu 10 ký tự)..."
-                    value={responseContent}
-                    onChange={(e) => setResponseContent(e.target.value)}
-                    maxLength={5000}
-                    showCount
-                    className="text-sm rounded-xl border-2 border-amber-200"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.9)",
-                    }}
-                  />
-                </div>
+                <p className="text-xs text-gray-500 mb-4 italic">
+                  {selectedNotification.my_response
+                    ? "Bạn vẫn có thể gửi thêm câu hỏi nếu cần thêm thông tin hoặc làm rõ."
+                    : "Bạn có câu hỏi hoặc muốn phản hồi? Hãy để lại tin nhắn của bạn dưới đây."}
+                </p>
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Nhập nội dung phản hồi của bạn (tối thiểu 10 ký tự)..."
+                  value={responseContent}
+                  onChange={(e) => setResponseContent(e.target.value)}
+                  maxLength={5000}
+                  showCount
+                  className="mb-3 border-gray-300 rounded-lg mb-5"
+                />
                 <Button
                   type="primary"
                   loading={submitingResponse}
@@ -857,14 +788,10 @@ export const StudentPage = () => {
                     submitingResponse || responseContent.trim().length < 10
                   }
                   onClick={handleSubmitResponse}
+                  className="w-full font-semibold"
                   size="large"
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 border-none font-bold text-white shadow-lg hover:shadow-xl"
-                  style={{
-                    height: "48px",
-                    borderRadius: "12px",
-                  }}
                 >
-                  📤 Gửi phản hồi ({responseContent.trim().length}/10)
+                  Gửi phản hồi ({responseContent.trim().length}/10)
                 </Button>
               </div>
             </div>

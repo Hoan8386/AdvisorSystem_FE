@@ -52,13 +52,15 @@ export const StudentChat = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [messageContent, setMessageContent] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
+  const [textareaKey, setTextareaKey] = useState(0);
+  const [hasText, setHasText] = useState(false);
+  const messageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const echoChannelRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -223,6 +225,9 @@ export const StudentChat = () => {
   };
 
   const handleSendMessage = async () => {
+    const messageContent =
+      messageInputRef.current?.resizableTextArea?.textArea?.value || "";
+
     if (!messageContent.trim() && fileList.length === 0) {
       message.warning("Vui lòng nhập nội dung hoặc chọn file đính kèm");
       return;
@@ -261,7 +266,11 @@ export const StudentChat = () => {
 
       if (data?.success && data?.data) {
         setMessages((prev) => [...prev, data.data]);
-        setMessageContent("");
+
+        // Reset textarea bằng cách thay đổi key để force remount component
+        setTextareaKey((prev) => prev + 1);
+        setHasText(false);
+
         setFileList([]);
         setAdvisor((prev) => ({
           ...prev,
@@ -836,14 +845,17 @@ export const StudentChat = () => {
 
                   <div className="flex-1 w-full min-w-0">
                     <TextArea
-                      value={messageContent}
-                      onChange={(e) => setMessageContent(e.target.value)}
+                      key={textareaKey}
+                      ref={messageInputRef}
                       placeholder={
                         window.innerWidth < 640
                           ? "Nhập tin nhắn..."
                           : "Nhập tin nhắn gửi cho cố vấn..."
                       }
                       autoSize={{ minRows: 1, maxRows: 4 }}
+                      onChange={(e) =>
+                        setHasText(e.target.value.trim().length > 0)
+                      }
                       onPressEnter={(e) => {
                         if (!e.shiftKey) {
                           e.preventDefault();
@@ -866,13 +878,13 @@ export const StudentChat = () => {
                     type="primary"
                     onClick={handleSendMessage}
                     loading={sending || uploading}
-                    disabled={!messageContent.trim() && fileList.length === 0}
+                    disabled={!hasText && fileList.length === 0}
                     size={window.innerWidth < 640 ? "middle" : "large"}
                     className="rounded-xl shadow-md hover:shadow-lg transition-all font-medium flex items-center flex-shrink-0"
                     style={{
                       height: window.innerWidth < 640 ? "38px" : "46px",
                       background:
-                        messageContent.trim() || fileList.length > 0
+                        hasText || fileList.length > 0
                           ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
                           : undefined,
                       border: "none",
