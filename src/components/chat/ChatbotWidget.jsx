@@ -84,7 +84,7 @@ const ChatbotWidget = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:3636/documents/vector/chat/process-query",
+        "https://advisor-system-chatbot.nguyenthanhhoan.cloud/documents/vector/chat/process-query",
         {
           method: "POST",
           headers: headers,

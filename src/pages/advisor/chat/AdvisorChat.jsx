@@ -32,6 +32,7 @@ import {
   sendMessageApi,
   deleteMessageApi,
   searchMessagesApi,
+  markMessageReadApi,
 } from "../../../services/api.service";
 import { AuthContext } from "../../../components/context/auth.context";
 import { getEcho, initEcho } from "../../../utils/echo";
@@ -123,6 +124,24 @@ export const AdvisorChat = () => {
             }
             return prev;
           });
+
+          // Đánh dấu tin nhắn mới là đã đọc ngay lập tức nếu đang xem conversation
+          if (event.message.message_id) {
+            markMessageReadApi(event.message.message_id)
+              .then(() => {
+                // Cập nhật trạng thái tin nhắn trong UI
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.message_id === event.message.message_id
+                      ? { ...msg, is_read: 1 }
+                      : msg
+                  )
+                );
+              })
+              .catch((error) => {
+                console.error("Error marking message as read:", error);
+              });
+          }
         }
 
         // Hiển thị thông báo nếu không đang xem conversation đó
@@ -228,6 +247,23 @@ export const AdvisorChat = () => {
         setMessages(response.data);
         setIsSearching(false);
         setSearchKeyword("");
+
+        // Đánh dấu tất cả tin nhắn chưa đọc từ student là đã đọc
+        const unreadMessages = response.data.filter(
+          (msg) => msg.sender_type !== "advisor" && msg.is_read === 0
+        );
+
+        if (unreadMessages.length > 0) {
+          // Gọi API đánh dấu đã đọc cho từng tin nhắn
+          unreadMessages.forEach(async (msg) => {
+            try {
+              await markMessageReadApi(msg.message_id);
+            } catch (error) {
+              console.error("Error marking message as read:", error);
+            }
+          });
+        }
+
         setConversations((prev) =>
           prev.map((conv) =>
             conv.partner_id === partnerId ? { ...conv, unread_count: 0 } : conv
@@ -278,7 +314,7 @@ export const AdvisorChat = () => {
     try {
       setSending(true);
 
-      // ✅ Gửi file trực tiếp cùng với tin nhắn (giống Blade.php)
+      // Chuẩn bị FormData với tin nhắn và file đính kèm
       const formData = new FormData();
       formData.append("partner_id", selectedConversation.partner_id);
       if (messageContent.trim()) {
@@ -288,21 +324,11 @@ export const AdvisorChat = () => {
         formData.append("attachment", fileList[0].originFileObj);
       }
 
-      const response = await fetch(
-        "http://localhost:8000/api/dialogs/messages",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-          body: formData,
-        }
-      );
+      // Gọi API từ service
+      const response = await sendMessageApi(formData);
 
-      const data = await response.json();
-
-      if (data?.success && data?.data) {
-        setMessages((prev) => [...prev, data.data]);
+      if (response?.success && response?.data) {
+        setMessages((prev) => [...prev, response.data]);
 
         // Reset textarea bằng cách thay đổi key để force remount component
         setTextareaKey((prev) => prev + 1);
@@ -314,15 +340,15 @@ export const AdvisorChat = () => {
             conv.partner_id === selectedConversation.partner_id
               ? {
                   ...conv,
-                  last_message: data.data.content || "Đã gửi file đính kèm",
-                  last_message_time: data.data.sent_at,
+                  last_message: response.data.content || "Đã gửi file đính kèm",
+                  last_message_time: response.data.sent_at,
                 }
               : conv
           )
         );
         message.success("Gửi tin nhắn thành công");
       } else {
-        message.error(data?.message || "Không thể gửi tin nhắn");
+        message.error(response?.message || "Không thể gửi tin nhắn");
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -477,7 +503,9 @@ export const AdvisorChat = () => {
                   {msg.attachment_path && (
                     <div className={msg.content ? "mt-3" : ""}>
                       <Link
-                        to={`http://localhost:8000${msg.attachment_path}`}
+                        to={`${import.meta.env.VITE_BACKEND_URL}${
+                          msg.attachment_path
+                        }`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group/file ${
