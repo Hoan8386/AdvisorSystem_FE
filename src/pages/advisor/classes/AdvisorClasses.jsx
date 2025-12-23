@@ -21,6 +21,7 @@ import {
   IdcardOutlined,
   FileTextOutlined,
   PlusOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -30,6 +31,9 @@ import {
   getSemestersAPI,
 } from "../../../services/api.service";
 import { toast } from "react-toastify";
+import { AdvisorDialogues } from "./AdvisorDialogues";
+
+const { Option } = Select;
 
 export const AdvisorClasses = () => {
   const navigate = useNavigate();
@@ -168,6 +172,170 @@ export const AdvisorClasses = () => {
 
   const handleClassClick = (classId) => {
     navigate(`/advisor/classes/${classId}`);
+  };
+
+  // --- Functions cho Tổng hợp ý kiến ---
+  const fetchDialogues = async () => {
+    try {
+      setDialoguesLoading(true);
+      const params = { ...filters };
+      Object.keys(params).forEach((key) => {
+        if (params[key] === null || params[key] === "") {
+          delete params[key];
+        }
+      });
+
+      const response = await getDialoguesApi(params);
+      if (response?.success && response?.data) {
+        setDialogues(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching dialogues:", error);
+      toast.error("Không thể tải danh sách ý kiến đối thoại");
+    } finally {
+      setDialoguesLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      setStatisticsLoading(true);
+      const params = { ...filters };
+      Object.keys(params).forEach((key) => {
+        if (params[key] === null || params[key] === "") {
+          delete params[key];
+        }
+      });
+
+      const response = await getDialogueStatisticsApi(params);
+      if (response?.success && response?.data) {
+        setStatistics(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+    } finally {
+      setStatisticsLoading(false);
+    }
+  };
+
+  const handleViewDetail = async (record) => {
+    try {
+      setDetailLoading(true);
+      setDetailModalVisible(true);
+      const response = await getDialogueDetailApi(record.source, record.id);
+      if (response?.success && response?.data) {
+        setSelectedDialogue(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching dialogue detail:", error);
+      toast.error("Không thể tải chi tiết ý kiến");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleExportReport = async () => {
+    try {
+      setExportLoading(true);
+      const params = {
+        class_id: filters.class_id,
+        from_date: filters.from_date,
+        to_date: filters.to_date,
+        source: filters.source,
+      };
+
+      const response = await exportDialoguesReportApi(params);
+
+      let blob;
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      if (!blob || blob.size === 0) {
+        toast.error("File xuất trống hoặc không hợp lệ");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `BaoCao_YKienDoiThoai_${dayjs().format(
+        "YYYYMMDDHHmmss"
+      )}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Xuất báo cáo thành công");
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      toast.error("Không thể xuất báo cáo");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleDateRangeChange = (dates) => {
+    if (dates) {
+      setFilters((prev) => ({
+        ...prev,
+        from_date: dates[0].format("YYYY-MM-DD"),
+        to_date: dates[1].format("YYYY-MM-DD"),
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        from_date: null,
+        to_date: null,
+      }));
+    }
+  };
+
+  const handleSearch = () => {
+    fetchDialogues();
+    fetchStatistics();
+  };
+
+  const handleReset = () => {
+    setFilters({
+      source: "all",
+      class_id: null,
+      status: null,
+      notification_type: null,
+      from_date: null,
+      to_date: null,
+      keyword: "",
+      sort_by: "created_at",
+      sort_order: "desc",
+    });
+    setTimeout(() => {
+      fetchDialogues();
+      fetchStatistics();
+    }, 100);
   };
 
   return (
@@ -467,6 +635,16 @@ export const AdvisorClasses = () => {
                     )}
                   </Spin>
                 ),
+              },
+              {
+                key: "dialogues",
+                label: (
+                  <span className="flex items-center gap-2">
+                    <CommentOutlined />
+                    Tổng hợp ý kiến
+                  </span>
+                ),
+                children: <AdvisorDialogues classes={classes} />,
               },
             ]}
           />

@@ -1016,6 +1016,41 @@ const getMeetingStatisticsApi = (params = {}) => {
   return axios.get(URL_BACKEND, { params });
 };
 
+// ========== DIALOGUE APIs ==========
+
+// Get dialogues list
+const getDialoguesApi = (params = {}) => {
+  const URL_BACKEND = "/api/dialogues";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Get dialogue detail
+const getDialogueDetailApi = (source, id) => {
+  const URL_BACKEND = `/api/dialogues/${source}/${id}`;
+  return axios.get(URL_BACKEND);
+};
+
+// Get dialogue statistics
+const getDialogueStatisticsApi = (params = {}) => {
+  const URL_BACKEND = "/api/dialogues/statistics/overview";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Get dialogue report by class
+const getDialogueReportByClassApi = (params = {}) => {
+  const URL_BACKEND = "/api/dialogues/reports/by-class";
+  return axios.get(URL_BACKEND, { params });
+};
+
+// Export dialogue report
+const exportDialoguesReportApi = (params = {}) => {
+  const URL_BACKEND = "/api/dialogues/export";
+  return axios.get(URL_BACKEND, { 
+    params,
+    responseType: 'blob' 
+  });
+};
+
 // ========== ATTENDANCE APIs (Activity) ==========
 
 // Export danh sách đăng ký hoạt động
@@ -1246,6 +1281,32 @@ const exportSocialPointsByFacultyApi = () => {
   });
 };
 
+// Export insufficient social points by class
+const exportInsufficientSocialPointsByClassApi = (classId) => {
+  const URL_BACKEND = `/api/admin/export/social-points/insufficient/class?class_id=${classId}`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
+
+// Export insufficient social points by faculty
+const exportInsufficientSocialPointsByFacultyApi = () => {
+  const URL_BACKEND = `/api/admin/export/social-points/insufficient/faculty`;
+  return axios.get(URL_BACKEND, {
+    responseType: 'blob',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
+
 export {
     
     createUserApi,
@@ -1412,6 +1473,12 @@ export {
   downloadMeetingMinutesApi,
   getMeetingFeedbacksApi,
   getMeetingStatisticsApi,
+  // Dialogue APIs
+  getDialoguesApi,
+  getDialogueDetailApi,
+  getDialogueStatisticsApi,
+  getDialogueReportByClassApi,
+  exportDialoguesReportApi,
   // Attendance APIs
   exportRegistrationsAPI,
   exportAttendanceTemplateAPI,
@@ -1442,4 +1509,6 @@ export {
     exportTrainingPointsByFacultyApi,
     exportSocialPointsByClassApi,
     exportSocialPointsByFacultyApi,
+    exportInsufficientSocialPointsByClassApi,
+    exportInsufficientSocialPointsByFacultyApi,
 };

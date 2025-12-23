@@ -301,7 +301,8 @@ export const StudentMeetings = () => {
 
           {/* Table */}
           <Card
-            className="shadow-2xl rounded-2xl border-0 bg-white/90 backdrop-blur-sm overflow-x-auto"
+            style={{ marginTop: "20px" }}
+            className="shadow-2xl rounded-2xl border-0 bg-white/90 backdrop-blur-sm overflow-x-auto mt-5"
             title={
               <span className="text-base sm:text-lg md:text-xl font-semibold">
                 <CalendarOutlined className="mr-2" />

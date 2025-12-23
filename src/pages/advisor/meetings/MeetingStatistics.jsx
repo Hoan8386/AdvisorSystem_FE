@@ -14,6 +14,8 @@ import {
   Divider,
   Badge,
   Tooltip,
+  Select,
+  DatePicker,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -26,23 +28,53 @@ import {
   CheckOutlined,
   PercentageOutlined,
   BarChartOutlined,
+  ReloadOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import { getMeetingStatisticsApi } from "../../../services/meeting.service";
+import { getClassesAPI } from "../../../services/api.service";
+import dayjs from "dayjs";
+
+const { RangePicker } = DatePicker;
 
 export const MeetingStatistics = () => {
   const navigate = useNavigate();
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [classes, setClasses] = useState([]);
+  const [filters, setFilters] = useState({
+    class_id: null,
+    from_date: null,
+    to_date: null,
+  });
 
   useEffect(() => {
+    fetchClasses();
     fetchStatistics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const response = await getClassesAPI();
+      if (response?.data) {
+        setClasses(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+    }
+  };
 
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      const response = await getMeetingStatisticsApi();
+      const params = {};
+      if (filters.class_id) params.class_id = filters.class_id;
+      if (filters.from_date) params.from_date = filters.from_date;
+      if (filters.to_date) params.to_date = filters.to_date;
+
+      const response = await getMeetingStatisticsApi(params);
       console.log("Statistics Response:", response);
 
       // Response structure: { success: true, data: {...} }
@@ -71,6 +103,33 @@ export const MeetingStatistics = () => {
 
   const handleGoBack = () => {
     navigate(-1);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters({ ...filters, [key]: value });
+  };
+
+  const handleDateRangeChange = (dates) => {
+    setFilters({
+      ...filters,
+      from_date: dates?.[0] ? dates[0].format("YYYY-MM-DD") : null,
+      to_date: dates?.[1] ? dates[1].format("YYYY-MM-DD") : null,
+    });
+  };
+
+  const handleApplyFilters = () => {
+    fetchStatistics();
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      class_id: null,
+      from_date: null,
+      to_date: null,
+    });
+    setTimeout(() => {
+      fetchStatistics();
+    }, 100);
   };
 
   const StatisticCard = ({
@@ -179,10 +238,49 @@ export const MeetingStatistics = () => {
                 Thống kê Cuộc Họp
               </h1>
             </div>
-            <Button type="primary" onClick={fetchStatistics} loading={loading}>
-              Làm mới
-            </Button>
           </div>
+
+          {/* Filters */}
+          <Card className="mb-5" style={{ background: "#f5f7fa" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <FilterOutlined />
+              <span className="font-semibold">Bộ lọc</span>
+            </div>
+            <div className="flex flex-wrap gap-3 items-center">
+              <Select
+                placeholder="Tất cả lớp"
+                allowClear
+                style={{ width: 200 }}
+                value={filters.class_id}
+                onChange={(value) => handleFilterChange("class_id", value)}
+                options={classes.map((c) => ({
+                  label: c.class_name,
+                  value: c.class_id,
+                }))}
+              />
+              <RangePicker
+                format="DD/MM/YYYY"
+                placeholder={["Từ ngày", "Đến ngày"]}
+                value={
+                  filters.from_date && filters.to_date
+                    ? [dayjs(filters.from_date), dayjs(filters.to_date)]
+                    : null
+                }
+                onChange={handleDateRangeChange}
+              />
+              <Button
+                type="primary"
+                icon={<FilterOutlined />}
+                onClick={handleApplyFilters}
+                loading={loading}
+              >
+                Áp dụng
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={handleResetFilters}>
+                Đặt lại
+              </Button>
+            </div>
+          </Card>
 
           {/* Meeting Statistics Section */}
           <div className="mb-5">

@@ -44,6 +44,7 @@ export const AdvisorMeetings = () => {
   const [meetings, setMeetings] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   const [filters, setFilters] = useState({
     class_id: null,
@@ -282,12 +283,23 @@ export const AdvisorMeetings = () => {
     setFilters({ ...filters, [key]: value });
   };
 
-  const handleDateRangeChange = (dates) => {
-    setFilters({
-      ...filters,
-      from_date: dates?.[0] ? dates[0].format("YYYY-MM-DD") : null,
-      to_date: dates?.[1] ? dates[1].format("YYYY-MM-DD") : null,
-    });
+  const handleMonthChange = (date) => {
+    setSelectedMonth(date);
+    if (date) {
+      const startOfMonth = date.startOf("month").format("YYYY-MM-DD");
+      const endOfMonth = date.endOf("month").format("YYYY-MM-DD");
+      setFilters({
+        ...filters,
+        from_date: startOfMonth,
+        to_date: endOfMonth,
+      });
+    } else {
+      setFilters({
+        ...filters,
+        from_date: null,
+        to_date: null,
+      });
+    }
   };
 
   return (
@@ -341,14 +353,19 @@ export const AdvisorMeetings = () => {
                 { label: "Đã hủy", value: "cancelled" },
               ]}
             />
-            <DatePicker.RangePicker
-              format="DD/MM/YYYY"
-              placeholder={["Từ ngày", "Đến ngày"]}
-              onChange={handleDateRangeChange}
+            <DatePicker
+              picker="month"
+              format="MM/YYYY"
+              placeholder="Chọn tháng"
+              value={selectedMonth}
+              onChange={handleMonthChange}
+              allowClear
+              style={{ width: 150 }}
             />
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
+                setSelectedMonth(null);
                 setFilters({
                   class_id: null,
                   status: null,
@@ -363,24 +380,74 @@ export const AdvisorMeetings = () => {
             </Button>
           </div>
 
-          {/* Table */}
-          <Table
-            columns={columns}
-            dataSource={meetings}
-            loading={loading}
-            rowKey="meeting_id"
-            scroll={{ x: 1200 }}
-            pagination={{
-              pageSize: 10,
-              showTotal: (total) => `Tổng ${total} cuộc họp`,
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "20", "50"],
-            }}
-            locale={{
-              emptyText: (
+          {/* Table or Empty State */}
+          {meetings.length === 0 && !loading ? (
+            <div className="py-5 w-full">
+              {filters.class_id && selectedMonth ? (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 w-full">
+                  <div className="flex items-start gap-3 mb-4">
+                    <ExclamationCircleOutlined className="text-yellow-600 text-xl mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-base">
+                        Lơp này chưa tổ chức cuộc họp trong tháng này{" "}
+                        {selectedMonth.format("YYYY-MM")}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <Tag
+                          color="orange"
+                          className="text-sm px-3 py-1 mb-2"
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {
+                            classes.find((c) => c.class_id === filters.class_id)
+                              ?.class_name
+                          }
+                        </Tag>
+                        <div className="text-sm text-gray-700 mt-1">
+                          {classes.find((c) => c.class_id === filters.class_id)
+                            ?.class_description ||
+                            "Lớp Đại học 2021 ngành Công nghệ Thông tin"}
+                        </div>
+                      </div>
+
+                      <div className="text-right ml-4">
+                        <div className="text-sm text-gray-600 mb-1">
+                          <span className="text-gray-700">Sĩ số:</span>{" "}
+                          <span className="font-medium">
+                            {classes.find(
+                              (c) => c.class_id === filters.class_id
+                            )?.total_students || 20}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <span className="text-gray-700">CVHT:</span>{" "}
+                          <span className="font-medium">
+                            {classes.find(
+                              (c) => c.class_id === filters.class_id
+                            )?.advisor?.full_name || "ThS. Trần Văn An"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600">
+                    Tổng: <strong className="text-gray-800">1</strong> lớp chưa
+                    tổ chức họp
+                  </p>
+                </div>
+              ) : (
                 <Empty
                   description={
-                    <div className="py-8">
+                    <div>
                       <p className="text-gray-500 text-lg mb-3">
                         Chưa có cuộc họp nào
                       </p>
@@ -394,9 +461,23 @@ export const AdvisorMeetings = () => {
                     </div>
                   }
                 />
-              ),
-            }}
-          />
+              )}
+            </div>
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={meetings}
+              loading={loading}
+              rowKey="meeting_id"
+              scroll={{ x: 1200 }}
+              pagination={{
+                pageSize: 10,
+                showTotal: (total) => `Tổng ${total} cuộc họp`,
+                showSizeChanger: true,
+                pageSizeOptions: ["10", "20", "50"],
+              }}
+            />
+          )}
         </Card>
       </div>
     </AdvisorLayout>

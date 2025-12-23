@@ -21,7 +21,11 @@ import {
   getClassesApi,
   getSemestersApi,
   exportTrainingPointsByClassApi,
+  exportTrainingPointsByFacultyApi,
   exportSocialPointsByClassApi,
+  exportSocialPointsByFacultyApi,
+  exportInsufficientSocialPointsByClassApi,
+  exportInsufficientSocialPointsByFacultyApi,
 } from "../../../services/api.service";
 
 export const AdminActivityPoints = () => {
@@ -33,6 +37,12 @@ export const AdminActivityPoints = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [trainingLoading, setTrainingLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
+  const [trainingFacultyLoading, setTrainingFacultyLoading] = useState(false);
+  const [socialFacultyLoading, setSocialFacultyLoading] = useState(false);
+  const [insufficientClassLoading, setInsufficientClassLoading] =
+    useState(false);
+  const [insufficientFacultyLoading, setInsufficientFacultyLoading] =
+    useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -198,6 +208,261 @@ export const AdminActivityPoints = () => {
     }
   };
 
+  const handleExportTrainingPointsByFaculty = async () => {
+    if (!selectedSemester) {
+      toast.warning("Vui lòng chọn học kỳ");
+      return;
+    }
+
+    try {
+      setTrainingFacultyLoading(true);
+      const response = await exportTrainingPointsByFacultyApi(selectedSemester);
+
+      let blob;
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      if (!blob || blob.size === 0) {
+        toast.error("File xuất trống hoặc không hợp lệ");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      const semesterName =
+        semesters.find((s) => s.semester_id === selectedSemester)
+          ?.semester_name || "semester";
+      link.download = `DiemRenLuyen_TheoKhoa_${semesterName}_${timestamp}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Xuất điểm rèn luyện theo khoa thành công");
+    } catch (error) {
+      console.error("Error exporting training points by faculty:", error);
+      toast.error(error?.message || "Không thể xuất điểm rèn luyện theo khoa");
+    } finally {
+      setTrainingFacultyLoading(false);
+    }
+  };
+
+  const handleExportSocialPointsByFaculty = async () => {
+    try {
+      setSocialFacultyLoading(true);
+      const response = await exportSocialPointsByFacultyApi();
+
+      let blob;
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      if (!blob || blob.size === 0) {
+        toast.error("File xuất trống hoặc không hợp lệ");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      link.download = `DiemCTXH_TichLuy_TheoKhoa_${timestamp}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Xuất điểm CTXH theo khoa thành công");
+    } catch (error) {
+      console.error("Error exporting social points by faculty:", error);
+      toast.error(error?.message || "Không thể xuất điểm CTXH theo khoa");
+    } finally {
+      setSocialFacultyLoading(false);
+    }
+  };
+
+  const handleExportInsufficientSocialPointsByClass = async () => {
+    if (!selectedClass) {
+      toast.warning("Vui lòng chọn lớp");
+      return;
+    }
+
+    try {
+      setInsufficientClassLoading(true);
+      const response = await exportInsufficientSocialPointsByClassApi(
+        selectedClass
+      );
+
+      let blob;
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      if (!blob || blob.size === 0) {
+        toast.error("File xuất trống hoặc không hợp lệ");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      const className =
+        classes.find((c) => c.class_id === selectedClass)?.class_name ||
+        "class";
+      link.download = `SinhVienThieuDiemCTXH_${className}_${timestamp}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Xuất danh sách sinh viên thiếu điểm CTXH thành công");
+    } catch (error) {
+      console.error(
+        "Error exporting insufficient social points by class:",
+        error
+      );
+      toast.error(
+        error?.message || "Không thể xuất danh sách sinh viên thiếu điểm CTXH"
+      );
+    } finally {
+      setInsufficientClassLoading(false);
+    }
+  };
+
+  const handleExportInsufficientSocialPointsByFaculty = async () => {
+    try {
+      setInsufficientFacultyLoading(true);
+      const response = await exportInsufficientSocialPointsByFacultyApi();
+
+      let blob;
+      if (response instanceof Blob) {
+        blob = response;
+      } else if (response.data instanceof Blob) {
+        blob = response.data;
+      } else if (response.data instanceof ArrayBuffer) {
+        blob = new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else if (typeof response.data === "string") {
+        const binaryString = atob(response.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      } else {
+        blob = new Blob([response.data || response], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+      }
+
+      if (!blob || blob.size === 0) {
+        toast.error("File xuất trống hoặc không hợp lệ");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      link.download = `SinhVienThieuDiemCTXH_TheoKhoa_${timestamp}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(
+        "Xuất danh sách sinh viên thiếu điểm CTXH theo khoa thành công"
+      );
+    } catch (error) {
+      console.error(
+        "Error exporting insufficient social points by faculty:",
+        error
+      );
+      toast.error(
+        error?.message ||
+          "Không thể xuất danh sách sinh viên thiếu điểm CTXH theo khoa"
+      );
+    } finally {
+      setInsufficientFacultyLoading(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <Card>
@@ -264,7 +529,18 @@ export const AdminActivityPoints = () => {
               loading={trainingLoading}
               disabled={!selectedClass || !selectedSemester}
             >
-              Xuất Điểm Rèn Luyện
+              Xuất Điểm Rèn Luyện (Lớp)
+            </Button>
+
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              size="large"
+              onClick={handleExportTrainingPointsByFaculty}
+              loading={trainingFacultyLoading}
+              disabled={!selectedSemester}
+            >
+              Xuất Điểm Rèn Luyện (Khoa)
             </Button>
 
             <Button
@@ -276,7 +552,41 @@ export const AdminActivityPoints = () => {
               disabled={!selectedClass}
               style={{ background: "#52c41a", borderColor: "#52c41a" }}
             >
-              Xuất Điểm CTXH
+              Xuất Điểm CTXH (Lớp)
+            </Button>
+
+            <Button
+              type="primary"
+              icon={<FileExcelOutlined />}
+              size="large"
+              onClick={handleExportSocialPointsByFaculty}
+              loading={socialFacultyLoading}
+              style={{ background: "#52c41a", borderColor: "#52c41a" }}
+            >
+              Xuất Điểm CTXH (Khoa)
+            </Button>
+
+            <Button
+              type="default"
+              icon={<FileExcelOutlined />}
+              size="large"
+              onClick={handleExportInsufficientSocialPointsByClass}
+              loading={insufficientClassLoading}
+              disabled={!selectedClass}
+              danger
+            >
+              DS Thiếu CTXH (Lớp)
+            </Button>
+
+            <Button
+              type="default"
+              icon={<FileExcelOutlined />}
+              size="large"
+              onClick={handleExportInsufficientSocialPointsByFaculty}
+              loading={insufficientFacultyLoading}
+              danger
+            >
+              DS Thiếu CTXH (Khoa)
             </Button>
 
             <Button
@@ -343,12 +653,28 @@ export const AdminActivityPoints = () => {
           </h3>
           <ul className="space-y-2 text-sm">
             <li>
-              ✓ <strong>Điểm Rèn Luyện:</strong> Chọn lớp + học kỳ → Xuất danh
-              sách
+              ✓ <strong>Điểm Rèn Luyện (Lớp):</strong> Chọn lớp + học kỳ → Xuất
+              danh sách theo lớp
             </li>
             <li>
-              ✓ <strong>Điểm CTXH:</strong> Chọn lớp (không cần học kỳ) → Xuất
-              danh sách tích lũy
+              ✓ <strong>Điểm Rèn Luyện (Khoa):</strong> Chọn học kỳ → Xuất danh
+              sách toàn khoa
+            </li>
+            <li>
+              ✓ <strong>Điểm CTXH (Lớp):</strong> Chọn lớp (không cần học kỳ) →
+              Xuất danh sách tích lũy theo lớp
+            </li>
+            <li>
+              ✓ <strong>Điểm CTXH (Khoa):</strong> Không cần chọn gì → Xuất danh
+              sách tích lũy toàn khoa
+            </li>
+            <li>
+              ✓ <strong>DS Thiếu CTXH (Lớp):</strong> Chọn lớp → Xuất chỉ sinh
+              viên có điểm CTXH &lt; 170
+            </li>
+            <li>
+              ✓ <strong>DS Thiếu CTXH (Khoa):</strong> Xuất toàn bộ sinh viên
+              thiếu CTXH trong khoa
             </li>
             <li>
               ✓ File Excel sẽ tự động download và có thể mở trực tiếp trên máy

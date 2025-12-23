@@ -25,6 +25,7 @@ import {
   DownloadOutlined,
   UploadOutlined,
   ExclamationCircleOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -37,6 +38,7 @@ import {
   downloadWarningsTemplateApi,
   importWarningsApi,
 } from "../../../services/api.service";
+import { AdminDialogues } from "./AdminDialogues";
 
 export const AdminSemesters = () => {
   const navigate = useNavigate();
@@ -568,6 +570,15 @@ export const AdminSemesters = () => {
                   )}
                 </div>
               ),
+            },
+            {
+              key: "dialogues",
+              label: (
+                <span>
+                  <CommentOutlined /> Tổng hợp ý kiến
+                </span>
+              ),
+              children: <AdminDialogues />,
             },
           ]}
         />

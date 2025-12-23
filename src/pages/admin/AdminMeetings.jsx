@@ -13,8 +13,11 @@ import {
   Tooltip,
   Spin,
   Empty,
+  DatePicker,
+  Popconfirm,
 } from "antd";
-import { Eye, Trash2, Download, RotateCw } from "lucide-react";
+import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
+import { Eye, Trash2, Download } from "lucide-react";
 import { toast } from "react-toastify";
 import { getMeetingsApi, deleteMeetingApi } from "../../services/api.service";
 import { downloadMeetingMinutesApi } from "../../services/meeting.service";
@@ -34,7 +37,7 @@ const AdminMeetings = () => {
     from_date: undefined,
     to_date: undefined,
   });
-  const [searchText, setSearchText] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   // Extract unique classes for filter
   const [classes, setClasses] = useState([]);
@@ -108,14 +111,33 @@ const AdminMeetings = () => {
     }));
   };
 
+  const handleMonthChange = (date) => {
+    setSelectedMonth(date);
+    if (date) {
+      const startOfMonth = date.startOf("month").format("YYYY-MM-DD");
+      const endOfMonth = date.endOf("month").format("YYYY-MM-DD");
+      setFilters((prev) => ({
+        ...prev,
+        from_date: startOfMonth,
+        to_date: endOfMonth,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        from_date: undefined,
+        to_date: undefined,
+      }));
+    }
+  };
+
   const handleResetFilters = () => {
+    setSelectedMonth(null);
     setFilters({
       class_id: undefined,
       status: undefined,
       from_date: undefined,
       to_date: undefined,
     });
-    setSearchText("");
   };
 
   const handleViewDetail = (meeting) => {
@@ -179,28 +201,24 @@ const AdminMeetings = () => {
     }
   };
 
-  // Filter meetings by search text
-  const filteredMeetings = meetings.filter(
-    (meeting) =>
-      meeting.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      meeting.class.class_name
-        .toLowerCase()
-        .includes(searchText.toLowerCase()) ||
-      meeting.advisor.full_name.toLowerCase().includes(searchText.toLowerCase())
-  );
-
   const columns = [
+    {
+      title: "Lớp",
+      dataIndex: ["class", "class_name"],
+      key: "class_name",
+      width: 120,
+      render: (text) => (
+        <Tag color="blue" className="font-semibold">
+          {text}
+        </Tag>
+      ),
+    },
     {
       title: "Tiêu đề",
       dataIndex: "title",
       key: "title",
       width: 200,
-      render: (text, record) => (
-        <div>
-          <div className="font-semibold">{text}</div>
-          <div className="text-xs text-gray-500">{record.class.class_name}</div>
-        </div>
-      ),
+      render: (text) => <div className="font-semibold">{text}</div>,
     },
     {
       title: "Cố vấn",
@@ -329,81 +347,126 @@ const AdminMeetings = () => {
         Quản lý cuộc họp
       </h1>
 
-      <Card className="shadow-lg " style={{ marginBottom: "20px" }}>
-        <Row gutter={[16, 16]} className="mb-4">
-          <Col xs={24} sm={12} lg={6}>
-            <Input.Search
-              placeholder="Tìm kiếm tiêu đề, lớp, cố vấn..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              allowClear
-            />
-          </Col>
-
-          <Col xs={24} sm={12} lg={6}>
-            <Select
-              placeholder="Chọn lớp"
-              value={filters.class_id}
-              onChange={(value) => handleFilterChange("class_id", value)}
-              allowClear
-              className="w-full"
-              options={classes.map((cls) => ({
-                label: cls.class_name,
-                value: cls.class_id,
-              }))}
-            />
-          </Col>
-
-          <Col xs={24} sm={12} lg={6}>
-            <Select
-              placeholder="Chọn trạng thái"
-              value={filters.status}
-              onChange={(value) => handleFilterChange("status", value)}
-              allowClear
-              className="w-full"
-              options={[
-                { label: "Đã lên lịch", value: "scheduled" },
-                { label: "Đã hoàn thành", value: "completed" },
-                { label: "Đã hủy", value: "cancelled" },
-              ]}
-            />
-          </Col>
-
-          <Col xs={24} sm={12} lg={6}>
-            <Button onClick={handleResetFilters} className="w-full">
-              <RotateCw className="inline mr-2" size={16} />
-              Đặt lại
-            </Button>
-          </Col>
-        </Row>
-
-        <Row>
-          <Col span={24}>
-            <p className="text-gray-600">
-              Tổng số cuộc họp:{" "}
-              <span className="font-semibold">{filteredMeetings.length}</span>
-            </p>
-          </Col>
-        </Row>
-      </Card>
-
       <Card className="shadow-lg">
-        <Spin spinning={loading}>
+        {/* Filters */}
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg flex flex-wrap gap-3 items-center">
+          <Select
+            placeholder="Tất cả lớp"
+            allowClear
+            style={{ width: 200 }}
+            value={filters.class_id}
+            onChange={(value) => handleFilterChange("class_id", value)}
+            options={classes.map((c) => ({
+              label: c.class_name,
+              value: c.class_id,
+            }))}
+          />
+          <Select
+            placeholder="Tất cả trạng thái"
+            allowClear
+            style={{ width: 180 }}
+            value={filters.status}
+            onChange={(value) => handleFilterChange("status", value)}
+            options={[
+              { label: "Đã lên lịch", value: "scheduled" },
+              { label: "Đã hoàn thành", value: "completed" },
+              { label: "Đã hủy", value: "cancelled" },
+            ]}
+          />
+          <DatePicker
+            picker="month"
+            format="MM/YYYY"
+            placeholder="Chọn tháng"
+            value={selectedMonth}
+            onChange={handleMonthChange}
+            allowClear
+            style={{ width: 150 }}
+          />
+          <Button icon={<ReloadOutlined />} onClick={handleResetFilters}>
+            Làm mới
+          </Button>
+        </div>
+
+        {/* Table or Empty State */}
+        {meetings.length === 0 && !loading ? (
+          <div className="py-5 w-full">
+            {filters.class_id && selectedMonth ? (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 w-full">
+                <div className="flex items-start gap-3 mb-4">
+                  <ExclamationCircleOutlined className="text-yellow-600 text-xl mt-1" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800 text-base">
+                      Lớp này chưa tổ chức cuộc họp trong tháng{" "}
+                      {selectedMonth.format("MM/YYYY")}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <Tag
+                        color="orange"
+                        className="text-sm px-3 py-1 mb-2"
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {
+                          classes.find((c) => c.class_id === filters.class_id)
+                            ?.class_name
+                        }
+                      </Tag>
+                      <div className="text-sm text-gray-700 mt-1">
+                        {classes.find((c) => c.class_id === filters.class_id)
+                          ?.class_description || "Lớp Đại học"}
+                      </div>
+                    </div>
+
+                    <div className="text-right ml-4">
+                      <div className="text-sm text-gray-600 mb-1">
+                        <span className="text-gray-700">Sĩ số:</span>{" "}
+                        <span className="font-medium">
+                          {classes.find((c) => c.class_id === filters.class_id)
+                            ?.total_students || 0}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <span className="text-gray-700">CVHT:</span>{" "}
+                        <span className="font-medium">
+                          {classes.find((c) => c.class_id === filters.class_id)
+                            ?.advisor?.full_name || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-600">
+                  Tổng: <strong className="text-gray-800">1</strong> lớp chưa tổ
+                  chức họp
+                </p>
+              </div>
+            ) : (
+              <Empty description="Không có dữ liệu" />
+            )}
+          </div>
+        ) : (
           <Table
             columns={columns}
-            dataSource={filteredMeetings}
+            dataSource={meetings}
+            loading={loading}
             rowKey="meeting_id"
+            scroll={{ x: 1200 }}
             pagination={{
               pageSize: 10,
-              showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} cuộc họp`,
-            }}
-            scroll={{ x: 1200 }}
-            locale={{
-              emptyText: <Empty description="Không có dữ liệu" />,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50"],
             }}
           />
-        </Spin>
+        )}
       </Card>
 
       {selectedMeeting && (

@@ -91,9 +91,9 @@ const getMeetingFeedbacksApi = (meetingId) => {
 };
 
 // Get statistics
-const getMeetingStatisticsApi = () => {
+const getMeetingStatisticsApi = (params = {}) => {
   const URL_BACKEND = "/api/meetings/statistics/overview";
-  return axios.get(URL_BACKEND);
+  return axios.get(URL_BACKEND, { params });
 };
 
 // Check Google Calendar attendance
