@@ -169,6 +169,29 @@ export const StudentPage = () => {
     fetchUnreadCount();
   };
 
+  const handleDownloadAttachment = async (attachment) => {
+    try {
+      const baseUrl =
+        import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL;
+      const fileUrl = `${baseUrl}storage/${attachment.file_path}`;
+
+      // Tạo link tạm để download trực tiếp (tránh CORS)
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = attachment.file_name;
+      link.target = "_blank"; // Mở trong tab mới nếu download thất bại
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      message.success("Đang tải file...");
+    } catch (error) {
+      console.error("Download error:", error);
+      message.error("Lỗi khi tải file");
+    }
+  };
+
   const handleSubmitResponse = async () => {
     if (!responseContent.trim()) {
       message.warning("Vui lòng nhập nội dung phản hồi");
@@ -665,17 +688,16 @@ export const StudentPage = () => {
                     </h4>
                     <div className="flex flex-col gap-2">
                       {selectedNotification.attachments.map((attachment) => (
-                        <a
+                        <button
                           key={attachment.attachment_id}
-                          href={`/api/download/${attachment.attachment_id}`}
-                          download={attachment.file_name}
-                          className="flex items-center gap-2 p-3 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors border border-blue-200 hover:border-blue-400"
+                          onClick={() => handleDownloadAttachment(attachment)}
+                          className="flex items-center gap-2 p-3 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors border border-blue-200 hover:border-blue-400 cursor-pointer"
                         >
                           📄 {attachment.file_name}
                           <span className="ml-auto text-xs text-gray-500">
                             Tải
                           </span>
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>

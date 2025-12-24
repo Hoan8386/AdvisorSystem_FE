@@ -66,7 +66,7 @@ export default function CreateEditPointFeedback() {
               uid: "-1",
               name: data.attachment_path.split("/").pop(),
               status: "done",
-              url: `http://localhost:8000/storage/${data.attachment_path}`,
+              url: `${import.meta.env.VITE_BACKEND_URL}storage/${data.attachment_path}`,
               isExisting: true,
             },
           ]);

@@ -80,6 +80,35 @@ export default function StudentPointFeedbacks() {
     fetchFeedbacks();
   }, [fetchFeedbacks]);
 
+  const handleDownloadAttachment = async (attachment) => {
+    try {
+      const baseUrl =
+        import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL;
+      const fileUrl = `${baseUrl}storage/${attachment}`;
+
+      // Fetch file as blob
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to download file");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Tạo link tạm để download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = attachment.split("/").pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Lỗi khi tải file");
+    }
+  };
+
   const handleViewDetail = (record) => {
     setSelectedFeedback(record);
     setDrawerVisible(true);
@@ -321,22 +350,27 @@ export default function StudentPointFeedbacks() {
                       ) ? (
                         <div className="border rounded p-2 inline-block">
                           <Image
-                            src={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                            src={`${
+                              import.meta.env.VITE_BACKEND_URL ||
+                              import.meta.env.VITE_API_BASE_URL
+                            }storage/${selectedFeedback.attachment_path}`}
                             alt="Attachment"
                             style={{ maxHeight: "300px", width: "auto" }}
                             preview={{ mask: "Xem" }}
                           />
                         </div>
                       ) : null}
-                      <a
-                        href={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline"
+                      <button
+                        onClick={() =>
+                          handleDownloadAttachment(
+                            selectedFeedback.attachment_path
+                          )
+                        }
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer bg-transparent border-none p-0 text-left"
                       >
                         📥 Tải xuống (
                         {selectedFeedback.attachment_path.split("/").pop()})
-                      </a>
+                      </button>
                     </div>
                   </div>
                 )}

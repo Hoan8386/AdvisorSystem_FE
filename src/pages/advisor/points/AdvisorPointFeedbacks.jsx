@@ -280,7 +280,7 @@ export default function AdvisorPointFeedbacks() {
                     ) ? (
                       <div className="border rounded p-2 inline-block">
                         <Image
-                          src={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                          src={`${import.meta.env.VITE_BACKEND_URL}storage/${selectedFeedback.attachment_path}`}
                           alt="Attachment"
                           style={{ maxHeight: "300px", width: "auto" }}
                           preview={{ mask: "Xem" }}
@@ -288,7 +288,7 @@ export default function AdvisorPointFeedbacks() {
                       </div>
                     ) : null}
                     <a
-                      href={`http://localhost:8000/storage/${selectedFeedback.attachment_path}`}
+                      href={`${import.meta.env.VITE_BACKEND_URL}storage/${selectedFeedback.attachment_path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 underline"

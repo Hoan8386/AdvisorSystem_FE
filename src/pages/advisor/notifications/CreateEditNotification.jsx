@@ -52,19 +52,33 @@ export const CreateEditNotification = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleDownloadAttachment = (attachment) => {
-    const baseUrl =
-      import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-    const fileUrl = `${baseUrl}/storage/${attachment.file_path}`;
+  const handleDownloadAttachment = async (attachment) => {
+    try {
+      const baseUrl =
+        import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL;
+      const fileUrl = `${baseUrl}storage/${attachment.file_path}`;
 
-    // Tạo link tạm để download
-    const link = document.createElement("a");
-    link.href = fileUrl;
-    link.download = attachment.file_name;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Fetch file as blob
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to download file");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Tạo link tạm để download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = attachment.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Lỗi khi tải file");
+    }
   };
 
   const fetchNotificationData = async () => {

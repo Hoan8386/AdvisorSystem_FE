@@ -161,7 +161,7 @@ export default function RespondPointFeedback() {
                   {/\.(jpg|jpeg|png|gif)$/i.test(feedback.attachment_path) ? (
                     <div className="border rounded p-2 inline-block">
                       <Image
-                        src={`http://localhost:8000/storage/${feedback.attachment_path}`}
+                        src={`${import.meta.env.VITE_BACKEND_URL}storage/${feedback.attachment_path}`}
                         alt="Attachment"
                         style={{ maxHeight: "300px", width: "auto" }}
                         preview={{ mask: "Xem" }}
@@ -169,7 +169,7 @@ export default function RespondPointFeedback() {
                     </div>
                   ) : null}
                   <a
-                    href={`http://localhost:8000/storage/${feedback.attachment_path}`}
+                    href={`${import.meta.env.VITE_BACKEND_URL}storage/${feedback.attachment_path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 underline"
