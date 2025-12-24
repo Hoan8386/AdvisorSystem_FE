@@ -503,15 +503,15 @@ export const AdvisorChat = () => {
                   {msg.attachment_path && (
                     <div className={msg.content ? "mt-3" : ""}>
                       <Link
-                        to={`${import.meta.env.VITE_BACKEND_URL}${
+                        to={`${import.meta.env.VITE_BACKEND_URL}storage/${
                           msg.attachment_path
                         }`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group/file ${
                           isSentByMe
-                            ? "border-white/50 hover:bg-white/10"
-                            : "bg-white border-gray-200 hover:border-blue-400 shadow-sm"
+                            ? "border-white/50 hover:bg-white/10" // Tin gửi: Viền trắng mờ
+                            : "bg-white border-gray-200 hover:border-blue-400 shadow-sm" // Tin nhận: Nền trắng
                         }`}
                       >
                         {/* Icon Wrapper */}

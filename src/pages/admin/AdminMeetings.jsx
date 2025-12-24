@@ -19,7 +19,11 @@ import {
 import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Eye, Trash2, Download } from "lucide-react";
 import { toast } from "react-toastify";
-import { getMeetingsApi, deleteMeetingApi } from "../../services/api.service";
+import {
+  getMeetingsApi,
+  deleteMeetingApi,
+  getClassesApi,
+} from "../../services/api.service";
 import { downloadMeetingMinutesApi } from "../../services/meeting.service";
 import MeetingDetailModal from "../../components/admin/MeetingDetailModal";
 import dayjs from "dayjs";
@@ -29,13 +33,13 @@ const AdminMeetings = () => {
   const [loading, setLoading] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [classesWithoutMeetings, setClassesWithoutMeetings] = useState([]);
 
   // Filter states
   const [filters, setFilters] = useState({
     class_id: undefined,
     status: undefined,
-    from_date: undefined,
-    to_date: undefined,
+    month: undefined,
   });
   const [selectedMonth, setSelectedMonth] = useState(null);
 
@@ -50,16 +54,12 @@ const AdminMeetings = () => {
       if (result.success) {
         setMeetings(result.data);
 
-        // Extract unique classes
-        const uniqueClasses = [
-          ...new Map(
-            result.data.map((meeting) => [
-              meeting.class.class_id,
-              meeting.class,
-            ])
-          ).values(),
-        ];
-        setClasses(uniqueClasses);
+        // Lưu classes_without_meetings khi có month
+        if (result.classes_without_meetings) {
+          setClassesWithoutMeetings(result.classes_without_meetings);
+        } else {
+          setClassesWithoutMeetings([]);
+        }
       }
     } catch (error) {
       console.error("Error fetching meetings:", error);
@@ -69,8 +69,21 @@ const AdminMeetings = () => {
     }
   }, [filters]);
 
+  const fetchClasses = async () => {
+    try {
+      const result = await getClassesApi();
+      if (result?.data) {
+        setClasses(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      toast.error("Không thể tải danh sách lớp");
+    }
+  };
+
   useEffect(() => {
     // Gọi lần đầu tiên khi component mount
+    fetchClasses();
     const initialFetch = async () => {
       try {
         setLoading(true);
@@ -79,16 +92,11 @@ const AdminMeetings = () => {
         if (result.success) {
           setMeetings(result.data);
 
-          // Extract unique classes
-          const uniqueClasses = [
-            ...new Map(
-              result.data.map((meeting) => [
-                meeting.class.class_id,
-                meeting.class,
-              ])
-            ).values(),
-          ];
-          setClasses(uniqueClasses);
+          if (result.classes_without_meetings) {
+            setClassesWithoutMeetings(result.classes_without_meetings);
+          } else {
+            setClassesWithoutMeetings([]);
+          }
         }
       } catch (error) {
         console.error("Error fetching meetings:", error);
@@ -114,18 +122,15 @@ const AdminMeetings = () => {
   const handleMonthChange = (date) => {
     setSelectedMonth(date);
     if (date) {
-      const startOfMonth = date.startOf("month").format("YYYY-MM-DD");
-      const endOfMonth = date.endOf("month").format("YYYY-MM-DD");
+      const monthStr = date.format("YYYY-MM");
       setFilters((prev) => ({
         ...prev,
-        from_date: startOfMonth,
-        to_date: endOfMonth,
+        month: monthStr,
       }));
     } else {
       setFilters((prev) => ({
         ...prev,
-        from_date: undefined,
-        to_date: undefined,
+        month: undefined,
       }));
     }
   };
@@ -135,8 +140,7 @@ const AdminMeetings = () => {
     setFilters({
       class_id: undefined,
       status: undefined,
-      from_date: undefined,
-      to_date: undefined,
+      month: undefined,
     });
   };
 
@@ -387,40 +391,41 @@ const AdminMeetings = () => {
           </Button>
         </div>
 
-        {/* Table or Empty State */}
-        {meetings.length === 0 && !loading ? (
-          <div className="py-5 w-full">
-            {filters.class_id && selectedMonth ? (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 w-full">
-                <div className="flex items-start gap-3 mb-4">
-                  <ExclamationCircleOutlined className="text-yellow-600 text-xl mt-1" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 text-base">
-                      Lớp này chưa tổ chức cuộc họp trong tháng{" "}
-                      {selectedMonth.format("MM/YYYY")}
-                    </h3>
-                  </div>
-                </div>
+        {/* Classes Without Meetings - Hiển thị trước bảng */}
+        {selectedMonth && classesWithoutMeetings.length > 0 && (
+          <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <ExclamationCircleOutlined className="text-yellow-600 text-xl mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800 text-base">
+                  Các lớp chưa tổ chức cuộc họp trong tháng{" "}
+                  {selectedMonth.format("MM/YYYY")}
+                </h3>
+              </div>
+            </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+            <div className="space-y-3">
+              {classesWithoutMeetings.map((cls) => (
+                <div
+                  key={cls.class_id}
+                  className="bg-white rounded-lg border border-gray-200 p-4"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <Tag
-                        color="orange"
-                        className="text-sm px-3 py-1 mb-2"
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {
-                          classes.find((c) => c.class_id === filters.class_id)
-                            ?.class_name
-                        }
-                      </Tag>
-                      <div className="text-sm text-gray-700 mt-1">
-                        {classes.find((c) => c.class_id === filters.class_id)
-                          ?.class_description || "Lớp Đại học"}
+                      <div className="flex items-center gap-2 mb-2">
+                        <Tag
+                          color="orange"
+                          className="text-sm px-3 py-1"
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {cls.class_name}
+                        </Tag>
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        {cls.description || "Không có mô tả"}
                       </div>
                     </div>
 
@@ -428,30 +433,34 @@ const AdminMeetings = () => {
                       <div className="text-sm text-gray-600 mb-1">
                         <span className="text-gray-700">Sĩ số:</span>{" "}
                         <span className="font-medium">
-                          {classes.find((c) => c.class_id === filters.class_id)
-                            ?.total_students || 0}
+                          {cls.students_count || 0}
                         </span>
                       </div>
                       <div className="text-sm text-gray-600">
                         <span className="text-gray-700">CVHT:</span>{" "}
                         <span className="font-medium">
-                          {classes.find((c) => c.class_id === filters.class_id)
-                            ?.advisor?.full_name || "-"}
+                          {cls.advisor?.full_name || "-"}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                <p className="text-sm text-gray-600">
-                  Tổng: <strong className="text-gray-800">1</strong> lớp chưa tổ
-                  chức họp
-                </p>
-              </div>
-            ) : (
-              <Empty description="Không có dữ liệu" />
-            )}
+            <p className="text-sm text-gray-600 mt-4">
+              Tổng:{" "}
+              <strong className="text-gray-800">
+                {classesWithoutMeetings.length}
+              </strong>{" "}
+              lớp chưa tổ chức họp
+            </p>
           </div>
+        )}
+
+        {/* Table or Empty State */}
+        {meetings.length === 0 && !loading ? (
+          <Empty description="Không có dữ liệu" />
         ) : (
           <Table
             columns={columns}

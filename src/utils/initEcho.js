@@ -19,7 +19,7 @@ export const initEcho = (token) => {
     port: port,
     scheme: import.meta.env.VITE_REVERB_SCHEME,
     forceTLS: isSecure,
-    authEndpoint: `${import.meta.env.VITE_BACKEND_URL}/api/broadcasting/auth`,
+    authEndpoint: `${import.meta.env.VITE_BACKEND_URL}api/broadcasting/auth`,
   });
 
   echoInstance = new Echo({

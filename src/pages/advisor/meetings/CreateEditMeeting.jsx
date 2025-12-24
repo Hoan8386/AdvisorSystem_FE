@@ -180,11 +180,12 @@ export const CreateEditMeeting = () => {
         toast.error("Vui lòng kiểm tra lại thông tin");
       } else {
         const errorMessage =
-          error.response?.data?.message ||
+          error.message ||
           (isEditMode
             ? "Không thể cập nhật cuộc họp"
             : "Không thể tạo cuộc họp");
         toast.error(errorMessage);
+        toast.error(error.conflicting_meeting);
       }
     } finally {
       setSubmitting(false);
@@ -310,6 +311,27 @@ export const CreateEditMeeting = () => {
                   name="meeting_time"
                   rules={[
                     { required: true, message: "Vui lòng chọn giờ bắt đầu" },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        const meetingDate = form.getFieldValue("meeting_date");
+                        if (!meetingDate) return Promise.resolve();
+
+                        // Nếu ngày họp là hôm nay, kiểm tra thời gian phải lớn hơn hiện tại
+                        if (meetingDate.isSame(dayjs(), "day")) {
+                          const selectedDateTime = dayjs()
+                            .hour(value.hour())
+                            .minute(value.minute());
+                          if (selectedDateTime.isAfter(dayjs())) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(
+                            new Error("Giờ bắt đầu phải sau thời gian hiện tại")
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
                   ]}
                 >
                   <TimePicker
@@ -327,13 +349,33 @@ export const CreateEditMeeting = () => {
                       validator: (_, value) => {
                         if (!value) return Promise.resolve();
                         const meetingTime = form.getFieldValue("meeting_time");
+                        const meetingDate = form.getFieldValue("meeting_date");
+
                         if (!meetingTime) return Promise.resolve();
-                        if (value.isAfter(meetingTime)) {
-                          return Promise.resolve();
+
+                        // Kiểm tra giờ kết thúc phải sau giờ bắt đầu
+                        if (!value.isAfter(meetingTime)) {
+                          return Promise.reject(
+                            new Error("Giờ kết thúc phải sau giờ bắt đầu")
+                          );
                         }
-                        return Promise.reject(
-                          new Error("Giờ kết thúc phải sau giờ bắt đầu")
-                        );
+
+                        // Nếu ngày họp là hôm nay, kiểm tra thời gian phải lớn hơn hiện tại
+                        if (meetingDate && meetingDate.isSame(dayjs(), "day")) {
+                          const selectedDateTime = dayjs()
+                            .hour(value.hour())
+                            .minute(value.minute());
+                          if (selectedDateTime.isAfter(dayjs())) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(
+                            new Error(
+                              "Giờ kết thúc phải sau thời gian hiện tại"
+                            )
+                          );
+                        }
+
+                        return Promise.resolve();
                       },
                     },
                   ]}
@@ -405,24 +447,22 @@ export const CreateEditMeeting = () => {
                   />
                 </Form.Item>
 
-                {/* Switch Đồng bộ với Google Calendar - Hiện cho cả create và edit */}
-                <Form.Item
-                  label={
-                    <span className="font-semibold text-green-600">
-                      <GoogleOutlined className="mr-1" />
-                      {isEditMode ? "Đồng bộ GG" : "Auto Meet"}
-                    </span>
-                  }
-                  name="auto_create_meet"
-                  valuePropName="checked"
-                  tooltip={
-                    isEditMode
-                      ? "Đồng bộ cuộc họp với Google Calendar"
-                      : "Tự động tạo link Google Meet"
-                  }
-                >
-                  <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
-                </Form.Item>
+                {/* Switch tự động tạo Google Meet - Chỉ hiện khi tạo mới */}
+                {!isEditMode && (
+                  <Form.Item
+                    label={
+                      <span className="font-semibold text-green-600">
+                        <GoogleOutlined className="mr-1" />
+                        Auto Meet
+                      </span>
+                    }
+                    name="auto_create_meet"
+                    valuePropName="checked"
+                    tooltip="Tự động tạo link Google Meet"
+                  >
+                    <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                  </Form.Item>
+                )}
               </div>
             </div>
 

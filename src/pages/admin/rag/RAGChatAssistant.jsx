@@ -97,6 +97,11 @@ const RAGChatAssistant = () => {
       return;
     }
 
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    };
+
     const userMessage = {
       role: "user",
       content: inputValue,
@@ -110,13 +115,10 @@ const RAGChatAssistant = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:3636/documents/vector/chat/process-query",
+        `${import.meta.env.VITE_CHATBOT}documents/vector/chat/process-query`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: headers,
           body: JSON.stringify({
             query: query,
             thread_id: threadId,
@@ -137,6 +139,7 @@ const RAGChatAssistant = () => {
       let assistantMessage = {
         role: "assistant",
         timestamp: new Date(),
+        data: data,
       };
 
       if (data.status === "success" && data.data) {

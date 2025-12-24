@@ -36,6 +36,9 @@ import {
 } from "../../../services/meeting.service";
 import { getClassesAPI } from "../../../services/api.service";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 const { RangePicker } = DatePicker;
 
@@ -45,13 +48,12 @@ export const AdvisorMeetings = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(null);
+  const [classesWithoutMeetings, setClassesWithoutMeetings] = useState([]);
 
   const [filters, setFilters] = useState({
     class_id: null,
     status: null,
-    from_date: null,
-    to_date: null,
-    search: "",
+    month: null,
   });
 
   useEffect(() => {
@@ -82,19 +84,72 @@ export const AdvisorMeetings = () => {
       const params = { ...filters };
       const response = await getMeetingsApi(params);
 
-      if (response?.data) {
+      console.log("📦 Full response:", response);
+      console.log(
+        "📦 response type:",
+        typeof response,
+        "isArray:",
+        Array.isArray(response)
+      );
+
+      if (response) {
         let meetingData = [];
 
-        if (Array.isArray(response.data)) {
+        // Response sau khi qua interceptor: { success, data, classes_without_meetings }
+        if (Array.isArray(response)) {
+          console.log("✅ Branch 1: response is Array directly");
+          meetingData = response;
+          setClassesWithoutMeetings([]);
+        } else if (response.data && Array.isArray(response.data)) {
+          console.log("✅ Branch 2: response.data is Array");
           meetingData = response.data;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          meetingData = response.data.data;
-        } else if (response.data.success && response.data.data) {
-          meetingData = Array.isArray(response.data.data)
-            ? response.data.data
-            : [];
+
+          console.log(
+            "🔍 Checking response.classes_without_meetings:",
+            response.classes_without_meetings
+          );
+          console.log(
+            "🔍 Is Array:",
+            Array.isArray(response.classes_without_meetings)
+          );
+          console.log("🔍 Length:", response.classes_without_meetings?.length);
+
+          // Lưu classes_without_meetings từ response gốc (cùng cấp với data)
+          if (
+            response.classes_without_meetings &&
+            Array.isArray(response.classes_without_meetings)
+          ) {
+            console.log(
+              "✅ Setting classes without meetings:",
+              response.classes_without_meetings
+            );
+            setClassesWithoutMeetings(response.classes_without_meetings);
+          } else {
+            console.log("❌ No classes_without_meetings in response");
+            setClassesWithoutMeetings([]);
+          }
+        } else if (response.success && response.data) {
+          console.log("✅ Branch 3: response.success exists");
+          meetingData = Array.isArray(response.data) ? response.data : [];
+
+          if (
+            response.classes_without_meetings &&
+            Array.isArray(response.classes_without_meetings)
+          ) {
+            console.log(
+              "✅ Setting classes without meetings (branch 3):",
+              response.classes_without_meetings
+            );
+            setClassesWithoutMeetings(response.classes_without_meetings);
+          } else {
+            console.log(
+              "❌ No classes_without_meetings in response (branch 3)"
+            );
+            setClassesWithoutMeetings([]);
+          }
         }
 
+        console.log("📊 Meeting data:", meetingData);
         setMeetings(meetingData);
       }
     } catch (error) {
@@ -194,21 +249,29 @@ export const AdvisorMeetings = () => {
       dataIndex: "meeting_time",
       key: "meeting_time",
       width: 100,
-      render: (text, record) => (
-        <div>
-          <div className="flex items-center gap-1 text-sm">
-            <CalendarOutlined className="text-blue-600" />
-            <span className="font-medium">
-              {dayjs(text).format("DD/MM/YYYY")}
-            </span>
+      render: (text, record) => {
+        // Bỏ 'Z' để parse như local time thay vì UTC
+        const localMeetingTime = text?.replace("Z", "").replace(".000000", "");
+        const localEndTime = record.end_time
+          ?.replace("Z", "")
+          .replace(".000000", "");
+
+        return (
+          <div>
+            <div className="flex items-center gap-1 text-sm">
+              <CalendarOutlined className="text-blue-600" />
+              <span className="font-medium">
+                {dayjs(localMeetingTime).format("DD/MM/YYYY")}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              <ClockCircleOutlined className="mr-1" />
+              {dayjs(localMeetingTime).format("HH:mm")}
+              {localEndTime && ` - ${dayjs(localEndTime).format("HH:mm")}`}
+            </div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            <ClockCircleOutlined className="mr-1" />
-            {dayjs(text).format("HH:mm")}
-            {record.end_time && ` - ${dayjs(record.end_time).format("HH:mm")}`}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Trạng thái",
@@ -286,18 +349,15 @@ export const AdvisorMeetings = () => {
   const handleMonthChange = (date) => {
     setSelectedMonth(date);
     if (date) {
-      const startOfMonth = date.startOf("month").format("YYYY-MM-DD");
-      const endOfMonth = date.endOf("month").format("YYYY-MM-DD");
+      const monthStr = date.format("YYYY-MM");
       setFilters({
         ...filters,
-        from_date: startOfMonth,
-        to_date: endOfMonth,
+        month: monthStr,
       });
     } else {
       setFilters({
         ...filters,
-        from_date: null,
-        to_date: null,
+        month: null,
       });
     }
   };
@@ -369,9 +429,7 @@ export const AdvisorMeetings = () => {
                 setFilters({
                   class_id: null,
                   status: null,
-                  from_date: null,
-                  to_date: null,
-                  search: "",
+                  month: null,
                 });
                 setTimeout(() => fetchMeetings(), 0);
               }}
@@ -380,41 +438,53 @@ export const AdvisorMeetings = () => {
             </Button>
           </div>
 
-          {/* Table or Empty State */}
-          {meetings.length === 0 && !loading ? (
-            <div className="py-5 w-full">
-              {filters.class_id && selectedMonth ? (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 w-full">
-                  <div className="flex items-start gap-3 mb-4">
-                    <ExclamationCircleOutlined className="text-yellow-600 text-xl mt-1" />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-800 text-base">
-                        Lơp này chưa tổ chức cuộc họp trong tháng này{" "}
-                        {selectedMonth.format("YYYY-MM")}
-                      </h3>
-                    </div>
-                  </div>
+          {/* Classes Without Meetings - Hiển thị trước bảng */}
+          {console.log("=== DEBUG INFO ===")}
+          {console.log("selectedMonth:", selectedMonth)}
+          {console.log("classesWithoutMeetings:", classesWithoutMeetings)}
+          {console.log(
+            "classesWithoutMeetings.length:",
+            classesWithoutMeetings.length
+          )}
+          {console.log(
+            "Condition result:",
+            selectedMonth && classesWithoutMeetings.length > 0
+          )}
+          {console.log("==================")}
+          {selectedMonth && classesWithoutMeetings.length > 0 && (
+            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <ExclamationCircleOutlined className="text-yellow-600 text-xl mt-1" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800 text-base">
+                    Các lớp chưa có cuộc họp trong tháng{" "}
+                    {selectedMonth.format("MM/YYYY")}
+                  </h3>
+                </div>
+              </div>
 
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+              <div className="space-y-3">
+                {classesWithoutMeetings.map((cls) => (
+                  <div
+                    key={cls.class_id}
+                    className="bg-white rounded-lg border border-gray-200 p-4"
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <Tag
-                          color="orange"
-                          className="text-sm px-3 py-1 mb-2"
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: "500",
-                          }}
-                        >
-                          {
-                            classes.find((c) => c.class_id === filters.class_id)
-                              ?.class_name
-                          }
-                        </Tag>
-                        <div className="text-sm text-gray-700 mt-1">
-                          {classes.find((c) => c.class_id === filters.class_id)
-                            ?.class_description ||
-                            "Lớp Đại học 2021 ngành Công nghệ Thông tin"}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Tag
+                            color="orange"
+                            className="text-sm px-3 py-1"
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: "500",
+                            }}
+                          >
+                            {cls.class_name}
+                          </Tag>
+                        </div>
+                        <div className="text-sm text-gray-700">
+                          {cls.description || "Không có mô tả"}
                         </div>
                       </div>
 
@@ -422,47 +492,49 @@ export const AdvisorMeetings = () => {
                         <div className="text-sm text-gray-600 mb-1">
                           <span className="text-gray-700">Sĩ số:</span>{" "}
                           <span className="font-medium">
-                            {classes.find(
-                              (c) => c.class_id === filters.class_id
-                            )?.total_students || 20}
+                            {cls.students_count || 0}
                           </span>
                         </div>
                         <div className="text-sm text-gray-600">
                           <span className="text-gray-700">CVHT:</span>{" "}
                           <span className="font-medium">
-                            {classes.find(
-                              (c) => c.class_id === filters.class_id
-                            )?.advisor?.full_name || "ThS. Trần Văn An"}
+                            {cls.advisor?.full_name || "-"}
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  <p className="text-sm text-gray-600">
-                    Tổng: <strong className="text-gray-800">1</strong> lớp chưa
-                    tổ chức họp
-                  </p>
-                </div>
-              ) : (
-                <Empty
-                  description={
-                    <div>
-                      <p className="text-gray-500 text-lg mb-3">
-                        Chưa có cuộc họp nào
-                      </p>
-                      <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => navigate("/advisor/meetings/create")}
-                      >
-                        Tạo cuộc họp đầu tiên
-                      </Button>
-                    </div>
-                  }
-                />
-              )}
+              <p className="text-sm text-gray-600 mt-4">
+                Tổng:{" "}
+                <strong className="text-gray-800">
+                  {classesWithoutMeetings.length}
+                </strong>{" "}
+                lớp chưa tổ chức họp
+              </p>
             </div>
+          )}
+
+          {/* Table */}
+          {meetings.length === 0 && !loading ? (
+            <Empty
+              description={
+                <div>
+                  <p className="text-gray-500 text-lg mb-3">
+                    Chưa có cuộc họp nào
+                  </p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate("/advisor/meetings/create")}
+                  >
+                    Tạo cuộc họp đầu tiên
+                  </Button>
+                </div>
+              }
+            />
           ) : (
             <Table
               columns={columns}

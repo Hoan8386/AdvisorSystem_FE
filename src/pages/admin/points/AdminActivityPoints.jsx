@@ -466,11 +466,23 @@ export const AdminActivityPoints = () => {
   return (
     <div className="p-6">
       <Card>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Quản lý Hoạt động & CTXH</h1>
-          <p className="text-gray-500">
-            Xuất điểm rèn luyện và công tác xã hội theo lớp học
-          </p>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">
+              Quản lý Hoạt động & CTXH
+            </h1>
+            <p className="text-gray-500">
+              Xuất điểm rèn luyện và công tác xã hội theo lớp học
+            </p>
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            size="large"
+            onClick={fetchInitialData}
+            loading={loading}
+          >
+            Làm mới
+          </Button>
         </div>
 
         {/* Selection Filters */}
@@ -520,83 +532,83 @@ export const AdminActivityPoints = () => {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-3 flex-wrap">
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              size="large"
-              onClick={handleExportTrainingPoints}
-              loading={trainingLoading}
-              disabled={!selectedClass || !selectedSemester}
-            >
-              Xuất Điểm Rèn Luyện (Lớp)
-            </Button>
+          <div className="mt-6 space-y-3">
+            {/* Điểm Rèn Luyện */}
+            <div className="flex gap-3 flex-wrap">
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                size="large"
+                onClick={handleExportTrainingPoints}
+                loading={trainingLoading}
+                disabled={!selectedClass || !selectedSemester}
+              >
+                Xuất Điểm Rèn Luyện (Lớp)
+              </Button>
 
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              size="large"
-              onClick={handleExportTrainingPointsByFaculty}
-              loading={trainingFacultyLoading}
-              disabled={!selectedSemester}
-            >
-              Xuất Điểm Rèn Luyện (Khoa)
-            </Button>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                size="large"
+                onClick={handleExportTrainingPointsByFaculty}
+                loading={trainingFacultyLoading}
+                disabled={!selectedSemester}
+              >
+                Xuất Điểm Rèn Luyện (Khoa)
+              </Button>
+            </div>
 
-            <Button
-              type="primary"
-              icon={<FileExcelOutlined />}
-              size="large"
-              onClick={handleExportSocialPoints}
-              loading={socialLoading}
-              disabled={!selectedClass}
-              style={{ background: "#52c41a", borderColor: "#52c41a" }}
-            >
-              Xuất Điểm CTXH (Lớp)
-            </Button>
+            {/* Điểm CTXH Tích Lũy */}
+            <div className="flex gap-3 flex-wrap">
+              <Button
+                type="primary"
+                icon={<FileExcelOutlined />}
+                size="large"
+                onClick={handleExportSocialPoints}
+                loading={socialLoading}
+                disabled={!selectedClass}
+                style={{ background: "#52c41a", borderColor: "#52c41a" }}
+              >
+                Xuất Điểm CTXH (Lớp)
+              </Button>
 
-            <Button
-              type="primary"
-              icon={<FileExcelOutlined />}
-              size="large"
-              onClick={handleExportSocialPointsByFaculty}
-              loading={socialFacultyLoading}
-              style={{ background: "#52c41a", borderColor: "#52c41a" }}
-            >
-              Xuất Điểm CTXH (Khoa)
-            </Button>
+              <Button
+                type="primary"
+                icon={<FileExcelOutlined />}
+                size="large"
+                onClick={handleExportSocialPointsByFaculty}
+                loading={socialFacultyLoading}
+                style={{ background: "#52c41a", borderColor: "#52c41a" }}
+              >
+                Xuất Điểm CTXH (Khoa)
+              </Button>
+            </div>
 
-            <Button
-              type="default"
-              icon={<FileExcelOutlined />}
-              size="large"
-              onClick={handleExportInsufficientSocialPointsByClass}
-              loading={insufficientClassLoading}
-              disabled={!selectedClass}
-              danger
-            >
-              DS Thiếu CTXH (Lớp)
-            </Button>
+            {/* Danh Sách Thiếu CTXH */}
+            <div className="flex gap-3 flex-wrap">
+              <Button
+                type="primary"
+                icon={<FileExcelOutlined />}
+                size="large"
+                onClick={handleExportInsufficientSocialPointsByClass}
+                loading={insufficientClassLoading}
+                disabled={!selectedClass}
+                style={{ background: "#52c41a", borderColor: "#52c41a" }}
+              >
+                DS Thiếu CTXH (Lớp)
+              </Button>
 
-            <Button
-              type="default"
-              icon={<FileExcelOutlined />}
-              size="large"
-              onClick={handleExportInsufficientSocialPointsByFaculty}
-              loading={insufficientFacultyLoading}
-              danger
-            >
-              DS Thiếu CTXH (Khoa)
-            </Button>
-
-            <Button
-              icon={<ReloadOutlined />}
-              size="large"
-              onClick={fetchInitialData}
-              loading={loading}
-            >
-              Làm mới
-            </Button>
+              <Button
+                type="primary"
+                icon={<FileExcelOutlined />}
+                size="large"
+                onClick={handleExportInsufficientSocialPointsByFaculty}
+                loading={insufficientFacultyLoading}
+                style={{ background: "#52c41a", borderColor: "#52c41a" }}
+              >
+                DS Thiếu CTXH (Khoa)
+              </Button>
+            </div>
           </div>
         </Card>
 

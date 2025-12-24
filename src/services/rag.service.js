@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Tạo axios instance riêng cho RAG API
 const ragAxios = axios.create({
-  baseURL: 'http://localhost:3636', // URL của RAG API
+  baseURL: import.meta.env.VITE_CHATBOT, // URL của RAG API
   timeout: 600000, // 60 giây cho các request upload lớn
 });
 

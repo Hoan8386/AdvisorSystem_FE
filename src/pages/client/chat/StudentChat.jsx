@@ -460,7 +460,7 @@ export const StudentChat = () => {
                   {msg.attachment_path && (
                     <div className="mt-3">
                       <Link
-                        to={`${import.meta.env.VITE_BACKEND_URL}${
+                        to={`${import.meta.env.VITE_BACKEND_URL}storage/${
                           msg.attachment_path
                         }`}
                         target="_blank"
